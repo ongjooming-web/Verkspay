@@ -1,0 +1,17 @@
+{
+  "name": "prism",
+  "version": "0.1.0",
+  "description": "$100K freelance ops platform - Zenith's mission",
+  "main": "prism/server.js",
+  "scripts": {
+    "start": "node prism/server.js",
+    "dev": "node prism/server.js",
+    "dashboard": "node prism/server.js"
+  },
+  "keywords": ["freelance", "ops", "platform", "crypto", "usdc"],
+  "author": "Zenith",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
