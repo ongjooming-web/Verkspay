@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#ffffff"/>
+  
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="prismGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Prism shape (triangle/light refraction) -->
+  <g transform="translate(256, 256)">
+    <!-- Left triangle -->
+    <polygon points="0,0 -80,-100 -80,100" fill="#667eea" opacity="0.9"/>
+    
+    <!-- Center triangle -->
+    <polygon points="0,0 0,-140 80,-70" fill="#764ba2" opacity="0.9"/>
+    
+    <!-- Right triangle -->
+    <polygon points="0,0 80,-70 0,140" fill="#667eea" opacity="0.7"/>
+    
+    <!-- Light rays (circles getting smaller) -->
+    <circle cx="-60" cy="-40" r="8" fill="#ffd700" opacity="0.8"/>
+    <circle cx="0" cy="-90" r="6" fill="#ffed4e" opacity="0.8"/>
+    <circle cx="60" cy="-20" r="7" fill="#ffc700" opacity="0.8"/>
+    
+    <!-- Lightning bolt (⚡) inside -->
+    <g transform="translate(-15, -20)">
+      <polygon points="0,-20 8,-8 4,8 12,20 0,8 4,-8" fill="#ffffff" opacity="0.9"/>
+    </g>
+  </g>
+  
+  <!-- Text below for larger contexts -->
+  <text x="256" y="480" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle" fill="#667eea">PRISM</text>
+</svg>

@@ -69,14 +69,36 @@ const server = http.createServer((req, res) => {
     }
 });
 
-server.listen(PORT, () => {
+const os = require('os');
+
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Skip internal and non-IPv4 addresses
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+const localIP = getLocalIP();
+
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║         ⚡ Zenith's Prism Mission Dashboard                │
 ║                                                            │
+║  📱 MOBILE/NETWORK ACCESS:                                │
+║  🌐 http://${localIP}:${PORT}                               │
+║  📊 http://${localIP}:${PORT}/dashboard                    │
+║  📡 http://${localIP}:${PORT}/api/status                  │
+║                                                            │
+║  LOCAL ACCESS:                                            │
 ║  🌐 http://localhost:${PORT}                                 │
 ║  📊 http://localhost:${PORT}/dashboard                      │
-║  📡 http://localhost:${PORT}/api/status                    │
 ║                                                            │
 ║  Press Ctrl+C to stop                                     │
 ╚════════════════════════════════════════════════════════════╝

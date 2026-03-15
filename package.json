@@ -8,10 +8,23 @@
     "dev": "node prism/server.js",
     "dashboard": "node prism/server.js"
   },
-  "keywords": ["freelance", "ops", "platform", "crypto", "usdc"],
+  "keywords": [
+    "freelance",
+    "ops",
+    "platform",
+    "crypto",
+    "usdc"
+  ],
   "author": "Zenith",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
+    "oauth-1.0a": "^2.2.6",
+    "playwright": "^1.58.2",
+    "twitter-api-v2": "^1.29.0"
   }
 }
