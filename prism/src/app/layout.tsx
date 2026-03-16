@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Prism - Invoicing & Proposals',
-  description: 'Simple invoicing and proposal management',
+  description: 'Simple invoicing and proposal management with crypto payments',
 }
 
 export default function RootLayout({
@@ -13,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50">{children}</body>
+      <body className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+        {children}
+      </body>
     </html>
   )
 }

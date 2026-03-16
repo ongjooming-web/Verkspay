@@ -14,25 +14,28 @@ export function Navigation() {
   }
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="glass sticky top-0 z-50 mb-8">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <Link href="/dashboard" className="text-2xl font-bold text-blue-600">
-          Prism
+        <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
+          ◆ Prism
         </Link>
-        <div className="flex gap-6 items-center">
-          <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
+        <div className="flex gap-8 items-center">
+          <Link href="/dashboard" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Dashboard
           </Link>
-          <Link href="/clients" className="text-gray-700 hover:text-blue-600">
+          <Link href="/clients" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Clients
           </Link>
-          <Link href="/invoices" className="text-gray-700 hover:text-blue-600">
+          <Link href="/invoices" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Invoices
           </Link>
-          <Link href="/settings" className="text-gray-700 hover:text-blue-600">
+          <Link href="/proposals" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
+            Proposals
+          </Link>
+          <Link href="/settings" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Settings
           </Link>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="ml-4">
             Logout
           </Button>
         </div>

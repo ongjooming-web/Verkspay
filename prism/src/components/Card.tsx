@@ -9,10 +9,10 @@ export function Card({ variant = 'default', className, children, ...props }: Car
   return (
     <div
       className={clsx(
-        'rounded-lg',
+        'rounded-16px transition-all duration-300',
         {
-          'bg-white shadow-md': variant === 'default',
-          'border border-gray-200': variant === 'outline',
+          'glass hover:shadow-lg hover:border-blue-400/30': variant === 'default',
+          'glass-sm': variant === 'outline',
         },
         className
       )}
@@ -24,13 +24,28 @@ export function Card({ variant = 'default', className, children, ...props }: Car
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx('p-6 border-b border-gray-200', className)} {...props} />
+  return (
+    <div 
+      className={clsx('p-6 border-b border-white/10', className)} 
+      {...props} 
+    />
+  )
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx('p-6', className)} {...props} />
+  return (
+    <div 
+      className={clsx('p-6', className)} 
+      {...props} 
+    />
+  )
 }
 
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx('p-6 border-t border-gray-200', className)} {...props} />
+  return (
+    <div 
+      className={clsx('p-6 border-t border-white/10', className)} 
+      {...props} 
+    />
+  )
 }
