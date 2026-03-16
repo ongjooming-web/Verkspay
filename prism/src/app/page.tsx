@@ -794,7 +794,7 @@ export default function Home() {
           </p>
           <div className="hero-cta">
             <Link href="/app/signup" className="cta-button">Start for Free</Link>
-            <Link href="/app/dashboard" className="cta-button secondary">View Demo</Link>
+            <a href="https://app.prismops.xyz" className="cta-button secondary">View Demo</a>
           </div>
         </div>
 
@@ -994,7 +994,7 @@ export default function Home() {
         </form>
         <p className="email-disclaimer">No spam, ever. Unsubscribe anytime.</p>
         <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-          Or <Link href="/app/signup" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}>sign up now</Link> to start using Prism today.
+          Or <a href="https://app.prismops.xyz/app/signup" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}>sign up now</a> to start using Prism today.
         </p>
       </section>
 
