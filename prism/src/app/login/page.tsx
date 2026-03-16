@@ -19,27 +19,54 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      if (!email || !password) {
+        setError('Please fill in all fields')
+        setLoading(false)
+        return
+      }
 
-    if (error) {
-      setError(error.message)
+      console.log('Attempting login with:', { email })
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      console.log('Login response:', { data, error })
+
+      if (error) {
+        console.error('Login error:', error)
+        setError(error.message || 'Failed to sign in')
+        setLoading(false)
+      } else {
+        console.log('Login successful:', data)
+        router.push('/dashboard')
+      }
+    } catch (err) {
+      console.error('Unexpected error during login:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       setLoading(false)
-    } else {
-      router.push('/dashboard')
     }
   }
 
   const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) setError(error.message)
+    try {
+      console.log('Attempting Google sign-in...')
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) {
+        console.error('Google sign-in error:', error)
+        setError(error.message || 'Failed to sign in with Google')
+      }
+    } catch (err) {
+      console.error('Unexpected error during Google sign-in:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+    }
   }
 
   return (

@@ -22,23 +22,41 @@ export default function Signup() {
     setSuccess('')
     setLoading(true)
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
-    }
+    try {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        setLoading(false)
+        return
+      }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+      if (!email || !password) {
+        setError('Please fill in all fields')
+        setLoading(false)
+        return
+      }
 
-    if (error) {
-      setError(error.message)
+      console.log('Attempting signup with:', { email })
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      console.log('Signup response:', { data, error })
+
+      if (error) {
+        console.error('Signup error:', error)
+        setError(error.message || 'Failed to create account')
+        setLoading(false)
+      } else {
+        console.log('Signup successful:', data)
+        setSuccess('Account created! Redirecting to login...')
+        setTimeout(() => router.push('/login'), 1500)
+      }
+    } catch (err) {
+      console.error('Unexpected error during signup:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       setLoading(false)
-    } else {
-      setSuccess('Account created! Redirecting...')
-      setTimeout(() => router.push('/login'), 1500)
     }
   }
 
