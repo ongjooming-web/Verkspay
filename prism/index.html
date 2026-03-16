@@ -3,10 +3,408 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Prism - One platform for freelance operations. Contracts, proposals, CRM, invoicing, and crypto payments.">
     <title>Prism — Freelance Ops Platform</title>
-    <meta http-equiv="refresh" content="0; url=/landing-page.html">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        nav a {
+            text-decoration: none;
+            color: #666;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        nav a:hover {
+            color: #667eea;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+            line-height: 1.2;
+        }
+        
+        .hero .tagline {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+            padding: 0 2rem;
+        }
+        
+        .feature {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #1a1a1a;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        
+        .cta-section {
+            background: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+        
+        .cta-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+        
+        .cta-section p {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .email-signup {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 400px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .email-signup input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .email-signup input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        footer {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+            font-size: 0.9rem;
+        }
+        
+        .pricing {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+        
+        .pricing h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            color: #1a1a1a;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .pricing-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .pricing-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+        
+        .price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .pricing-card ul {
+            list-style: none;
+            margin: 2rem 0;
+            text-align: left;
+            color: #666;
+        }
+        
+        .pricing-card li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .pricing-card li:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            nav {
+                gap: 1rem;
+            }
+            
+            .email-signup {
+                flex-direction: column;
+            }
+            
+            .email-signup input {
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    Redirecting to Prism...
+    <header>
+        <div class="logo">✨ Prism</div>
+        <nav>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#contact">Contact</a>
+            <button class="cta-button">Get Started</button>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h1>One Platform for Freelance Ops</h1>
+        <p class="tagline">
+            Manage contracts, proposals, clients, invoicing — and get paid in crypto. All in one place.
+        </p>
+        <button class="cta-button" style="font-size: 1.1rem; padding: 1rem 2rem;">Start Building →</button>
+    </div>
+
+    <div id="features">
+        <div class="features" style="max-width: 1200px; margin: 0 auto;">
+            <div class="feature">
+                <div class="feature-icon">✍️</div>
+                <h3>Smart Contracts</h3>
+                <p>Pre-built contract templates for freelancers. Sign, store, and track in one place.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📋</div>
+                <h3>Proposal Builder</h3>
+                <p>Create professional proposals in minutes. Track status and get signed agreements fast.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">👥</div>
+                <h3>Client CRM</h3>
+                <p>Keep all client info, contact history, and project notes in one organized dashboard.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">💰</div>
+                <h3>Invoicing</h3>
+                <p>Create, send, and track invoices. Know exactly what's owed and when.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Crypto Payments</h3>
+                <p>Get paid in USDC. No middlemen, no delays. Settle payments in seconds.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <h3>Dashboard</h3>
+                <p>Real-time visibility into revenue, clients, and pipeline. Know your business at a glance.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="pricing" class="pricing">
+        <h2>Simple, Transparent Pricing</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="price">$0</div>
+                <p style="color: #666; margin-bottom: 1.5rem;">Perfect for testing</p>
+                <ul>
+                    <li>✓ 3 active clients</li>
+                    <li>✓ 5 invoices/month</li>
+                    <li>✓ Basic CRM</li>
+                    <li>✗ Contract templates</li>
+                    <li>✗ Crypto payments</li>
+                </ul>
+                <button class="cta-button" style="width: 100%; margin-top: 1.5rem;">Get Started</button>
+            </div>
+            
+            <div class="pricing-card">
+                <h3>Pro</h3>
+                <div class="price">$49</div>
+                <p style="color: #666; margin-bottom: 1.5rem;">For growing freelancers</p>
+                <ul>
+                    <li>✓ Unlimited clients</li>
+                    <li>✓ Unlimited invoices</li>
+                    <li>✓ Advanced CRM</li>
+                    <li>✓ Contract templates</li>
+                    <li>✓ Crypto payments (USDC)</li>
+                </ul>
+                <button class="cta-button" style="width: 100%; margin-top: 1.5rem;">Start Free Trial</button>
+            </div>
+            
+            <div class="pricing-card">
+                <h3>Agency</h3>
+                <div class="price">$299</div>
+                <p style="color: #666; margin-bottom: 1.5rem;">For growing agencies</p>
+                <ul>
+                    <li>✓ Everything in Pro</li>
+                    <li>✓ Team management</li>
+                    <li>✓ Advanced reporting</li>
+                    <li>✓ White label option</li>
+                    <li>✓ Priority support</li>
+                </ul>
+                <button class="cta-button" style="width: 100%; margin-top: 1.5rem;">Contact Sales</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="cta-section" id="contact">
+        <h2>Ready to Simplify Your Ops?</h2>
+        <p>Join freelancers already using Prism to manage their business better.</p>
+        <div class="email-signup">
+            <input type="email" placeholder="your@email.com" required>
+            <button class="cta-button">Notify Me</button>
+        </div>
+        <p style="margin-top: 1.5rem; color: #999; font-size: 0.9rem;">
+            Early access + exclusive updates. No spam, ever.
+        </p>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Prism. Built for freelancers, by AI. <a href="#" style="color: #667eea; text-decoration: none;">Status</a> • <a href="#" style="color: #667eea; text-decoration: none;">Twitter</a></p>
+    </footer>
+
+    <script>
+        // Simple email signup handler
+        document.querySelector('.email-signup').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.querySelector('.email-signup input').value;
+            if (email) {
+                alert('Thanks! We\'ll notify you when Prism launches.');
+                document.querySelector('.email-signup input').value = '';
+            }
+        });
+    </script>
 </body>
 </html>
