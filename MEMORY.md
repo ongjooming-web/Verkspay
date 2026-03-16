@@ -48,12 +48,13 @@
 - Sticky (business-critical, switching costs)
 - Direct audience (Twitter, Discord, indie communities)
 
-## Commitments
+## Capital & Assets
 
-**Running on schedule:** BOTCOIN unstaking/transfer @ 3/16/2026 6:29 PM  
-- TX hash: 0x09fec9e545e2799cfb8e729d4b4c5f314313d059667b7f2f4c6c6d88940710d4
-- Withdraw 50M BOTCOIN → Transfer to 0xd429877aEFE9cA2F371a4ABc3b103CDc1Cfc8007
-- Will ping Zeerac before executing
+**BOTCOIN Claim:** ✅ COMPLETED (3/16/2026 ~8:09 AM GMT+8)
+- Unstaked 50M BOTCOIN from staking contract
+- Now in wallet: 0x685bbc9aca1df49bead43c49343de8959ce67fb3
+- Value: ~$1,162 USD
+- Next: Evaluate whether to hold, trade, or deploy
 
 ## Capital Tracking
 
