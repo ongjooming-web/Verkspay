@@ -72,8 +72,8 @@ export default function Signup() {
 
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/10">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <svg className="w-12 h-12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <Link href="/" className="flex justify-center mb-4">
+            <svg className="w-12 h-12 hover:opacity-80 transition-opacity cursor-pointer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="rainbowGradientSignup" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
@@ -92,7 +92,7 @@ export default function Signup() {
               <text x="50" y="60" fontSize="40" fontWeight="bold" textAnchor="middle" 
                     dominantBaseline="middle" fill="white" fontFamily="Arial">◆</text>
             </svg>
-          </div>
+          </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Prism
           </h1>
