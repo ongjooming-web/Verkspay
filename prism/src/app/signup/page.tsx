@@ -51,7 +51,9 @@ export default function Signup() {
       } else {
         console.log('Signup successful:', data)
         setSuccess('Account created! Redirecting to login...')
-        setTimeout(() => router.push('/login'), 1500)
+        setTimeout(() => {
+          window.location.href = '/app/login'
+        }, 1500)
       }
     } catch (err) {
       console.error('Unexpected error during signup:', err)

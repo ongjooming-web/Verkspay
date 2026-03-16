@@ -41,7 +41,9 @@ export default function Login() {
         setLoading(false)
       } else {
         console.log('Login successful:', data)
-        router.push('/dashboard')
+        console.log('Redirecting to dashboard...')
+        // Use window.location for more reliable navigation
+        window.location.href = '/app/dashboard'
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)
