@@ -56,7 +56,8 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
     try {
       // Check if MetaMask/Phantom is installed
-      if (!window.ethereum) {
+      const ethereum = (window as any).ethereum
+      if (!ethereum) {
         setError('No wallet detected. Please install MetaMask or Phantom.')
         setLoading(false)
         return
@@ -65,7 +66,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
       console.log('[WalletConnect] Requesting account access...')
 
       // Request account access (shows approval prompt in wallet)
-      const accounts = await window.ethereum.request({
+      const accounts = await ethereum.request({
         method: 'eth_requestAccounts'
       })
 
