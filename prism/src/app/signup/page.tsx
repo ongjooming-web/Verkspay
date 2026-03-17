@@ -52,7 +52,7 @@ export default function Signup() {
         console.log('Signup successful:', data)
         setSuccess('Account created! Redirecting to login...')
         setTimeout(() => {
-          window.location.href = '/app/login'
+          window.location.href = '/login'
         }, 1500)
       }
     } catch (err) {

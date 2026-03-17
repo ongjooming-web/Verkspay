@@ -46,11 +46,11 @@ export default function Login() {
         setSuccess('Login successful! Redirecting...')
         // Redirect after a brief delay to ensure session is set
         setTimeout(() => {
-          router.push('/app/dashboard')
+          router.push('/dashboard')
           // Fallback to window.location if router.push doesn't work
           setTimeout(() => {
-            if (window.location.pathname !== '/app/dashboard') {
-              window.location.href = '/app/dashboard'
+            if (window.location.pathname !== '/dashboard') {
+              window.location.href = '/dashboard'
             }
           }, 500)
         }, 500)
