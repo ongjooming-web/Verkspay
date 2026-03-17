@@ -7,14 +7,14 @@ import { Card } from './Card'
 interface QRCodeDisplayProps {
   walletAddress: string
   amount?: number
-  network: 'base' | 'ethereum' | 'solana'
+  network?: 'base' | 'ethereum' | 'solana'
   currency?: string
 }
 
 export function QRCodeDisplay({
   walletAddress,
   amount,
-  network,
+  network = 'base',
   currency = 'USDC'
 }: QRCodeDisplayProps) {
   const qrRef = useRef<HTMLDivElement>(null)

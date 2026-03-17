@@ -243,6 +243,7 @@ export function USDCPaymentCard({
               <QRCodeDisplay
                 walletAddress={walletAddress}
                 amount={invoiceAmount}
+                network="base"
                 currency="USDC"
               />
             </div>

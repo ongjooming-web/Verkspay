@@ -278,8 +278,8 @@ export default function Settings() {
           </CardHeader>
           <CardBody>
             <WalletConnectComponent 
-              onWalletConnected={(address, network) => {
-                console.log('Wallet connected:', address, network)
+              onWalletConnected={(address) => {
+                console.log('Wallet connected:', address)
               }}
               onWalletDisconnected={() => {
                 console.log('Wallet disconnected')

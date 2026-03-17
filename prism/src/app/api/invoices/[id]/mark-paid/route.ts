@@ -1,10 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -13,6 +10,12 @@ export async function POST(
   try {
     const { id } = await context.params
     console.log('[mark-paid] Request received for invoice:', id)
+
+    // Create Supabase client inside function to avoid build-time instantiation
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
 
     // Get the authorization header
     const authHeader = request.headers.get('authorization')
