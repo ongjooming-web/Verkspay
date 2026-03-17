@@ -61,12 +61,15 @@ export async function POST(req: NextRequest) {
       .update({ stripe_account_id: account.id })
       .eq('id', userId)
 
-    // Generate account onboarding link
+    // Generate state param with userId
+    const state = Buffer.from(JSON.stringify({ userId })).toString('base64')
+
+    // Generate account onboarding link with state
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       type: 'account_onboarding',
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=success`,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=refresh`
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/callback?state=${encodeURIComponent(state)}`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/callback?state=${encodeURIComponent(state)}`
     })
 
     console.log('[Stripe] Generated onboarding link:', accountLink.url)

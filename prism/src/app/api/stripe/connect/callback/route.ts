@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const stripeAccountId = searchParams.get('stripe_user_id')
+    const state = searchParams.get('state')
 
     if (!stripeAccountId) {
       console.log('[Stripe] No stripe_user_id in callback')
@@ -23,28 +24,21 @@ export async function GET(req: NextRequest) {
 
     console.log('[Stripe] Callback received with stripeAccountId:', stripeAccountId)
 
-    // Try to get user from session cookie
-    // Supabase stores auth in sb-<project-id>-auth-token cookie
+    // Extract userId from state param
     let userId: string | null = null
-    
-    // Try each possible cookie name for Supabase auth
-    const cookieNames = ['sb-fqdipubbyvekhipknxnr-auth-token', 'auth-token', 'sb-auth-token']
-    
-    for (const cookieName of cookieNames) {
-      const authCookie = req.cookies.get(cookieName)?.value
-      if (authCookie) {
-        try {
-          const sessionData = JSON.parse(Buffer.from(authCookie, 'base64').toString())
-          userId = sessionData.user?.id
-          if (userId) break
-        } catch (e) {
-          console.log(`[Stripe] Could not parse ${cookieName}`)
-        }
+
+    if (state) {
+      try {
+        const decoded = JSON.parse(Buffer.from(state, 'base64').toString())
+        userId = decoded.userId
+        console.log('[Stripe] Decoded userId from state:', userId)
+      } catch (e) {
+        console.error('[Stripe] Could not parse state param:', e)
       }
     }
-    
+
     if (!userId) {
-      console.error('[Stripe] Could not get user from cookies, redirecting to login')
+      console.error('[Stripe] Could not get userId from state, redirecting to login')
       return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
