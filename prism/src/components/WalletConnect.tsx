@@ -14,6 +14,18 @@ const isMobileDevice = (): boolean => {
   return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 }
 
+const isInsideWalletBrowser = (): boolean => {
+  if (typeof window === 'undefined') return false
+  const ua = navigator.userAgent
+  const eth = (window as any).ethereum
+  return !!(
+    eth?.isMetaMask ||
+    eth?.isPhantom ||
+    ua.includes('MetaMaskMobile') ||
+    ua.includes('Phantom')
+  )
+}
+
 export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps) {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -27,31 +39,31 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     setIsMobile(isMobileDevice())
     loadWalletData()
 
-    // Check for autoconnect URL parameter (set by deep-link from wallet app)
-    const searchParams = new URLSearchParams(window.location.search)
-    const autoconnect = searchParams.get('autoconnect') === 'true'
-
-    console.log('[WalletConnect] autoconnect param:', autoconnect, 'window.ethereum:', !!window.ethereum)
-
-    if (autoconnect && window.ethereum) {
-      console.log('[WalletConnect] Inside wallet browser, showing tap-to-connect button')
-      setInsideWalletBrowser(true)
+    // Detect if running inside MetaMask or Phantom built-in browser
+    // window.ethereum may not be injected yet — poll briefly
+    const checkWalletBrowser = async () => {
+      let attempts = 0
+      while (attempts < 15) {
+        if (isInsideWalletBrowser()) {
+          setInsideWalletBrowser(true)
+          return
+        }
+        await new Promise(r => setTimeout(r, 100))
+        attempts++
+      }
     }
+    checkWalletBrowser()
   }, [])
 
   const loadWalletData = async () => {
     try {
       const { data: userData } = await supabase.auth.getUser()
-
       if (!userData?.user?.id) return
-
-      // Load saved wallet from database
       const { data: profile } = await supabase
         .from('profiles')
         .select('wallet_address')
         .eq('id', userData.user.id)
         .single()
-
       if (profile?.wallet_address) {
         setConnectedAddress(profile.wallet_address)
       }
@@ -61,42 +73,29 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   }
 
   const handleConnectWallet = useCallback(async () => {
-    console.log('[WalletConnect] handleConnectWallet called')
     setLoading(true)
     setError(null)
     setSuccess(false)
 
     try {
-      console.log('[WalletConnect] Checking for window.ethereum...')
-      if (!window.ethereum) {
-        console.log('[WalletConnect] No window.ethereum found')
-        setError('No wallet detected. Please install MetaMask or Phantom.')
+      if (!(window as any).ethereum) {
+        setError('No wallet detected.')
         setLoading(false)
         return
       }
 
-      console.log('[WalletConnect] window.ethereum found, requesting account access...')
-      console.log('[WalletConnect] Calling eth_requestAccounts...')
-
-      // Request account access (shows approval prompt in wallet)
-      // This MUST be called from a user gesture (click/tap), not from useEffect
-      const accounts = (await window.ethereum.request({
+      const accounts = (await (window as any).ethereum.request({
         method: 'eth_requestAccounts'
       })) as string[]
 
-      console.log('[WalletConnect] eth_requestAccounts returned:', accounts)
-
       if (!accounts || accounts.length === 0) {
-        console.log('[WalletConnect] No accounts returned')
         setError('No accounts found')
         setLoading(false)
         return
       }
 
       const address = accounts[0]
-      console.log('[WalletConnect] Connected address:', address)
 
-      // Get current user
       const { data: userData } = await supabase.auth.getUser()
       if (!userData?.user?.id) {
         setError('User not authenticated')
@@ -104,7 +103,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         return
       }
 
-      // Save to Supabase
       setSaving(true)
       const { error: updateError } = await supabase
         .from('profiles')
@@ -112,52 +110,41 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         .eq('id', userData.user.id)
 
       if (updateError) {
-        console.error('[WalletConnect] Save error:', updateError)
         setError('Failed to save wallet address')
         setSaving(false)
         setLoading(false)
         return
       }
 
-      console.log('[WalletConnect] Address saved successfully')
       setSaving(false)
       setConnectedAddress(address)
       setSuccess(true)
       setLoading(false)
-
-      if (onWalletConnected) {
-        onWalletConnected(address)
-      }
-
-      // Clear success message after 3 seconds
+      if (onWalletConnected) onWalletConnected(address)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      console.error('[WalletConnect] Connection error:', err)
       if (err.code === 4001) {
         setError('Connection cancelled')
       } else {
         setError(err.message || 'Failed to connect wallet')
       }
       setLoading(false)
+      setSaving(false)
     }
   }, [onWalletConnected])
 
   const handleDeepLink = (wallet: 'metamask' | 'phantom') => {
-    const base = typeof window !== 'undefined' ? window.location.href.split('?')[0] : 'https://app.prismops.xyz'
-    const domainAndPath = base.replace(/^https?:\/\//, '')
-
-    let deepLinkUrl: string
+    // Get current page URL without query params
+    const base = window.location.origin + window.location.pathname
 
     if (wallet === 'metamask') {
-      // MetaMask deep link: https://metamask.app.link/dapp/{domain-and-path}?autoconnect=true
-      deepLinkUrl = `https://metamask.app.link/dapp/${domainAndPath}?autoconnect=true`
+      // MetaMask: https://metamask.app.link/dapp/{domain-and-path}?autoconnect=true
+      const domainAndPath = base.replace(/^https?:\/\//, '')
+      window.location.href = `https://metamask.app.link/dapp/${domainAndPath}?autoconnect=true`
     } else {
-      // Phantom deep link: https://phantom.app/ul/browse/{encoded-url}?ref={encoded-url}
-      deepLinkUrl = `https://phantom.app/ul/browse/${encodeURIComponent(base)}?autoconnect=true&ref=${encodeURIComponent(base)}`
+      // Phantom: https://phantom.app/ul/browse/{encoded-url}?autoconnect=true&ref={encoded-url}
+      window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(base)}?autoconnect=true&ref=${encodeURIComponent(base)}`
     }
-
-    console.log(`[WalletConnect] Redirecting to ${wallet} deep link:`, deepLinkUrl)
-    window.location.href = deepLinkUrl
   }
 
   const handleDisconnect = async () => {
@@ -226,14 +213,11 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                 <Button
                   onClick={handleConnectWallet}
                   disabled={loading || saving}
-                  className={`
-                    w-full px-4 py-4 rounded-lg font-bold text-base transition
-                    ${
-                      loading || saving
-                        ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg'
-                    }
-                  `}
+                  className={`w-full px-4 py-4 rounded-lg font-bold text-base transition ${
+                    loading || saving
+                      ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg'
+                  }`}
                 >
                   {loading ? 'Connecting...' : saving ? 'Saving...' : '👆 Tap to Connect & Sign'}
                 </Button>
@@ -250,26 +234,30 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                   </ul>
                 </div>
 
-                {/* Desktop: Use injected provider */}
-                {!isMobile && window.ethereum && (
+                {/* Desktop with extension */}
+                {!isMobile && (window as any).ethereum && (
                   <Button
                     onClick={handleConnectWallet}
                     disabled={loading || saving}
-                    className={`
-                      w-full px-4 py-3 rounded-lg font-semibold transition
-                      ${
-                        loading || saving
-                          ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-                      }
-                    `}
+                    className={`w-full px-4 py-3 rounded-lg font-semibold transition ${
+                      loading || saving
+                        ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                    }`}
                   >
-                    {loading ? 'Approving in wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
+                    {loading ? 'Approving...' : saving ? 'Saving...' : 'Connect Wallet'}
                   </Button>
                 )}
 
-                {/* Mobile without injected provider: Show deep-link buttons */}
-                {isMobile && !window.ethereum && (
+                {/* Desktop without extension */}
+                {!isMobile && !(window as any).ethereum && (
+                  <p className="text-red-400 text-xs text-center">
+                    MetaMask or Phantom extension not found. Please install it as a browser extension.
+                  </p>
+                )}
+
+                {/* Mobile: deep-link buttons */}
+                {isMobile && (
                   <div className="space-y-2">
                     <Button
                       onClick={() => handleDeepLink('metamask')}
@@ -283,21 +271,10 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                     >
                       👻 Open in Phantom
                     </Button>
+                    <p className="text-gray-500 text-xs text-center">
+                      Opens your wallet app to connect
+                    </p>
                   </div>
-                )}
-
-                {/* Desktop without extension: Show error */}
-                {!isMobile && !window.ethereum && (
-                  <p className="text-red-400 text-xs text-center">
-                    MetaMask or Phantom extension not found. Please install it as a browser extension.
-                  </p>
-                )}
-
-                {/* Mobile: Explanation */}
-                {isMobile && !window.ethereum && (
-                  <p className="text-gray-500 text-xs text-center">
-                    Tap a button above to open the wallet app and complete setup
-                  </p>
                 )}
               </>
             )}
@@ -306,9 +283,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
         {success && (
           <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
-            <p className="text-green-300 text-sm">
-              <span className="font-bold">✓ Success!</span> Wallet connected
-            </p>
+            <p className="text-green-300 text-sm"><span className="font-bold">✓ Success!</span> Wallet connected</p>
           </div>
         )}
       </CardBody>
