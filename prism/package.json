@@ -27,11 +27,13 @@
     "@solana/wallet-adapter-base": "^0.9.22",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/wallet-adapter-react": "^0.15.33",
-    "stripe": "^16.11.0"
+    "stripe": "^16.11.0",
+    "pg": "^8.11.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
     "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
     "typescript": "5.8.3",
     "postcss": "^8.4.33",
     "autoprefixer": "^10.4.17",
