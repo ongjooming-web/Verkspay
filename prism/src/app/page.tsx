@@ -49,7 +49,7 @@ export default function LandingPage() {
               <a href="#features" className="text-gray-300 hover:text-white transition">Features</a>
               <a href="#crypto" className="text-gray-300 hover:text-white transition">Crypto</a>
               <a href="#pricing" className="text-gray-300 hover:text-white transition">Pricing</a>
-              <Link href="/app/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
+              <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
                 Get Started
               </Link>
             </nav>
@@ -67,10 +67,10 @@ export default function LandingPage() {
                 Manage your entire freelance operation in one place. Get paid in USDC instantly. No middlemen, no delays.
               </p>
               <div className="flex gap-4">
-                <Link href="/app/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-white">
+                <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-white">
                   Start for Free
                 </Link>
-                <Link href="/app/dashboard" className="border border-white/30 backdrop-blur-xl px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition text-white">
+                <Link href="/dashboard" className="border border-white/30 backdrop-blur-xl px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition text-white">
                   View Demo
                 </Link>
               </div>
@@ -147,7 +147,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/app/signup" className="w-full block text-center bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                <Link href="/signup" className="w-full block text-center bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
                   Get Started
                 </Link>
               </div>
@@ -159,7 +159,7 @@ export default function LandingPage() {
         <section className="max-w-7xl mx-auto px-6 py-20 text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to streamline your freelance business?</h2>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Join freelancers and agencies using Prism to manage proposals, contracts, invoices, and get paid in crypto.</p>
-          <Link href="/app/signup" className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition text-white text-lg">
+          <Link href="/signup" className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition text-white text-lg">
             Start Free Today
           </Link>
         </section>
