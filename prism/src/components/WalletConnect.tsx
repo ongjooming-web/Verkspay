@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
@@ -25,29 +25,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   useEffect(() => {
     setIsMobile(isMobileDevice())
     loadWalletData()
-    
-    // Auto-connect if running inside wallet's built-in browser
-    const detectWalletBrowserAndConnect = async () => {
-      const isWalletBrowser = !!(window.ethereum) && (
-        (window.ethereum as any).isMetaMask || 
-        (window.ethereum as any).isPhantom ||
-        navigator.userAgent.includes('MetaMaskMobile') ||
-        navigator.userAgent.includes('Phantom')
-      )
-      
-      console.log('[WalletConnect] Wallet browser detected:', isWalletBrowser)
-      
-      if (isWalletBrowser && !connectedAddress) {
-        console.log('[WalletConnect] Auto-connecting inside wallet browser...')
-        setLoading(true)
-        // Small delay to ensure wallet provider is fully ready
-        await new Promise(resolve => setTimeout(resolve, 500))
-        await handleConnectWallet()
-      }
-    }
-    
-    detectWalletBrowserAndConnect()
-  }, [connectedAddress])
+  }, [])
 
   const loadWalletData = async () => {
     try {
@@ -82,7 +60,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     }
   }
 
-  const handleConnectWallet = async () => {
+  const handleConnectWallet = useCallback(async () => {
     setLoading(true)
     setError(null)
     setSuccess(false)
@@ -155,7 +133,25 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
       }
       setLoading(false)
     }
-  }
+  }, [onWalletConnected])
+
+  useEffect(() => {
+    const tryAutoConnect = async () => {
+      // Wait for ethereum to be injected (wallet browsers inject it async)
+      let attempts = 0
+      while (!window.ethereum && attempts < 20) {
+        await new Promise(r => setTimeout(r, 100))
+        attempts++
+      }
+      
+      if (window.ethereum) {
+        console.log('[WalletConnect] Wallet provider detected, auto-connecting...')
+        handleConnectWallet()
+      }
+    }
+
+    tryAutoConnect()
+  }, [handleConnectWallet])
 
   const handleDeepLink = (wallet: 'metamask' | 'phantom') => {
     const dappUrl = typeof window !== 'undefined' ? window.location.href : 'https://app.prismops.xyz'
