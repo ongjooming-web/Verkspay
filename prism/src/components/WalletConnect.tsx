@@ -8,7 +8,7 @@ import { Card, CardBody, CardHeader } from './Card'
 
 // Lazy load AppKit component - SSR breaks wallet libs
 const WalletConnectAppKit = dynamic(
-  () => import('./WalletConnectAppKit').then(mod => ({ default: mod.WalletConnectAppKitComponent })),
+  () => import('./WalletConnectAppKit').then(mod => ({ default: mod.WalletConnectAppKit })),
   { ssr: false, loading: () => <div className="text-gray-400 text-sm">Loading wallet...</div> }
 )
 
