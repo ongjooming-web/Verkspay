@@ -281,9 +281,6 @@ export default function Settings() {
               onWalletConnected={(address) => {
                 console.log('Wallet connected:', address)
               }}
-              onWalletDisconnected={() => {
-                console.log('Wallet disconnected')
-              }}
             />
           </CardBody>
         </Card>
