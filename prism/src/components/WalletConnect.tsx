@@ -81,10 +81,10 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
         // Sign message for auth
         const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
-        const signature = await provider.request({
+        const signature = (await provider.request({
           method: 'personal_sign',
           params: [message, address]
-        })
+        })) as string
 
         await saveWalletAddress(address, signature)
       } else {
@@ -106,10 +106,10 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
         // Sign message for auth
         const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
-        const signature = await window.ethereum.request({
+        const signature = (await window.ethereum.request({
           method: 'personal_sign',
           params: [message, address]
-        })
+        })) as string
 
         await saveWalletAddress(address, signature)
       }
