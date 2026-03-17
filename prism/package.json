@@ -29,10 +29,7 @@
     "@solana/wallet-adapter-base": "^0.9.22",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/wallet-adapter-react": "^0.15.33",
-    "@reown/appkit": "^1.4.0",
-    "@reown/appkit-adapter-wagmi": "^1.4.0",
-    "wagmi": "^2.5.0",
-    "viem": "^2.0.0"
+    "@reown/appkit": "^1.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",

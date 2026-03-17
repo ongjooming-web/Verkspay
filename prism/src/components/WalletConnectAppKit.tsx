@@ -1,111 +1,101 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
 
-interface WalletConnectAppKitProps {
-  onWalletConnected?: (address: string) => void
-}
-
-// Dynamic import for wagmi hooks - SSR causes issues with wallet libs
-let appKit: any = null
-let useAppKitAccount: any = null
-let useAppKitProvider: any = null
-
-// Initialize AppKit on first use (client-side only)
-async function initializeAppKit() {
-  if (appKit) return appKit
-
-  try {
-    const { createAppKit } = await import('@reown/appkit')
-    const { WagmiAdapter } = await import('@reown/appkit-adapter-wagmi')
-    const { mainnet, base, polygon } = await import('viem/chains')
-
-    const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
-    if (!projectId) {
-      console.error('[AppKit] Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in environment')
-      return null
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'appkit-button': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & { size?: string },
+        HTMLElement
+      >
     }
-
-    const metadata = {
-      name: 'Prism Wallet',
-      description: 'Connect your wallet to Prism for invoicing & proposals',
-      url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-      icons: ['https://avatars.githubusercontent.com/u/37784886']
-    }
-
-    const wagmiAdapter = new WagmiAdapter({
-      networks: [mainnet, base, polygon],
-      projectId,
-      ssr: false
-    })
-
-    const instance = createAppKit({
-      adapters: [wagmiAdapter],
-      networks: [mainnet, base, polygon],
-      projectId,
-      metadata,
-      features: {
-        analytics: true,
-        onramp: true
-      }
-    })
-
-    appKit = instance
-    return instance
-  } catch (error) {
-    console.error('[AppKit] Initialization error:', error)
-    return null
   }
 }
 
-// Load hooks after AppKit is initialized
-async function getHooks() {
-  if (useAppKitAccount && useAppKitProvider) {
-    return { useAppKitAccount, useAppKitProvider }
-  }
-
-  try {
-    const module = await import('@reown/appkit/react')
-    useAppKitAccount = module.useAppKitAccount
-    useAppKitProvider = module.useAppKitProvider
-    return { useAppKitAccount, useAppKitProvider }
-  } catch (error) {
-    console.error('[AppKit] Failed to load hooks:', error)
-    return { useAppKitAccount: null, useAppKitProvider: null }
-  }
-}
-
-export function WalletConnectAppKitComponent({ onWalletConnected }: WalletConnectAppKitProps) {
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+export function WalletConnectAppKit() {
+  const [initialized, setInitialized] = useState(false)
+  const [address, setAddress] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [isMounted, setIsMounted] = useState(false)
-  const initializationAttempted = useRef(false)
 
   useEffect(() => {
-    setIsMounted(true)
-    loadWalletData()
-    
-    // Initialize AppKit once on mount
-    if (!initializationAttempted.current) {
-      initializationAttempted.current = true
-      initializeAppKit().catch(err => console.error('[AppKit] Init failed:', err))
+    // Dynamically load AppKit to avoid SSR issues
+    const loadAppKit = async () => {
+      try {
+        // Import AppKit
+        const { createAppKit } = await import('@reown/appkit')
+
+        const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+        if (!projectId) {
+          setError('WalletConnect Project ID not configured')
+          setLoading(false)
+          return
+        }
+
+        // Create AppKit instance (handles mobile deep linking automatically)
+        const appKit = createAppKit({
+          projectId,
+          metadata: {
+            name: 'Prism',
+            description: 'Invoicing & Payment Platform',
+            url: typeof window !== 'undefined' ? window.location.origin : 'https://app.prismops.xyz',
+            icons: ['https://app.prismops.xyz/logo.png']
+          },
+          networks: [
+            {
+              id: 8453,
+              name: 'Base',
+              currency: 'ETH',
+              explorerUrl: 'https://basescan.org',
+              rpcUrl: 'https://mainnet.base.org'
+            },
+            {
+              id: 1,
+              name: 'Ethereum',
+              currency: 'ETH',
+              explorerUrl: 'https://etherscan.io',
+              rpcUrl: 'https://eth.llamarpc.com'
+            }
+          ],
+          defaultNetwork: {
+            id: 8453,
+            name: 'Base',
+            currency: 'ETH',
+            explorerUrl: 'https://basescan.org',
+            rpcUrl: 'https://mainnet.base.org'
+          }
+        })
+
+        // Listen for connection state changes
+        appKit?.subscribeAccount((account) => {
+          if (account?.address) {
+            handleWalletConnected(account.address)
+          }
+        })
+
+        setInitialized(true)
+        setLoading(false)
+
+        // Load saved address from DB
+        loadSavedAddress()
+      } catch (err: any) {
+        console.error('[AppKit] Init error:', err)
+        setError(err.message || 'Failed to initialize AppKit')
+        setLoading(false)
+      }
     }
+
+    loadAppKit()
   }, [])
 
-  const loadWalletData = async () => {
+  const loadSavedAddress = async () => {
     try {
       const { data: userData } = await supabase.auth.getUser()
-      setUser(userData?.user)
-
       if (!userData?.user?.id) return
 
-      // Load saved wallet from database
       const { data: profile } = await supabase
         .from('profiles')
         .select('wallet_address')
@@ -113,134 +103,54 @@ export function WalletConnectAppKitComponent({ onWalletConnected }: WalletConnec
         .single()
 
       if (profile?.wallet_address) {
-        setConnectedAddress(profile.wallet_address)
+        setAddress(profile.wallet_address)
       }
-    } catch (err: any) {
-      console.error('[AppKit] Error loading wallet:', err)
+    } catch (err) {
+      console.error('[AppKit] Load address error:', err)
     }
   }
 
-  const truncateAddress = (address: string) => {
-    if (!address) return ''
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
-  }
-
-  // Sign message with personal_sign
-  const signMessage = async (address: string, provider: any) => {
+  const handleWalletConnected = async (walletAddress: string) => {
     try {
-      const message = `Sign in to Prism
-Wallet: ${address}
-Timestamp: ${Date.now()}`
+      console.log('[AppKit] Wallet connected:', walletAddress)
 
-      console.log('[AppKit] Signing message:', message)
-
-      const signature = await provider.request({
-        method: 'personal_sign',
-        params: [message, address]
-      })
-
-      return signature
-    } catch (err: any) {
-      console.error('[AppKit] Message signing error:', err)
-      throw new Error('Failed to sign message')
-    }
-  }
-
-  // Open AppKit modal and handle connection
-  const handleConnectWallet = async () => {
-    setLoading(true)
-    setError(null)
-    setSuccess(false)
-
-    try {
-      // Ensure AppKit is initialized
-      if (!appKit) {
-        const initialized = await initializeAppKit()
-        if (!initialized) {
-          throw new Error('Failed to initialize WalletConnect AppKit')
-        }
+      // Get user
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData?.user?.id) {
+        setError('User not authenticated')
+        return
       }
 
-      console.log('[AppKit] Opening modal...')
-      // Open the connection modal
-      await appKit.open()
+      // Prepare sign message
+      const message = `Sign in to Prism\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`
 
-      // Wait for connection (max 30 seconds)
-      const startTime = Date.now()
-      const maxWait = 30000
+      // Sign message (AppKit handles this via connected provider)
+      // For now, just save address and mark as connected
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          wallet_address: walletAddress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userData.user.id)
 
-      while (Date.now() - startTime < maxWait) {
-        const { data: account } = await appKit.getAccount?.() || { data: null }
-        
-        if (account?.address) {
-          console.log('[AppKit] Connected address:', account.address)
-          const address = account.address
-
-          // Get provider for signing
-          const { data: provider } = await appKit.getProvider?.() || { data: null }
-          
-          if (provider) {
-            // Sign message for authentication
-            try {
-              const signature = await signMessage(address, provider)
-              console.log('[AppKit] Message signed:', signature)
-            } catch (signErr) {
-              console.warn('[AppKit] Message signing failed, continuing without signature:', signErr)
-              // Continue without signature - address is already verified by connection
-            }
-          }
-
-          // Get current user
-          const { data: userData } = await supabase.auth.getUser()
-          if (!userData?.user?.id) {
-            throw new Error('User not authenticated')
-          }
-
-          // Save to Supabase
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ wallet_address: address })
-            .eq('id', userData.user.id)
-
-          if (updateError) {
-            console.error('[AppKit] Save error:', updateError)
-            throw new Error('Failed to save wallet address')
-          }
-
-          console.log('[AppKit] Address saved successfully')
-          setConnectedAddress(address)
-          setSuccess(true)
-          setLoading(false)
-
-          if (onWalletConnected) {
-            onWalletConnected(address)
-          }
-
-          // Clear success message after 3 seconds
-          setTimeout(() => setSuccess(false), 3000)
-          return
-        }
-
-        // Wait 500ms before checking again
-        await new Promise(resolve => setTimeout(resolve, 500))
+      if (updateError) {
+        console.error('[AppKit] Save error:', updateError)
+        setError('Failed to save wallet')
+        return
       }
 
-      // Timeout
-      throw new Error('Connection timeout - no wallet selected')
+      setAddress(walletAddress)
+      setError(null)
+      console.log('[AppKit] Address saved successfully')
     } catch (err: any) {
       console.error('[AppKit] Connection error:', err)
       setError(err.message || 'Failed to connect wallet')
-      setLoading(false)
     }
   }
 
   const handleDisconnect = async () => {
     try {
-      // Disconnect from AppKit
-      if (appKit?.disconnect) {
-        await appKit.disconnect()
-      }
-
       const { data: userData } = await supabase.auth.getUser()
       if (userData?.user?.id) {
         await supabase
@@ -248,92 +158,83 @@ Timestamp: ${Date.now()}`
           .update({ wallet_address: null })
           .eq('id', userData.user.id)
       }
-      setConnectedAddress(null)
-      setSuccess(false)
+      setAddress(null)
     } catch (err) {
       console.error('[AppKit] Disconnect error:', err)
     }
   }
 
-  if (!isMounted) {
-    return null
+  if (loading) {
+    return (
+      <Card>
+        <CardBody>
+          <div className="animate-pulse">Loading wallet...</div>
+        </CardBody>
+      </Card>
+    )
   }
 
   return (
     <Card className="border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
       <CardHeader>
-        <h3 className="text-lg font-semibold text-white">🔐 Connect Wallet (AppKit)</h3>
+        <h3 className="text-lg font-semibold text-white">🔐 Connect Wallet (WalletConnect)</h3>
       </CardHeader>
       <CardBody className="space-y-4">
-        {connectedAddress ? (
+        {address ? (
           <>
             <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
               <span className="text-green-400 text-lg">✓</span>
-              <span className="text-green-300 font-semibold text-sm">Wallet Connected</span>
+              <span className="text-green-300 font-semibold text-sm">Connected</span>
             </div>
 
             <div className="glass rounded-lg p-4 border-blue-400/30">
-              <p className="text-gray-400 text-sm mb-2">Connected Address</p>
-              <p className="text-white font-mono text-sm break-all">{connectedAddress}</p>
+              <p className="text-gray-400 text-sm mb-2">Wallet Address</p>
+              <p className="text-white font-mono text-sm break-all">{address}</p>
               <p className="text-gray-500 text-xs mt-2">
                 Clients will send USDC to this address
               </p>
             </div>
 
-            <Button
+            <button
               onClick={handleDisconnect}
               className="w-full px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg transition"
             >
-              Disconnect Wallet
-            </Button>
+              Disconnect
+            </button>
           </>
         ) : (
           <>
             {error && (
               <div className="glass rounded-lg p-4 border-red-500/30 bg-red-500/10">
-                <p className="text-red-300 text-sm">
-                  <span className="font-bold">❌ Error:</span> {error}
-                </p>
+                <p className="text-red-300 text-sm">❌ Error: {error}</p>
               </div>
             )}
 
             <div className="glass rounded-lg p-4 border-blue-400/30">
-              <p className="text-gray-300 text-sm">
-                Click below to connect your wallet using WalletConnect. Works on mobile with deep linking!
+              <p className="text-gray-300 text-sm mb-4">
+                Click below to connect your wallet. WalletConnect supports 300+ wallets including MetaMask, Phantom, Trust Wallet, and more.
+              </p>
+              <p className="text-gray-400 text-xs">
+                Mobile: Deep links directly to your wallet app  
+                Desktop: Shows wallet selection modal
               </p>
             </div>
 
-            <Button
-              onClick={handleConnectWallet}
-              disabled={loading}
-              className={`
-                w-full px-4 py-3 rounded-lg font-semibold transition
-                ${
-                  loading
-                    ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-                }
-              `}
-            >
-              {loading ? 'Connecting...' : 'Connect Wallet'}
-            </Button>
+            {/* AppKit Button - renders WalletConnect modal */}
+            {initialized && (
+              <div className="flex gap-2">
+                <appkit-button size="md" />
+              </div>
+            )}
 
-            <p className="text-gray-500 text-xs text-center">
-              Mobile: Opens your wallet app automatically
-            </p>
+            {!initialized && (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-300 text-sm">Initializing WalletConnect...</p>
+              </div>
+            )}
           </>
-        )}
-
-        {success && (
-          <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
-            <p className="text-green-300 text-sm">
-              <span className="font-bold">✓ Success!</span> Wallet connected
-            </p>
-          </div>
         )}
       </CardBody>
     </Card>
   )
 }
-
-export { WalletConnectAppKitComponent as default }
