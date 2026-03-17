@@ -42,9 +42,8 @@ export default function Login() {
         setLoading(false)
       } else {
         console.log('Login successful:', data)
-        console.log('Session established, redirecting to dashboard...')
-        // Middleware will handle the redirect when page reloads
-        window.location.href = '/dashboard'
+        // Just navigate directly
+        router.push('/dashboard')
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)
