@@ -36,7 +36,8 @@ export default function Dashboard() {
         
         if (userError || !authUser) {
           console.error('Not authenticated, redirecting to login')
-          router.push('/login')
+          // Use hard redirect instead of router.push for reliability
+          window.location.href = '/login'
           return
         }
 

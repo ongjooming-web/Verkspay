@@ -42,9 +42,9 @@ export default function Login() {
         setLoading(false)
       } else {
         console.log('Login successful:', data)
-        // Immediate redirect - don't wait
-        console.log('Redirecting to /dashboard now...')
-        window.location.href = '/dashboard'
+        console.log('Reloading page to establish session...')
+        // Hard reload to refresh session
+        window.location.reload()
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)
