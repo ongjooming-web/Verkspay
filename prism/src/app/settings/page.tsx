@@ -1,26 +1,138 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 
+interface UserProfile {
+  wallet_address?: string
+  preferred_network?: string
+  business_name?: string
+  phone?: string
+}
+
 export default function Settings() {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<UserProfile>({})
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const [formData, setFormData] = useState({
+    wallet_address: '',
+    preferred_network: 'base',
+    business_name: '',
+    phone: '',
+  })
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser()
       if (data?.user) {
         setUser(data.user)
+        
+        // Try to fetch user profile
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .single()
+
+        if (profileData) {
+          setProfile(profileData)
+          setFormData({
+            wallet_address: profileData.wallet_address || '',
+            preferred_network: profileData.preferred_network || 'base',
+            business_name: profileData.business_name || '',
+            phone: profileData.phone || '',
+          })
+        }
       }
       setLoading(false)
     }
 
     fetchUser()
   }, [])
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user?.id) return
+
+    setSaving(true)
+    setMessage('')
+
+    try {
+      // Check if profile exists
+      const { data: existing } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            wallet_address: formData.wallet_address,
+            preferred_network: formData.preferred_network,
+            business_name: formData.business_name,
+            phone: formData.phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+
+        if (error) throw error
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert([
+            {
+              user_id: user.id,
+              wallet_address: formData.wallet_address,
+              preferred_network: formData.preferred_network,
+              business_name: formData.business_name,
+              phone: formData.phone,
+            },
+          ])
+
+        if (error) throw error
+      }
+
+      setMessage('✓ Settings saved successfully!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error saving profile:', err)
+      setMessage('✗ Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Delete user account
+      const { error } = await supabase.auth.admin.deleteUser(user.id)
+      if (error) throw error
+
+      // Sign out
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch (err) {
+      console.error('Error deleting account:', err)
+      setMessage('✗ Failed to delete account')
+      setSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -44,6 +156,12 @@ export default function Settings() {
           ⚙️ Settings
         </h1>
 
+        {message && (
+          <div className={`mb-6 glass px-4 py-3 rounded-lg ${message.startsWith('✓') ? 'border-green-500/50 bg-green-500/10 text-green-300' : 'border-red-500/50 bg-red-500/10 text-red-300'}`}>
+            {message}
+          </div>
+        )}
+
         {/* Account Settings */}
         <Card className="mb-6">
           <CardHeader>
@@ -61,10 +179,47 @@ export default function Settings() {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">User ID</label>
               <div className="glass px-4 py-3 rounded-lg overflow-x-auto">
-                <p className="text-white font-mono text-xs">{user?.id || 'N/A'}</p>
+                <p className="text-white font-mono text-xs break-all">{user?.id || 'N/A'}</p>
               </div>
               <p className="text-gray-400 text-xs mt-2">Unique identifier for your account</p>
             </div>
+          </CardBody>
+        </Card>
+
+        {/* Business Settings */}
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-2xl font-bold text-white">Business Information</h2>
+            <p className="text-gray-400 text-sm mt-1">Update your business details</p>
+          </CardHeader>
+          <CardBody>
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Business Name</label>
+                <input
+                  type="text"
+                  value={formData.business_name}
+                  onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                  placeholder="Your business or freelance name"
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(optional)"
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+              <div>
+                <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                  {saving ? '⏳ Saving...' : '✓ Save Changes'}
+                </Button>
+              </div>
+            </form>
           </CardBody>
         </Card>
 
@@ -78,11 +233,9 @@ export default function Settings() {
             <div className="flex justify-between items-center py-4 border-b border-white/10">
               <div>
                 <h3 className="font-bold text-white text-lg">Current Plan</h3>
-                <p className="text-gray-400 text-sm">Pro - $29/month</p>
+                <p className="text-gray-400 text-sm">Free Plan</p>
               </div>
-              <Button variant="secondary" className="whitespace-nowrap">
-                Change Plan
-              </Button>
+              <span className="text-blue-400 font-semibold">$0/month</span>
             </div>
             <div className="py-4">
               <h3 className="font-bold text-white mb-4">Plan Features</h3>
@@ -122,25 +275,39 @@ export default function Settings() {
             <h2 className="text-2xl font-bold text-white">💰 Crypto Settings</h2>
             <p className="text-gray-400 text-sm mt-1">Configure your USDC payment wallet</p>
           </CardHeader>
-          <CardBody className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Wallet Address</label>
-              <input
-                type="text"
-                placeholder="0x..."
-                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-              />
-              <p className="text-gray-400 text-xs mt-2">Your Ethereum/Polygon wallet for receiving USDC</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Network</label>
-              <select className="glass px-4 py-3 rounded-lg text-white w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none">
-                <option className="bg-slate-900">Base (Recommended)</option>
-                <option className="bg-slate-900">Ethereum</option>
-                <option className="bg-slate-900">Polygon</option>
-              </select>
-              <p className="text-gray-400 text-xs mt-2">Network where you'll receive payments</p>
-            </div>
+          <CardBody>
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Wallet Address</label>
+                <input
+                  type="text"
+                  value={formData.wallet_address}
+                  onChange={(e) => setFormData({ ...formData, wallet_address: e.target.value })}
+                  placeholder="0x..."
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 font-mono"
+                />
+                <p className="text-gray-400 text-xs mt-2">Your Ethereum/Polygon/Base wallet for receiving USDC</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Network</label>
+                <select 
+                  value={formData.preferred_network}
+                  onChange={(e) => setFormData({ ...formData, preferred_network: e.target.value })}
+                  className="glass px-4 py-3 rounded-lg text-white w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
+                >
+                  <option value="base" className="bg-slate-900">Base (Recommended - Fast & Cheap)</option>
+                  <option value="ethereum" className="bg-slate-900">Ethereum (Mainnet)</option>
+                  <option value="polygon" className="bg-slate-900">Polygon (Scaling Solution)</option>
+                  <option value="solana" className="bg-slate-900">Solana</option>
+                </select>
+                <p className="text-gray-400 text-xs mt-2">Network where you'll receive USDC payments</p>
+              </div>
+              <div>
+                <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                  {saving ? '⏳ Saving...' : '✓ Save Crypto Settings'}
+                </Button>
+              </div>
+            </form>
           </CardBody>
         </Card>
 
@@ -157,10 +324,12 @@ export default function Settings() {
                 Permanently delete your account and all associated data (clients, invoices, proposals). This action cannot be undone.
               </p>
               <Button 
+                onClick={handleDeleteAccount}
+                disabled={saving}
                 variant="outline" 
                 className="border-red-500/50 text-red-400 hover:border-red-400/80 hover:text-red-300 hover:bg-red-500/10"
               >
-                🗑 Delete Account
+                {saving ? '⏳ Deleting...' : '🗑 Delete Account'}
               </Button>
             </div>
           </CardBody>

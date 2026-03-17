@@ -10,6 +10,7 @@ interface Invoice {
   id: string
   invoice_number: string
   client_id: string
+  client_name?: string
   amount: number
   status: string
   due_date: string
@@ -34,12 +35,38 @@ export default function Invoices() {
   }, [])
 
   const fetchInvoices = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id
+
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     const { data } = await supabase
       .from('invoices')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (data) setInvoices(data)
+    if (data) {
+      // Fetch client details for each invoice
+      const invoicesWithClients = await Promise.all(
+        data.map(async (invoice) => {
+          const { data: client } = await supabase
+            .from('clients')
+            .select('name')
+            .eq('id', invoice.client_id)
+            .single()
+          
+          return {
+            ...invoice,
+            client_name: client?.name || 'Unknown Client'
+          }
+        })
+      )
+      setInvoices(invoicesWithClients)
+    }
     setLoading(false)
   }
 
@@ -191,9 +218,12 @@ export default function Invoices() {
                 >
                   <CardBody className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div className="flex-1">
-                      <h3 className="font-bold text-lg text-white group-hover:text-blue-300 transition-colors">
-                        {invoice.invoice_number}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-lg text-white group-hover:text-blue-300 transition-colors">
+                          {invoice.invoice_number}
+                        </h3>
+                        <span className="text-gray-400 text-sm">• {invoice.client_name}</span>
+                      </div>
                       <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mt-1">
                         ${invoice.amount.toFixed(2)}
                       </p>

@@ -10,6 +10,7 @@ interface Proposal {
   id: string
   proposal_number: string
   client_id: string
+  client_name?: string
   title: string
   amount: number
   status: string
@@ -34,12 +35,38 @@ export default function Proposals() {
   }, [])
 
   const fetchProposals = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id
+
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     const { data } = await supabase
       .from('proposals')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (data) setProposals(data)
+    if (data) {
+      // Fetch client details for each proposal
+      const proposalsWithClients = await Promise.all(
+        data.map(async (proposal) => {
+          const { data: client } = await supabase
+            .from('clients')
+            .select('name')
+            .eq('id', proposal.client_id)
+            .single()
+          
+          return {
+            ...proposal,
+            client_name: client?.name || 'Unknown Client'
+          }
+        })
+      )
+      setProposals(proposalsWithClients)
+    }
     setLoading(false)
   }
 
@@ -191,10 +218,15 @@ export default function Proposals() {
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
                   <CardHeader className="border-b border-white/10">
-                    <h3 className="font-bold text-lg text-white group-hover:text-purple-300 transition-colors">
-                      {proposal.proposal_number}
-                    </h3>
-                    <p className="text-gray-400 text-sm mt-1">{proposal.title}</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-lg text-white group-hover:text-purple-300 transition-colors">
+                        {proposal.proposal_number}
+                      </h3>
+                      <span className="text-gray-400 text-xs bg-gray-500/20 px-2 py-1 rounded">
+                        {proposal.client_name}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-sm mt-2">{proposal.title}</p>
                   </CardHeader>
                   <CardBody className="space-y-4">
                     <div>

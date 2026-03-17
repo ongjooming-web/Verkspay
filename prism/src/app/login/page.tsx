@@ -44,16 +44,13 @@ export default function Login() {
         console.log('Login successful:', data)
         console.log('Redirecting to dashboard...')
         setSuccess('Login successful! Redirecting...')
-        // Redirect after a brief delay to ensure session is set
-        setTimeout(() => {
-          router.push('/dashboard')
-          // Fallback to window.location if router.push doesn't work
-          setTimeout(() => {
-            if (window.location.pathname !== '/dashboard') {
-              window.location.href = '/dashboard'
-            }
-          }, 500)
-        }, 500)
+        
+        // Verify session is established before redirecting
+        const { data: sessionData } = await supabase.auth.getSession()
+        console.log('Session verified:', sessionData?.session)
+        
+        // Hard redirect to dashboard
+        window.location.href = '/dashboard'
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)

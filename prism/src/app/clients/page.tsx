@@ -13,6 +13,9 @@ interface Client {
   company: string
   phone?: string
   created_at: string
+  invoiceCount?: number
+  proposalCount?: number
+  totalRevenue?: number
 }
 
 export default function Clients() {
@@ -31,13 +34,47 @@ export default function Clients() {
   }, [])
 
   const fetchClients = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id
+
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
     if (data) {
-      setClients(data)
+      // Fetch stats for each client
+      const clientsWithStats = await Promise.all(
+        data.map(async (client) => {
+          const { data: invoices } = await supabase
+            .from('invoices')
+            .select('amount')
+            .eq('client_id', client.id)
+
+          const { data: proposals } = await supabase
+            .from('proposals')
+            .select('id')
+            .eq('client_id', client.id)
+
+          const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
+          const invoiceCount = invoices?.length || 0
+          const proposalCount = proposals?.length || 0
+
+          return {
+            ...client,
+            invoiceCount,
+            proposalCount,
+            totalRevenue
+          }
+        })
+      )
+      setClients(clientsWithStats)
     }
     setLoading(false)
   }
@@ -173,7 +210,7 @@ export default function Clients() {
                   <CardBody className="space-y-3">
                     <div>
                       <p className="text-gray-400 text-xs">Email</p>
-                      <p className="text-gray-200 text-sm font-mono">{client.email}</p>
+                      <p className="text-gray-200 text-sm font-mono break-all">{client.email}</p>
                     </div>
                     {client.phone && (
                       <div>
@@ -181,7 +218,21 @@ export default function Clients() {
                         <p className="text-gray-200 text-sm">{client.phone}</p>
                       </div>
                     )}
-                    <div className="pt-3 border-t border-white/10">
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-gray-400 text-xs">Invoices</p>
+                          <p className="text-blue-300 font-bold">{client.invoiceCount || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs">Proposals</p>
+                          <p className="text-purple-300 font-bold">{client.proposalCount || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs">Revenue</p>
+                          <p className="text-green-300 font-bold text-sm">${(client.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        </div>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
