@@ -43,41 +43,86 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     }
   }
 
-  const truncateAddress = (address: string) => {
-    if (!address) return ''
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
-  }
-
   const handleConnectWallet = async () => {
     setLoading(true)
     setError(null)
     setSuccess(false)
 
     try {
-      // Check if MetaMask/Phantom is installed
-      if (!window.ethereum) {
-        setError('No wallet detected. Please install MetaMask or Phantom.')
-        setLoading(false)
-        return
+      const isMobile = /iPhone|Android/i.test(navigator.userAgent)
+      let provider
+
+      if (isMobile || !window.ethereum) {
+        // Mobile or no injected provider: use WalletConnect
+        const EthereumProvider = (await import('@walletconnect/ethereum-provider')).EthereumProvider
+
+        provider = await EthereumProvider.init({
+          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+          chains: [1, 8453], // Ethereum, Base
+          optionalChains: [137, 56, 43114], // Polygon, BSC, Avalanche
+          methods: ['eth_sendTransaction', 'eth_signTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v4'],
+          events: ['chainChanged', 'accountsChanged'],
+          showQrModal: true
+        })
+
+        // Connect
+        const accounts = await provider.connect()
+        if (!accounts || accounts.length === 0) {
+          setError('No accounts found')
+          setLoading(false)
+          return
+        }
+
+        const address = accounts[0]
+        console.log('[WalletConnect] Connected via WalletConnect:', address)
+
+        // Sign message for auth
+        const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
+        const signature = await provider.request({
+          method: 'personal_sign',
+          params: [message, address]
+        })
+
+        await saveWalletAddress(address, signature)
+      } else {
+        // Desktop with injected provider: use window.ethereum directly
+        console.log('[WalletConnect] Using window.ethereum (MetaMask/Phantom)')
+
+        const accounts = (await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        })) as string[]
+
+        if (!accounts || accounts.length === 0) {
+          setError('No accounts found')
+          setLoading(false)
+          return
+        }
+
+        const address = accounts[0]
+        console.log('[WalletConnect] Connected via window.ethereum:', address)
+
+        // Sign message for auth
+        const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [message, address]
+        })
+
+        await saveWalletAddress(address, signature)
       }
-
-      console.log('[WalletConnect] Requesting account access...')
-
-      // Request account access (shows approval prompt in wallet)
-      const accounts = (await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      })) as string[]
-
-      if (!accounts || accounts.length === 0) {
-        setError('No accounts found')
-        setLoading(false)
-        return
+    } catch (err: any) {
+      console.error('[WalletConnect] Connection error:', err)
+      if (err.code === 4001 || err.message?.includes('User rejected')) {
+        setError('Connection cancelled by user')
+      } else {
+        setError(err.message || 'Failed to connect wallet')
       }
+      setLoading(false)
+    }
+  }
 
-      const address = accounts[0]
-      console.log('[WalletConnect] Connected address:', address)
-
-      // Get current user
+  const saveWalletAddress = async (address: string, signature: string) => {
+    try {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData?.user?.id) {
         setError('User not authenticated')
@@ -85,11 +130,14 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         return
       }
 
-      // Save to Supabase
       setSaving(true)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ wallet_address: address })
+        .update({
+          wallet_address: address,
+          wallet_signature: signature,
+          wallet_signed_at: new Date().toISOString()
+        })
         .eq('id', userData.user.id)
 
       if (updateError) {
@@ -100,7 +148,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         return
       }
 
-      console.log('[WalletConnect] Address saved successfully')
+      console.log('[WalletConnect] Wallet saved successfully')
       setSaving(false)
       setConnectedAddress(address)
       setSuccess(true)
@@ -110,15 +158,11 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         onWalletConnected(address)
       }
 
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      console.error('[WalletConnect] Connection error:', err)
-      if (err.code === 4001) {
-        setError('Connection cancelled')
-      } else {
-        setError(err.message || 'Failed to connect wallet')
-      }
+      console.error('[WalletConnect] Save error:', err)
+      setError(err.message || 'Failed to save wallet')
+      setSaving(false)
       setLoading(false)
     }
   }
@@ -129,7 +173,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
       if (userData?.user?.id) {
         await supabase
           .from('profiles')
-          .update({ wallet_address: null })
+          .update({ wallet_address: null, wallet_signature: null })
           .eq('id', userData.user.id)
       }
       setConnectedAddress(null)
@@ -153,10 +197,10 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
             </div>
 
             <div className="glass rounded-lg p-4 border-blue-400/30">
-              <p className="text-gray-400 text-sm mb-2">Connected Address</p>
+              <p className="text-gray-400 text-sm mb-2">Connected Wallet Address</p>
               <p className="text-white font-mono text-sm break-all">{connectedAddress}</p>
               <p className="text-gray-500 text-xs mt-2">
-                Clients will send USDC to this address
+                Clients will send USDC to this address for invoice payments
               </p>
             </div>
 
@@ -178,9 +222,13 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
             )}
 
             <div className="glass rounded-lg p-4 border-blue-400/30">
-              <p className="text-gray-300 text-sm">
-                Click below to connect your MetaMask or Phantom wallet. You'll approve the connection in your wallet.
+              <p className="text-gray-300 text-sm mb-2">
+                Connect your wallet to receive USDC payments for invoices
               </p>
+              <ul className="text-gray-400 text-xs space-y-1 ml-4 list-disc">
+                <li><strong>Desktop:</strong> MetaMask, Phantom, or any EVM wallet</li>
+                <li><strong>Mobile:</strong> WalletConnect opens your wallet app (300+ supported)</li>
+              </ul>
             </div>
 
             <Button
@@ -195,19 +243,15 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                 }
               `}
             >
-              {loading ? 'Waiting for wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
+              {loading ? 'Opening wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
             </Button>
-
-            <p className="text-gray-500 text-xs text-center">
-              Make sure you have MetaMask or Phantom installed
-            </p>
           </>
         )}
 
         {success && (
           <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
             <p className="text-green-300 text-sm">
-              <span className="font-bold">✓ Success!</span> Wallet connected
+              <span className="font-bold">✓ Success!</span> Wallet connected and authenticated
             </p>
           </div>
         )}
