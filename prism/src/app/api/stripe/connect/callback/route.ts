@@ -23,30 +23,31 @@ export async function GET(req: NextRequest) {
 
     console.log('[Stripe] Callback received with stripeAccountId:', stripeAccountId)
 
-    // Get user from auth cookie (Supabase client will read it from cookies)
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getSetCookie().map((cookie) => {
-              const [name, ...rest] = cookie.split('=')
-              return { name, value: rest.join('=') }
-            })
-          }
+    // Try to get user from session cookie
+    // Supabase stores auth in sb-<project-id>-auth-token cookie
+    let userId: string | null = null
+    
+    // Try each possible cookie name for Supabase auth
+    const cookieNames = ['sb-fqdipubbyvekhipknxnr-auth-token', 'auth-token', 'sb-auth-token']
+    
+    for (const cookieName of cookieNames) {
+      const authCookie = req.cookies.get(cookieName)?.value
+      if (authCookie) {
+        try {
+          const sessionData = JSON.parse(Buffer.from(authCookie, 'base64').toString())
+          userId = sessionData.user?.id
+          if (userId) break
+        } catch (e) {
+          console.log(`[Stripe] Could not parse ${cookieName}`)
         }
       }
-    )
-
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+    }
     
-    if (userError || !user?.id) {
-      console.error('[Stripe] Could not get user:', userError)
+    if (!userId) {
+      console.error('[Stripe] Could not get user from cookies, redirecting to login')
       return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
-    const userId = user.id
     console.log('[Stripe] Callback: userId =', userId, 'stripeAccountId =', stripeAccountId)
 
     // Use service role to update profile
