@@ -56,10 +56,28 @@ export async function GET(req: NextRequest) {
 
     if (updateError) {
       console.error('[Stripe] Update error:', updateError)
-      return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
+      
+      // Profile might not exist, try upsert
+      console.log('[Stripe] Attempting upsert instead...')
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          stripe_account_id: stripeAccountId,
+          stripe_onboarding_complete: true,
+          updated_at: new Date().toISOString()
+        })
+
+      if (upsertError) {
+        console.error('[Stripe] Upsert error:', upsertError)
+        return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
+      }
+      
+      console.log('[Stripe] Upsert successful')
+    } else {
+      console.log('[Stripe] Profile updated:', updateData)
     }
 
-    console.log('[Stripe] Profile updated:', updateData)
     console.log('[Stripe] Redirecting to settings with success')
     return NextResponse.redirect(new URL('/settings?stripe=success', process.env.NEXT_PUBLIC_APP_URL!))
   } catch (err: any) {
