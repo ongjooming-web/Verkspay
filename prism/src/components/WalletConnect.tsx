@@ -61,26 +61,33 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   }
 
   const handleConnectWallet = useCallback(async () => {
+    console.log('[WalletConnect] handleConnectWallet called')
     setLoading(true)
     setError(null)
     setSuccess(false)
 
     try {
+      console.log('[WalletConnect] Checking for window.ethereum...')
       // Check if MetaMask or Phantom is installed
       if (!window.ethereum) {
+        console.log('[WalletConnect] No window.ethereum found')
         setError('No wallet detected. Please install MetaMask or Phantom.')
         setLoading(false)
         return
       }
 
-      console.log('[WalletConnect] Requesting account access from MetaMask/Phantom...')
+      console.log('[WalletConnect] window.ethereum found, requesting account access...')
 
       // Request account access (shows approval prompt in wallet)
+      console.log('[WalletConnect] Calling eth_requestAccounts...')
       const accounts = (await window.ethereum.request({
         method: 'eth_requestAccounts'
       })) as string[]
 
+      console.log('[WalletConnect] eth_requestAccounts returned:', accounts)
+
       if (!accounts || accounts.length === 0) {
+        console.log('[WalletConnect] No accounts returned')
         setError('No accounts found')
         setLoading(false)
         return
@@ -137,16 +144,31 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
   useEffect(() => {
     const tryAutoConnect = async () => {
-      // Wait for ethereum to be injected (wallet browsers inject it async)
+      // Only auto-connect on mobile inside a wallet browser
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      if (!isMobile) {
+        console.log('[WalletConnect] Not on mobile, skipping auto-connect')
+        return
+      }
+
+      console.log('[WalletConnect] Mobile detected, waiting for wallet provider...')
+
       let attempts = 0
       while (!window.ethereum && attempts < 20) {
         await new Promise(r => setTimeout(r, 100))
         attempts++
       }
-      
+
+      console.log('[WalletConnect] ethereum after wait:', !!window.ethereum, 'attempts:', attempts)
+
       if (window.ethereum) {
-        console.log('[WalletConnect] Wallet provider detected, auto-connecting...')
+        console.log('[WalletConnect] isMetaMask:', (window.ethereum as any).isMetaMask)
+        console.log('[WalletConnect] isPhantom:', (window.ethereum as any).isPhantom)
+        console.log('[WalletConnect] userAgent:', navigator.userAgent)
+        console.log('[WalletConnect] Triggering auto-connect...')
         handleConnectWallet()
+      } else {
+        console.log('[WalletConnect] No wallet provider found after 2s')
       }
     }
 
