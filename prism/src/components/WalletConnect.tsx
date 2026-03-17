@@ -26,9 +26,28 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     setIsMobile(isMobileDevice())
     loadWalletData()
     
-    // Auto-connect if returning from wallet app
-    autoConnectIfReturningFromWallet()
-  }, [])
+    // Auto-connect if running inside wallet's built-in browser
+    const detectWalletBrowserAndConnect = async () => {
+      const isWalletBrowser = !!(window.ethereum) && (
+        (window.ethereum as any).isMetaMask || 
+        (window.ethereum as any).isPhantom ||
+        navigator.userAgent.includes('MetaMaskMobile') ||
+        navigator.userAgent.includes('Phantom')
+      )
+      
+      console.log('[WalletConnect] Wallet browser detected:', isWalletBrowser)
+      
+      if (isWalletBrowser && !connectedAddress) {
+        console.log('[WalletConnect] Auto-connecting inside wallet browser...')
+        setLoading(true)
+        // Small delay to ensure wallet provider is fully ready
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await handleConnectWallet()
+      }
+    }
+    
+    detectWalletBrowserAndConnect()
+  }, [connectedAddress])
 
   const loadWalletData = async () => {
     try {
@@ -220,26 +239,39 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
               </ul>
             </div>
 
+            {/* Auto-connecting state (inside wallet browser) */}
+            {loading && (
+              <div className="space-y-2">
+                <div className="w-full px-4 py-3 rounded-lg font-semibold bg-gray-600/50 text-gray-300 flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Connecting to wallet...</span>
+                </div>
+                <p className="text-gray-500 text-xs text-center">
+                  Please approve the connection in your wallet
+                </p>
+              </div>
+            )}
+
             {/* Desktop: Use injected provider */}
-            {!isMobile && window.ethereum && (
+            {!isMobile && window.ethereum && !loading && (
               <Button
                 onClick={handleConnectWallet}
-                disabled={loading || saving}
+                disabled={saving}
                 className={`
                   w-full px-4 py-3 rounded-lg font-semibold transition
                   ${
-                    loading || saving
+                    saving
                       ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
                   }
                 `}
               >
-                {loading ? 'Approving in wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
+                {saving ? 'Saving...' : 'Connect Wallet'}
               </Button>
             )}
 
             {/* Mobile without injected provider: Show deep-link buttons */}
-            {isMobile && !window.ethereum && (
+            {isMobile && !window.ethereum && !loading && (
               <div className="space-y-2">
                 <Button
                   onClick={() => handleDeepLink('metamask')}
