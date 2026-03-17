@@ -65,8 +65,11 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
           showQrModal: true
         })
 
-        // Connect
-        const accounts = await provider.connect()
+        // Connect - this returns void, accounts come from the provider state
+        await provider.connect()
+        
+        // Get accounts from provider
+        const accounts = provider.accounts
         if (!accounts || accounts.length === 0) {
           setError('No accounts found')
           setLoading(false)
