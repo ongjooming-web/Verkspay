@@ -11,6 +11,29 @@ interface WalletConnectProps {
   readOnly?: boolean
 }
 
+/**
+ * Detect if user is on mobile browser
+ */
+const isMobileBrowser = (): boolean => {
+  if (typeof window === 'undefined') return false
+  const userAgent = navigator.userAgent.toLowerCase()
+  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)
+}
+
+/**
+ * Check if wallet is available as injected provider
+ */
+const isWalletInjected = (walletType: 'metamask' | 'phantom'): boolean => {
+  if (typeof window === 'undefined') return false
+  
+  if (walletType === 'metamask') {
+    return !!(window as any).ethereum
+  } else if (walletType === 'phantom') {
+    return !!(window as any).phantom?.solana
+  }
+  return false
+}
+
 const WALLET_PROVIDERS = {
   // Phantom for Solana
   phantom: {
@@ -72,8 +95,11 @@ export function WalletConnectComponent({
   const [success, setSuccess] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [saving, setSaving] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    // Check if on mobile
+    setIsMobile(isMobileBrowser())
     loadWalletData()
   }, [])
 
@@ -111,7 +137,24 @@ export function WalletConnectComponent({
   }
 
   /**
-   * Simple: Connect wallet and save address
+   * Handle mobile deep linking to wallet app
+   */
+  const handleMobileDeepLink = (walletType: 'metamask' | 'phantom') => {
+    const dappUrl = typeof window !== 'undefined' ? window.location.href : 'https://app.prismops.xyz'
+    
+    let deepLinkUrl: string
+    if (walletType === 'metamask') {
+      deepLinkUrl = `https://metamask.app.link/dapp/${dappUrl.replace(/https?:\/\//, '')}`
+    } else {
+      deepLinkUrl = `https://phantom.app/ul/browse/${dappUrl.replace(/https?:\/\//, '')}`
+    }
+    
+    console.log(`[WalletConnect] Redirecting to ${walletType} deep link:`, deepLinkUrl)
+    window.location.href = deepLinkUrl
+  }
+
+  /**
+   * Simple: Connect wallet and save address (for desktop)
    */
   const handleConnectWallet = async () => {
     setLoading(true)
@@ -273,17 +316,45 @@ export function WalletConnectComponent({
             </p>
           </div>
 
-          <Button
-            onClick={handleConnectWallet}
-            disabled={loading || saving}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/50"
-          >
-            {loading ? '⏳ Connecting...' : saving ? '💾 Saving...' : '🔗 Connect Wallet'}
-          </Button>
+          {/* Mobile: Show deep link buttons */}
+          {isMobile && (
+            <div className="space-y-3">
+              <Button
+                onClick={() => handleMobileDeepLink('metamask')}
+                disabled={loading || saving}
+                className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:shadow-lg hover:shadow-orange-500/50"
+              >
+                🦊 Open MetaMask
+              </Button>
+              <Button
+                onClick={() => handleMobileDeepLink('phantom')}
+                disabled={loading || saving}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:shadow-lg hover:shadow-purple-500/50"
+              >
+                👻 Open Phantom
+              </Button>
+              <p className="text-gray-400 text-sm text-center text-xs">
+                After connecting, you'll be redirected back here
+              </p>
+            </div>
+          )}
 
-          <p className="text-gray-400 text-sm text-center text-xs">
-            Supports MetaMask (EVM chains) and Phantom (Solana)
-          </p>
+          {/* Desktop: Show standard connect button */}
+          {!isMobile && (
+            <>
+              <Button
+                onClick={handleConnectWallet}
+                disabled={loading || saving}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/50"
+              >
+                {loading ? '⏳ Connecting...' : saving ? '💾 Saving...' : '🔗 Connect Wallet'}
+              </Button>
+
+              <p className="text-gray-400 text-sm text-center text-xs">
+                Supports MetaMask (EVM chains) and Phantom (Solana)
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

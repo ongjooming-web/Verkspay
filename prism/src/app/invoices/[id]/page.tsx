@@ -50,6 +50,7 @@ export default function InvoiceDetail() {
   }, [invoiceId])
 
   const fetchInvoiceDetails = async () => {
+    console.log('[InvoiceDetail] Fetching invoice details for:', invoiceId)
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
 
@@ -65,6 +66,11 @@ export default function InvoiceDetail() {
       .eq('user_id', userId)
       .single()
 
+    console.log('[InvoiceDetail] Fetched invoice data:', data)
+    if (error) {
+      console.error('[InvoiceDetail] Error fetching invoice:', error)
+    }
+
     if (data) {
       // Fetch client name
       const { data: clientData } = await supabase
@@ -77,6 +83,7 @@ export default function InvoiceDetail() {
         ...data,
         client_name: clientData?.name || 'Unknown Client'
       }
+      console.log('[InvoiceDetail] Invoice with client:', invoiceWithClient)
       setInvoice(invoiceWithClient)
       setEditData(invoiceWithClient)
     }
@@ -378,11 +385,19 @@ export default function InvoiceDetail() {
             status={invoice.status}
             onPaymentMarked={async () => {
               // Refresh invoice details after payment is marked
-              console.log('[InvoiceDetail] Payment marked, refreshing invoice...')
-              await new Promise(resolve => setTimeout(resolve, 500)) // Small delay to ensure DB is updated
+              console.log('[InvoiceDetail] onPaymentMarked callback triggered')
+              console.log('[InvoiceDetail] Current invoice status before refresh:', invoice.status)
+              
+              // Wait a moment to ensure DB is updated
+              await new Promise(resolve => setTimeout(resolve, 1000))
+              
+              console.log('[InvoiceDetail] Calling fetchInvoiceDetails...')
               await fetchInvoiceDetails()
+              
+              console.log('[InvoiceDetail] Calling fetchPaymentRecords...')
               await fetchPaymentRecords()
-              console.log('[InvoiceDetail] Invoice refreshed successfully')
+              
+              console.log('[InvoiceDetail] Refresh complete, new status should be visible')
             }}
           />
         )}

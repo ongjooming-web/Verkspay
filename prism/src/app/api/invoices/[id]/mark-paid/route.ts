@@ -108,16 +108,20 @@ export async function POST(
 
     // Update invoice to paid
     console.log('[mark-paid] Updating invoice to paid status...')
-    const { error: updateError } = await supabase
+    const updatePayload = {
+      status: 'paid',
+      paid_date: new Date().toISOString(),
+      payment_method: 'usdc',
+      updated_at: new Date().toISOString()
+    }
+    console.log('[mark-paid] Update payload:', updatePayload)
+    
+    const { error: updateError, data: updateData } = await supabase
       .from('invoices')
-      .update({
-        status: 'paid',
-        paid_date: new Date().toISOString(),
-        payment_method: 'usdc',
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', id)
       .eq('user_id', userId)
+      .select()
 
     if (updateError) {
       console.error('[mark-paid] Invoice update error:', updateError)
@@ -127,6 +131,7 @@ export async function POST(
       )
     }
 
+    console.log('[mark-paid] Invoice update returned:', updateData)
     console.log('[mark-paid] Invoice updated successfully')
 
     // Fetch updated invoice to verify
