@@ -7,6 +7,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { WalletConnectComponent } from '@/components/WalletConnect'
+import { StripeConnectComponent } from '@/components/StripeConnect'
 
 interface UserProfile {
   wallet_address?: string
@@ -270,20 +271,27 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Wallet Connection */}
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-2xl font-bold text-white">💰 USDC Wallet Connection</h2>
-            <p className="text-gray-400 text-sm mt-1">Connect your wallet to receive USDC payments</p>
-          </CardHeader>
-          <CardBody>
+        {/* Payment Methods */}
+        <div className="mb-6 space-y-6">
+          {/* Stripe Payments */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Payment Methods</h2>
+            <StripeConnectComponent 
+              onStripeConnected={(accountId) => {
+                console.log('Stripe connected:', accountId)
+              }}
+            />
+          </div>
+
+          {/* Wallet Connection */}
+          <div>
             <WalletConnectComponent 
               onWalletConnected={(address) => {
                 console.log('Wallet connected:', address)
               }}
             />
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         {/* Webhook Configuration (Step 2 Foundation) */}
         <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
