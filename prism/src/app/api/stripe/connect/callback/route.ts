@@ -21,32 +21,51 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
-    // Get authenticated user from cookie or session
-    const { data, error } = await supabase.auth.getSession()
-    if (error || !data?.session?.user?.id) {
-      console.log('[Stripe] No session found')
+    console.log('[Stripe] Callback received with stripeAccountId:', stripeAccountId)
+
+    // Get user from auth cookie (Supabase client will read it from cookies)
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getSetCookie().map((cookie) => {
+              const [name, ...rest] = cookie.split('=')
+              return { name, value: rest.join('=') }
+            })
+          }
+        }
+      }
+    )
+
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+    
+    if (userError || !user?.id) {
+      console.error('[Stripe] Could not get user:', userError)
       return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
-    const userId = data.session.user.id
-
+    const userId = user.id
     console.log('[Stripe] Callback: userId =', userId, 'stripeAccountId =', stripeAccountId)
 
-    // Update profile with stripe_account_id and mark onboarding as complete
-    const { error: updateError } = await supabase
+    // Use service role to update profile
+    const { error: updateError, data: updateData } = await supabase
       .from('profiles')
       .update({
         stripe_account_id: stripeAccountId,
         stripe_onboarding_complete: true
       })
       .eq('id', userId)
+      .select()
 
     if (updateError) {
       console.error('[Stripe] Update error:', updateError)
       return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
-    console.log('[Stripe] Callback: Updated profile, redirecting to settings')
+    console.log('[Stripe] Profile updated:', updateData)
+    console.log('[Stripe] Redirecting to settings with success')
     return NextResponse.redirect(new URL('/settings?stripe=success', process.env.NEXT_PUBLIC_APP_URL!))
   } catch (err: any) {
     console.error('[Stripe] Callback error:', err)
