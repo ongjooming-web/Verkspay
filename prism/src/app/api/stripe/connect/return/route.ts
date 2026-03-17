@@ -41,6 +41,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
     }
 
+    // Check if onboarding is actually complete by retrieving account details
+    console.log('[Stripe Return] Retrieving Stripe account details for:', stripeAccountId)
+    
+    const Stripe = require('stripe')
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+    
+    const account = await stripe.accounts.retrieve(stripeAccountId)
+    const isOnboardingComplete = account.details_submitted === true
+    
+    console.log('[Stripe Return] Account details:', {
+      details_submitted: account.details_submitted,
+      charges_enabled: account.charges_enabled,
+      payouts_enabled: account.payouts_enabled,
+      requirements: account.requirements
+    })
+
     // Update or insert profile with Stripe account info
     console.log('[Stripe Return] Saving stripe_account_id for user:', userId)
 
@@ -50,7 +66,7 @@ export async function GET(req: NextRequest) {
         {
           id: userId,
           stripe_account_id: stripeAccountId,
-          stripe_onboarding_complete: true,
+          stripe_onboarding_complete: isOnboardingComplete,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'id' }
@@ -66,6 +82,7 @@ export async function GET(req: NextRequest) {
     console.log('[Stripe Return] Successfully saved Stripe account:', {
       userId,
       stripeAccountId,
+      isOnboardingComplete,
       profile
     })
 
