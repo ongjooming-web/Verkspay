@@ -21,38 +21,21 @@ export function USDCPaymentCard({
   onPaymentMarked
 }: USDCPaymentCardProps) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [network, setNetwork] = useState<'base' | 'ethereum' | 'solana'>('base')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [paymentIntent, setPaymentIntent] = useState<any>(null)
   const [showQR, setShowQR] = useState(false)
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false)
   const [markAsPayedError, setMarkAsPayedError] = useState<string | null>(null)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
-  const NETWORK_INFO = {
-    base: {
-      name: '⚡ Base',
-      description: 'Fastest & cheapest',
-      color: 'from-blue-600 to-blue-400'
-    },
-    ethereum: {
-      name: 'Ξ Ethereum',
-      description: 'Full decentralization',
-      color: 'from-purple-600 to-purple-400'
-    },
-    solana: {
-      name: '◎ Solana',
-      description: 'High speed',
-      color: 'from-green-600 to-green-400'
-    }
-  }
-
   useEffect(() => {
-    loadPaymentData()
+    loadWalletAddress()
   }, [invoiceId])
 
-  const loadPaymentData = async () => {
+  /**
+   * Load wallet address from user's profile
+   */
+  const loadWalletAddress = async () => {
     setLoading(true)
     setError(null)
 
@@ -64,16 +47,16 @@ export function USDCPaymentCard({
         return
       }
 
-      // Fetch user's wallet address and network preference
+      // Get saved wallet address
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('wallet_address, usdc_network')
+        .select('wallet_address')
         .eq('id', userData.user.id)
         .single()
 
       if (profileError) {
         console.error('Profile error:', profileError)
-        setWalletAddress(null)
+        setError('Failed to load wallet')
         setLoading(false)
         return
       }
@@ -86,50 +69,17 @@ export function USDCPaymentCard({
       }
 
       setWalletAddress(profile.wallet_address)
-      if (profile.usdc_network) {
-        setNetwork(profile.usdc_network as any)
-      }
-
-      // Try to fetch or create payment intent
-      const { data: intent, error: intentError } = await supabase
-        .from('payment_intents')
-        .select('*')
-        .eq('invoice_id', invoiceId)
-        .single()
-
-      if (intent) {
-        setPaymentIntent(intent)
-      } else if (intentError?.code === 'PGRST116') {
-        // No record found, create one
-        const { data: newIntent, error: createError } = await supabase
-          .from('payment_intents')
-          .insert([
-            {
-              user_id: userData.user.id,
-              invoice_id: invoiceId,
-              wallet_address: profile.wallet_address,
-              amount_usdc: invoiceAmount,
-              network: profile.usdc_network || 'base',
-              status: 'pending'
-            }
-          ])
-          .select()
-          .single()
-
-        if (newIntent) {
-          setPaymentIntent(newIntent)
-        } else if (createError) {
-          console.error('Create intent error:', createError)
-        }
-      }
     } catch (err: any) {
-      console.error('Payment data error:', err)
+      console.error('Error loading wallet:', err)
       setError('Failed to load payment information')
     } finally {
       setLoading(false)
     }
   }
 
+  /**
+   * Mark invoice as paid and refresh
+   */
   const handleMarkAsPaid = async () => {
     setIsMarkingAsPaid(true)
     setMarkAsPayedError(null)
@@ -149,17 +99,17 @@ export function USDCPaymentCard({
         return
       }
 
-      // Get the session to get the JWT token
+      // Get auth session for token
       const { data: session } = await supabase.auth.getSession()
       if (!session?.session?.access_token) {
-        setMarkAsPayedError('Authentication token not found')
+        setMarkAsPayedError('Authentication failed')
         setIsMarkingAsPaid(false)
         return
       }
 
-      console.log('[USDCPaymentCard] Marking invoice as paid', { invoiceId, walletAddress, network })
+      console.log('[USDCPaymentCard] Marking invoice as paid:', invoiceId)
 
-      // Call the API endpoint
+      // Call the mark-paid endpoint
       const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
         method: 'POST',
         headers: {
@@ -170,31 +120,20 @@ export function USDCPaymentCard({
 
       const data = await response.json()
 
-      console.log('[USDCPaymentCard] Mark as paid response:', { status: response.status, data })
-
       if (!response.ok) {
         setMarkAsPayedError(data.error || 'Failed to mark invoice as paid')
         setIsMarkingAsPaid(false)
         return
       }
 
-      // Verify the response includes the updated invoice
-      if (!data.invoice || data.invoice.status !== 'paid') {
-        console.error('[USDCPaymentCard] Invoice status not properly updated:', data.invoice)
-        setMarkAsPayedError('Invoice status was not properly updated. Please refresh the page.')
-        setIsMarkingAsPaid(false)
-        return
-      }
+      console.log('[USDCPaymentCard] Invoice marked as paid successfully')
 
-      console.log('[USDCPaymentCard] Invoice successfully marked as paid:', data.invoice)
-
-      // Show success message
+      // Show success
       setShowSuccessMessage(true)
-      setPaymentIntent(data.paymentIntent)
 
-      // Call callback if provided - this triggers a re-fetch on the parent
+      // Trigger parent refresh
       if (onPaymentMarked) {
-        console.log('[USDCPaymentCard] Calling onPaymentMarked callback')
+        console.log('[USDCPaymentCard] Refreshing parent component')
         onPaymentMarked()
       }
 
@@ -210,10 +149,12 @@ export function USDCPaymentCard({
     }
   }
 
+  // Don't show payment card if already paid
   if (status === 'paid') {
     return null
   }
 
+  // Show loading state
   if (loading) {
     return (
       <Card className="mb-6">
@@ -227,6 +168,7 @@ export function USDCPaymentCard({
     )
   }
 
+  // Show error if wallet not connected
   if (error) {
     return (
       <Card className="mb-6 border-amber-500/30 bg-amber-500/10">
@@ -239,6 +181,7 @@ export function USDCPaymentCard({
     )
   }
 
+  // Don't show if no wallet
   if (!walletAddress) {
     return null
   }
@@ -249,7 +192,7 @@ export function USDCPaymentCard({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-white">💰 Pay with USDC</h2>
-            <p className="text-gray-400 text-sm mt-1">Non-custodial blockchain payment</p>
+            <p className="text-gray-400 text-sm mt-1">Send to wallet address below</p>
           </div>
           <span className="text-3xl">✓</span>
         </div>
@@ -262,51 +205,37 @@ export function USDCPaymentCard({
         </div>
 
         {/* Amount display */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Amount in USDC</p>
-            <p className="text-3xl font-bold text-blue-400">
-              {invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Network</p>
-            <div className={`px-4 py-2 rounded-lg bg-gradient-to-r ${NETWORK_INFO[network].color} text-white font-semibold text-center`}>
-              {NETWORK_INFO[network].name}
-            </div>
-          </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="glass rounded-lg p-4 border-blue-400/30">
-          <h3 className="text-white font-semibold mb-3">📝 Payment Instructions</h3>
-          <ol className="space-y-2 text-gray-300 text-sm">
-            <li>
-              <span className="text-blue-400 font-bold">1.</span> Use your wallet to send{' '}
-              <span className="font-mono bg-black/30 px-2 py-1 rounded">{invoiceAmount} USDC</span>
-            </li>
-            <li>
-              <span className="text-blue-400 font-bold">2.</span> Scan the QR code below or copy the address
-            </li>
-            <li>
-              <span className="text-blue-400 font-bold">3.</span> Send from {NETWORK_INFO[network].name} network
-            </li>
-            <li>
-              <span className="text-blue-400 font-bold">4.</span> Payment will be automatically confirmed once received
-            </li>
-          </ol>
-        </div>
-
-        {/* QR Code section */}
         <div>
+          <p className="text-gray-400 text-sm mb-2">Amount in USDC</p>
+          <p className="text-3xl font-bold text-blue-400">
+            {invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+          </p>
+        </div>
+
+        {/* Recipient address (with QR code toggle) */}
+        <div className="space-y-3">
+          <p className="text-gray-400 text-sm font-semibold">Send USDC to this wallet address:</p>
+          
+          <div className="glass rounded-lg p-4 border-blue-400/30 flex items-center gap-2">
+            <code className="flex-1 text-white font-mono text-sm break-all">
+              {walletAddress}
+            </code>
+            <button
+              onClick={() => navigator.clipboard.writeText(walletAddress)}
+              className="px-3 py-2 bg-blue-600/50 hover:bg-blue-700/50 rounded text-sm text-white transition whitespace-nowrap"
+              title="Copy address"
+            >
+              📋 Copy
+            </button>
+          </div>
+
+          {/* QR Code toggle */}
           <button
             onClick={() => setShowQR(!showQR)}
-            className="w-full px-4 py-3 glass rounded-lg text-white hover:bg-white/10 transition font-semibold flex items-center justify-between"
+            className="w-full px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm flex items-center justify-center gap-2"
           >
-            <span>
-              {showQR ? '▼ Hide QR Code' : '▶ Show QR Code'}
-            </span>
-            <span className="text-xl">📱</span>
+            <span>{showQR ? '▼ Hide QR Code' : '▶ Show QR Code'}</span>
+            <span>📱</span>
           </button>
 
           {showQR && (
@@ -314,54 +243,32 @@ export function USDCPaymentCard({
               <QRCodeDisplay
                 walletAddress={walletAddress}
                 amount={invoiceAmount}
-                network={network}
                 currency="USDC"
               />
             </div>
           )}
         </div>
 
-        {/* Send instructions with address */}
-        {!showQR && (
-          <div className="glass rounded-lg p-4 border-blue-400/30">
-            <p className="text-gray-400 text-sm mb-3">Send USDC to this address:</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-white font-mono text-sm break-all bg-black/30 rounded px-3 py-2">
-                {walletAddress}
-              </code>
-              <button
-                onClick={() => navigator.clipboard.writeText(walletAddress)}
-                className="px-3 py-2 bg-blue-600/50 hover:bg-blue-700/50 rounded text-sm text-white transition"
-                title="Copy address"
-              >
-                📋
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Instructions */}
+        <div className="glass rounded-lg p-4 border-blue-400/30">
+          <h3 className="text-white font-semibold mb-3">📝 Steps</h3>
+          <ol className="space-y-2 text-gray-300 text-sm">
+            <li><span className="text-blue-400 font-bold">1.</span> Copy or scan the wallet address above</li>
+            <li><span className="text-blue-400 font-bold">2.</span> Open your wallet (MetaMask, Phantom, etc.)</li>
+            <li><span className="text-blue-400 font-bold">3.</span> Send {invoiceAmount} USDC to the address</li>
+            <li><span className="text-blue-400 font-bold">4.</span> After payment confirms, click "Mark as Paid" below</li>
+          </ol>
+        </div>
 
-        {/* Additional info */}
+        {/* Info */}
         <div className="flex gap-4 text-sm text-gray-400">
           <div className="flex items-start gap-2">
             <span>💡</span>
-            <span>No intermediaries - funds go directly to your wallet</span>
-          </div>
-        </div>
-        <div className="flex gap-4 text-sm text-gray-400">
-          <div className="flex items-start gap-2">
-            <span>⏱️</span>
-            <span>Payment link valid for 24 hours</span>
+            <span>No intermediaries — funds go directly to this wallet</span>
           </div>
         </div>
 
-        {/* Network fee info */}
-        <div className="glass rounded-lg p-3 border-amber-400/30 bg-amber-500/10">
-          <p className="text-amber-300 text-sm">
-            <strong>Note:</strong> {network === 'base' ? 'Base has minimal transaction fees (~$0.01)' : network === 'ethereum' ? 'Ethereum fees vary by network congestion' : 'Solana has low transaction fees (~$0.00025)'}
-          </p>
-        </div>
-
-        {/* Error Message */}
+        {/* Error message */}
         {markAsPayedError && (
           <div className="glass rounded-lg p-4 border-red-500/30 bg-red-500/10">
             <p className="text-red-300 text-sm">
@@ -370,24 +277,19 @@ export function USDCPaymentCard({
           </div>
         )}
 
-        {/* Success Message */}
+        {/* Success message */}
         {showSuccessMessage && (
           <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
             <p className="text-green-300 text-sm">
               <span className="font-bold">✓ Success!</span> Invoice marked as paid
             </p>
-            {paymentIntent?.transaction_hash && (
-              <p className="text-gray-400 text-xs mt-2 font-mono break-all">
-                Transaction: {paymentIntent.transaction_hash}
-              </p>
-            )}
           </div>
         )}
 
-        {/* Mark as Paid Button */}
-        <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
-          <p className="text-gray-400 text-sm">
-            💳 <strong>Testing?</strong> Manually mark as paid for testing purposes:
+        {/* Mark as Paid button */}
+        <div className="pt-4 border-t border-white/10">
+          <p className="text-gray-400 text-sm mb-3">
+            ✓ <strong>Received payment?</strong> Mark the invoice as paid:
           </p>
           <button
             onClick={handleMarkAsPaid}
@@ -405,18 +307,15 @@ export function USDCPaymentCard({
             {isMarkingAsPaid ? (
               <>
                 <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Marking as Paid...</span>
+                <span>Updating...</span>
               </>
             ) : (
               <>
                 <span>✓</span>
-                <span>Mark as Paid (Test)</span>
+                <span>Mark as Paid</span>
               </>
             )}
           </button>
-          <p className="text-gray-500 text-xs italic">
-            This creates a test payment record. In production, payments are tracked automatically via webhook.
-          </p>
         </div>
       </CardBody>
     </Card>

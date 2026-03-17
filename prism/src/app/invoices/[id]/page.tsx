@@ -378,9 +378,11 @@ export default function InvoiceDetail() {
             status={invoice.status}
             onPaymentMarked={async () => {
               // Refresh invoice details after payment is marked
-              console.log('[InvoiceDetail] Payment marked, refreshing invoice details...')
+              console.log('[InvoiceDetail] Payment marked, refreshing invoice...')
+              await new Promise(resolve => setTimeout(resolve, 500)) // Small delay to ensure DB is updated
               await fetchInvoiceDetails()
               await fetchPaymentRecords()
+              console.log('[InvoiceDetail] Invoice refreshed successfully')
             }}
           />
         )}
