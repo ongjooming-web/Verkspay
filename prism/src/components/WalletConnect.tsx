@@ -21,7 +21,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   const [success, setSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [shouldShowAutoConnect, setShouldShowAutoConnect] = useState(false)
+  const [insideWalletBrowser, setInsideWalletBrowser] = useState(false)
 
   useEffect(() => {
     setIsMobile(isMobileDevice())
@@ -34,8 +34,8 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     console.log('[WalletConnect] autoconnect param:', autoconnect, 'window.ethereum:', !!window.ethereum)
 
     if (autoconnect && window.ethereum) {
-      console.log('[WalletConnect] Showing tap-to-connect button for wallet browser')
-      setShouldShowAutoConnect(true)
+      console.log('[WalletConnect] Inside wallet browser, showing tap-to-connect button')
+      setInsideWalletBrowser(true)
     }
   }, [])
 
@@ -143,18 +143,17 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   }, [onWalletConnected])
 
   const handleDeepLink = (wallet: 'metamask' | 'phantom') => {
-    const dappUrl = typeof window !== 'undefined' ? window.location.href : 'https://app.prismops.xyz'
-    const dappDomain = dappUrl.replace(/https?:\/\//, '').split('?')[0] // Remove query params, keep domain + path
-    const fullUrl = dappUrl.split('?')[0] // Get full URL without query params
+    const base = typeof window !== 'undefined' ? window.location.href.split('?')[0] : 'https://app.prismops.xyz'
+    const domainAndPath = base.replace(/^https?:\/\//, '')
 
     let deepLinkUrl: string
 
     if (wallet === 'metamask') {
-      // MetaMask deep link with autoconnect param
-      deepLinkUrl = `https://metamask.app.link/dapp/${dappDomain}?autoconnect=true`
+      // MetaMask deep link: https://metamask.app.link/dapp/{domain-and-path}?autoconnect=true
+      deepLinkUrl = `https://metamask.app.link/dapp/${domainAndPath}?autoconnect=true`
     } else {
-      // Phantom deep link with autoconnect param
-      deepLinkUrl = `https://phantom.app/ul/browse/${fullUrl}?autoconnect=true&ref=${fullUrl}`
+      // Phantom deep link: https://phantom.app/ul/browse/{encoded-url}?ref={encoded-url}
+      deepLinkUrl = `https://phantom.app/ul/browse/${encodeURIComponent(base)}?autoconnect=true&ref=${encodeURIComponent(base)}`
     }
 
     console.log(`[WalletConnect] Redirecting to ${wallet} deep link:`, deepLinkUrl)
@@ -215,12 +214,12 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
               </div>
             )}
 
-            {/* Auto-connect CTA for wallet browsers */}
-            {shouldShowAutoConnect && window.ethereum ? (
+            {/* Inside MetaMask/Phantom built-in browser */}
+            {insideWalletBrowser ? (
               <div className="space-y-3">
-                <div className="glass rounded-lg p-4 border-blue-400/30 bg-blue-500/10">
-                  <p className="text-blue-300 text-sm font-semibold">
-                    Wallet Detected! Tap below to connect and sign.
+                <div className="glass rounded-lg p-4 border-green-400/30 bg-green-500/10">
+                  <p className="text-green-300 text-sm font-semibold">
+                    ✅ Wallet detected! Tap below to connect.
                   </p>
                 </div>
 
@@ -236,7 +235,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                     }
                   `}
                 >
-                  {loading ? 'Approving in wallet...' : saving ? 'Saving...' : '👆 Tap to Connect'}
+                  {loading ? 'Connecting...' : saving ? 'Saving...' : '👆 Tap to Connect & Sign'}
                 </Button>
               </div>
             ) : (
