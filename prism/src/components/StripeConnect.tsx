@@ -18,31 +18,50 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    console.log('[StripeConnect] Component mounted, loading data')
+    console.log('[StripeConnect] Component mounted')
     loadStripeData()
 
-    // Check for Stripe callback params
-    const searchParams = new URLSearchParams(window.location.search)
-    const stripeParam = searchParams.get('stripe')
-    console.log('[StripeConnect] URL search params:', {
-      stripe: stripeParam,
-      fullUrl: window.location.href
-    })
-
-    if (stripeParam === 'success') {
-      console.log('[StripeConnect] Success param detected, showing success message')
+    // Check for Stripe callback success param
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stripe') === 'success') {
+      console.log('[StripeConnect] Success callback detected, force-fetching updated profile')
       setSuccess(true)
-      // Reload data after successful onboarding with longer delay
-      setTimeout(() => {
-        console.log('[StripeConnect] Reloading data after callback')
-        loadStripeData()
-        setSuccess(false)
-      }, 2000)
-      
+
+      // Get current user
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user?.id) {
+          console.log('[StripeConnect] No user found after callback')
+          return
+        }
+
+        console.log('[StripeConnect] Fetching updated profile for user:', user.id)
+
+        // Force refetch profile from Supabase
+        supabase
+          .from('profiles')
+          .select('stripe_account_id, stripe_onboarding_complete')
+          .eq('id', user.id)
+          .single()
+          .then(({ data, error }) => {
+            console.log('[StripeConnect] Profile refetch result:', { data, error })
+
+            if (error) {
+              console.error('[StripeConnect] Error fetching profile:', error)
+              return
+            }
+
+            if (data?.stripe_onboarding_complete && data?.stripe_account_id) {
+              console.log('[StripeConnect] Setting Stripe as connected:', data.stripe_account_id)
+              setStripeAccountId(data.stripe_account_id)
+              setStripeOnboardingComplete(true)
+            }
+
+            setTimeout(() => setSuccess(false), 2000)
+          })
+      })
+
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname)
-    } else if (stripeParam === 'error') {
-      console.log('[StripeConnect] Error in callback')
     }
   }, [])
 
