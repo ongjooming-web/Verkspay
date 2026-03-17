@@ -12,8 +12,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if auth session exists in cookies
-  const authToken = request.cookies.get('sb-fqdipubbyvekhipknxnr-auth-token')?.value
-  const hasSession = !!authToken
+  // Supabase sets multiple cookies, we check for any of them
+  const authCookies = request.cookies.getAll().filter(c => c.name.includes('auth') || c.name.includes('session'))
+  const hasSession = authCookies.length > 0
 
   // Protected routes
   const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/proposals', '/settings']
