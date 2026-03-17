@@ -90,12 +90,15 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
         console.log('[WalletConnect] Connected via WalletConnect:', address)
 
-        // Sign message for auth
+        // Sign message for auth with chainId
         const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
-        const signature = (await provider.request({
-          method: 'personal_sign',
-          params: [message, address]
-        })) as string
+        const signature = (await provider.request(
+          {
+            method: 'personal_sign',
+            params: [message, address]
+          },
+          'eip155:1'
+        )) as string
 
         await saveWalletAddress(address, signature)
       } else {
