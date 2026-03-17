@@ -14,7 +14,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [user, setUser] = useState<any>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -24,7 +23,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   const loadWalletData = async () => {
     try {
       const { data: userData } = await supabase.auth.getUser()
-      setUser(userData?.user)
 
       if (!userData?.user?.id) return
 
@@ -49,97 +47,30 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     setSuccess(false)
 
     try {
-      const isMobile = /iPhone|Android/i.test(navigator.userAgent)
-      let provider
-
-      if (isMobile || !window.ethereum) {
-        // Mobile or no injected provider: use WalletConnect
-        const EthereumProvider = (await import('@walletconnect/ethereum-provider')).EthereumProvider
-
-        provider = await EthereumProvider.init({
-          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-          chains: [1, 8453], // Ethereum, Base
-          optionalChains: [137, 56, 43114], // Polygon, BSC, Avalanche
-          methods: ['eth_sendTransaction', 'eth_signTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v4'],
-          events: ['chainChanged', 'accountsChanged'],
-          showQrModal: true
-        })
-
-        // Connect and get accounts
-        const accounts = await provider.connect()
-        
-        // If connect returns accounts, use them; otherwise get from provider state
-        let address: string
-        if (Array.isArray(accounts) && accounts.length > 0) {
-          address = accounts[0]
-        } else if (provider.accounts && provider.accounts.length > 0) {
-          address = provider.accounts[0]
-        } else {
-          // Try requesting accounts directly
-          const requestedAccounts = (await provider.request({
-            method: 'eth_accounts'
-          })) as string[]
-          
-          if (!requestedAccounts || requestedAccounts.length === 0) {
-            setError('No accounts found. Please approve connection in your wallet.')
-            setLoading(false)
-            return
-          }
-          address = requestedAccounts[0]
-        }
-
-        console.log('[WalletConnect] Connected via WalletConnect:', address)
-
-        // Sign message for auth with chainId
-        const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
-        const signature = (await provider.request(
-          {
-            method: 'personal_sign',
-            params: [message, address]
-          },
-          1
-        )) as string
-
-        await saveWalletAddress(address, signature)
-      } else {
-        // Desktop with injected provider: use window.ethereum directly
-        console.log('[WalletConnect] Using window.ethereum (MetaMask/Phantom)')
-
-        const accounts = (await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        })) as string[]
-
-        if (!accounts || accounts.length === 0) {
-          setError('No accounts found')
-          setLoading(false)
-          return
-        }
-
-        const address = accounts[0]
-        console.log('[WalletConnect] Connected via window.ethereum:', address)
-
-        // Sign message for auth
-        const message = `Sign in to Prism\nWallet: ${address}\nTimestamp: ${Date.now()}`
-        const signature = (await window.ethereum.request({
-          method: 'personal_sign',
-          params: [message, address]
-        })) as string
-
-        await saveWalletAddress(address, signature)
+      // Check if MetaMask or Phantom is installed
+      if (!window.ethereum) {
+        setError('No wallet detected. Please install MetaMask or Phantom.')
+        setLoading(false)
+        return
       }
-    } catch (err: any) {
-      console.error('[WalletConnect] Connection error:', err)
-      if (err.code === 4001 || err.message?.includes('User rejected')) {
-        setError('Connection cancelled by user')
-      } else {
-        setError(err.message || 'Failed to connect wallet')
-      }
-      setLoading(false)
-    }
-  }
 
-  const saveWalletAddress = async (address: string, signature: string) => {
-    try {
+      console.log('[WalletConnect] Requesting account access from MetaMask/Phantom...')
+
+      // Request account access (shows approval prompt in wallet)
+      const accounts = (await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      })) as string[]
+
+      if (!accounts || accounts.length === 0) {
+        setError('No accounts found')
+        setLoading(false)
+        return
+      }
+
+      const address = accounts[0]
+      console.log('[WalletConnect] Connected address:', address)
+
+      // Get current user
       const { data: userData } = await supabase.auth.getUser()
       if (!userData?.user?.id) {
         setError('User not authenticated')
@@ -147,14 +78,11 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         return
       }
 
+      // Save to Supabase
       setSaving(true)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
-          wallet_address: address,
-          wallet_signature: signature,
-          wallet_signed_at: new Date().toISOString()
-        })
+        .update({ wallet_address: address })
         .eq('id', userData.user.id)
 
       if (updateError) {
@@ -165,7 +93,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         return
       }
 
-      console.log('[WalletConnect] Wallet saved successfully')
+      console.log('[WalletConnect] Address saved successfully')
       setSaving(false)
       setConnectedAddress(address)
       setSuccess(true)
@@ -175,11 +103,15 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         onWalletConnected(address)
       }
 
+      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      console.error('[WalletConnect] Save error:', err)
-      setError(err.message || 'Failed to save wallet')
-      setSaving(false)
+      console.error('[WalletConnect] Connection error:', err)
+      if (err.code === 4001) {
+        setError('Connection cancelled')
+      } else {
+        setError(err.message || 'Failed to connect wallet')
+      }
       setLoading(false)
     }
   }
@@ -190,7 +122,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
       if (userData?.user?.id) {
         await supabase
           .from('profiles')
-          .update({ wallet_address: null, wallet_signature: null })
+          .update({ wallet_address: null })
           .eq('id', userData.user.id)
       }
       setConnectedAddress(null)
@@ -243,8 +175,8 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                 Connect your wallet to receive USDC payments for invoices
               </p>
               <ul className="text-gray-400 text-xs space-y-1 ml-4 list-disc">
-                <li><strong>Desktop:</strong> MetaMask, Phantom, or any EVM wallet</li>
-                <li><strong>Mobile:</strong> WalletConnect opens your wallet app (300+ supported)</li>
+                <li><strong>MetaMask</strong> - Desktop or mobile app</li>
+                <li><strong>Phantom</strong> - Desktop or mobile app</li>
               </ul>
             </div>
 
@@ -260,15 +192,19 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
                 }
               `}
             >
-              {loading ? 'Opening wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
+              {loading ? 'Approving in wallet...' : saving ? 'Saving...' : 'Connect Wallet'}
             </Button>
+
+            <p className="text-gray-500 text-xs text-center">
+              Make sure you have MetaMask or Phantom installed as a browser extension
+            </p>
           </>
         )}
 
         {success && (
           <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
             <p className="text-green-300 text-sm">
-              <span className="font-bold">✓ Success!</span> Wallet connected and authenticated
+              <span className="font-bold">✓ Success!</span> Wallet connected
             </p>
           </div>
         )}
