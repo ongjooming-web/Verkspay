@@ -13,6 +13,13 @@ declare global {
   interface Window {
     ethereum?: EthereumProvider
   }
+
+  namespace AppKit {
+    interface Modal {
+      open: (options?: { view: string }) => Promise<void>
+      close: () => void
+    }
+  }
 }
 
 export {}
