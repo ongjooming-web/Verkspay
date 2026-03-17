@@ -34,6 +34,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   const [saving, setSaving] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [insideWalletBrowser, setInsideWalletBrowser] = useState(false)
+  const [isLoadingWalletData, setIsLoadingWalletData] = useState(true)
 
   useEffect(() => {
     setIsMobile(isMobileDevice())
@@ -56,19 +57,37 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   }, [])
 
   const loadWalletData = async () => {
+    setIsLoadingWalletData(true)
     try {
+      console.log('[WalletConnect] Loading wallet data...')
       const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user?.id) return
-      const { data: profile } = await supabase
+      console.log('[WalletConnect] userData.user.id:', userData?.user?.id)
+      
+      if (!userData?.user?.id) {
+        console.log('[WalletConnect] No user ID found, skipping wallet load')
+        setIsLoadingWalletData(false)
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('wallet_address')
         .eq('id', userData.user.id)
         .single()
+
+      console.log('[WalletConnect] Profile query result:', { profile, error: profileError })
+      console.log('[WalletConnect] wallet_address from DB:', profile?.wallet_address)
+
       if (profile?.wallet_address) {
+        console.log('[WalletConnect] Setting connected address:', profile.wallet_address)
         setConnectedAddress(profile.wallet_address)
+      } else {
+        console.log('[WalletConnect] No wallet address found in profile')
       }
     } catch (err: any) {
       console.error('[WalletConnect] Error loading wallet:', err)
+    } finally {
+      setIsLoadingWalletData(false)
     }
   }
 
@@ -169,7 +188,15 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         <h3 className="text-lg font-semibold text-white">🔐 Connect Wallet</h3>
       </CardHeader>
       <CardBody className="space-y-4">
-        {connectedAddress ? (
+        {isLoadingWalletData ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+              <span className="text-gray-400 text-sm">Loading wallet data...</span>
+            </div>
+            <div className="glass rounded-lg p-3 h-12 bg-gray-700/20 animate-pulse"></div>
+          </div>
+        ) : connectedAddress ? (
           <>
             <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
               <span className="text-green-400 text-lg">✓</span>
@@ -281,7 +308,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
           </>
         )}
 
-        {success && (
+        {!isLoadingWalletData && success && (
           <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
             <p className="text-green-300 text-sm"><span className="font-bold">✓ Success!</span> Wallet connected</p>
           </div>
