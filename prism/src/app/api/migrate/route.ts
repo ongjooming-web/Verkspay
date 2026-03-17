@@ -7,6 +7,9 @@ export async function POST(req: NextRequest) {
   try {
     // Verify authorization
     const authHeader = req.headers.get('authorization')
+    console.log('[Migrate] Auth header:', authHeader?.substring(0, 20))
+    console.log('[Migrate] Expected secret:', MIGRATION_SECRET?.substring(0, 20))
+    
     if (!MIGRATION_SECRET || authHeader !== `Bearer ${MIGRATION_SECRET}`) {
       console.error('[Migrate] Unauthorized - invalid or missing secret')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -14,8 +17,11 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.DATABASE_URL) {
       console.error('[Migrate] DATABASE_URL not set')
+      console.log('[Migrate] Available env vars:', Object.keys(process.env).filter(k => k.includes('DB') || k.includes('MIGRATION')))
       return NextResponse.json({ error: 'DATABASE_URL not configured' }, { status: 500 })
     }
+    
+    console.log('[Migrate] DATABASE_URL exists, length:', process.env.DATABASE_URL.length)
 
     console.log('[Migrate] Starting migrations...')
 
