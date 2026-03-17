@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import QRCode from 'qrcode.react'
-import { Card, CardBody } from './Card'
+import { useEffect, useRef, useState } from 'react'
+import QRCodeStyling from 'qr-code-styling'
+import { Card } from './Card'
 
 interface QRCodeDisplayProps {
   walletAddress: string
@@ -17,7 +17,8 @@ export function QRCodeDisplay({
   network,
   currency = 'USDC'
 }: QRCodeDisplayProps) {
-  const [qrValue, setQrValue] = useState<string>('')
+  const qrRef = useRef<HTMLDivElement>(null)
+  const [qrInstance, setQrInstance] = useState<QRCodeStyling | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -29,12 +30,51 @@ export function QRCodeDisplay({
       value = `solana:${walletAddress}${amount ? `?amount=${amount}&label=${currency}+Invoice` : ''}`
     } else {
       // ERC-681 format for Ethereum-based networks (Base, Ethereum)
-      // ethereum:ADDRESS?chainId=X
       const chainId = network === 'base' ? 8453 : 1
       value = `ethereum:${walletAddress}@${chainId}${amount ? `/transfer?address=${walletAddress}&uint256=${(amount * 1e6).toFixed(0)}` : ''}`
     }
     
-    setQrValue(value)
+    // Create QR code instance
+    const qr = new QRCodeStyling({
+      width: 256,
+      height: 256,
+      data: value,
+      image: undefined,
+      margin: 10,
+      qrOptions: {
+        typeNumber: 0,
+        mode: 'Byte',
+        errorCorrectionLevel: 'H'
+      },
+      imageOptions: {
+        hideBackgroundDots: true,
+        imageSize: 0.1,
+        margin: 10
+      },
+      dotsOptions: {
+        color: '#000000',
+        type: 'rounded'
+      },
+      backgroundOptions: {
+        color: '#ffffff'
+      },
+      cornersSquareOptions: {
+        color: '#667eea',
+        type: 'extra-rounded'
+      },
+      cornersDotOptions: {
+        color: '#667eea',
+        type: 'dot'
+      }
+    })
+    
+    setQrInstance(qr)
+    
+    // Append to DOM
+    if (qrRef.current) {
+      qrRef.current.innerHTML = ''
+      qr.append(qrRef.current)
+    }
   }, [walletAddress, amount, network, currency])
 
   const copyToClipboard = async () => {
@@ -47,41 +87,29 @@ export function QRCodeDisplay({
     }
   }
 
-  const downloadQR = () => {
-    const qrElement = document.getElementById('qr-code-canvas')
-    if (qrElement) {
-      const canvas = qrElement.querySelector('canvas')
-      if (canvas) {
-        const url = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `invoice-payment-${Date.now()}.png`
-        link.click()
+  const downloadQR = async () => {
+    if (qrInstance) {
+      try {
+        qrInstance.download({ name: `invoice-payment-${Date.now()}`, extension: 'png' })
+      } catch (err) {
+        console.error('Failed to download QR:', err)
       }
     }
-  }
-
-  if (!qrValue) {
-    return null
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-center">
-        <Card className="p-6 bg-white/10">
-          <div id="qr-code-canvas" className="p-4 bg-white rounded-lg">
-            <QRCode
-              value={qrValue}
-              size={256}
-              level="H"
-              includeMargin={true}
-              renderAs="canvas"
-            />
-          </div>
+        <Card className="p-6 bg-white/10 backdrop-blur-xl border border-white/20">
+          <div
+            ref={qrRef}
+            className="p-4 bg-white rounded-lg flex items-center justify-center"
+            style={{ width: '300px', height: '300px' }}
+          />
         </Card>
       </div>
 
-      <div className="glass rounded-lg p-4 space-y-3">
+      <div className="glass rounded-lg p-4 space-y-3 backdrop-blur-xl border border-white/20">
         <div>
           <p className="text-gray-400 text-sm mb-2">Wallet Address</p>
           <div className="flex items-center gap-2">
@@ -118,13 +146,13 @@ export function QRCodeDisplay({
       <div className="flex gap-2">
         <button
           onClick={copyToClipboard}
-          className="flex-1 px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm font-medium"
+          className="flex-1 px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm font-medium backdrop-blur-xl border border-white/20"
         >
           {copied ? '✓ Copied!' : '📋 Copy Address'}
         </button>
         <button
           onClick={downloadQR}
-          className="flex-1 px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm font-medium"
+          className="flex-1 px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm font-medium backdrop-blur-xl border border-white/20"
         >
           ⬇ Download QR
         </button>
