@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 export default function LandingPage() {
+  // Cache bust: 2026-03-17 09:41
   const [email, setEmail] = useState('')
 
   const handleEmailSignup = (e: React.FormEvent) => {
