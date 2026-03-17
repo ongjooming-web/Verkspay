@@ -25,10 +25,10 @@
     "@walletconnect/ethereum-provider": "^2.11.0",
     "ethers": "^6.11.0",
     "qr-code-styling": "^1.6.0",
-    "@solana/web3.js": "^1.95.0",
-    "@solana/wallet-adapter-base": "^0.9.23",
-    "@solana/wallet-adapter-wallets": "^0.21.6",
-    "@solana/wallet-adapter-react": "^0.15.35"
+    "@solana/web3.js": "^1.91.0",
+    "@solana/wallet-adapter-base": "^0.9.22",
+    "@solana/wallet-adapter-wallets": "^0.19.32",
+    "@solana/wallet-adapter-react": "^0.15.33"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",

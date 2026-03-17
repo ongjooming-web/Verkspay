@@ -184,7 +184,7 @@ export async function POST(
       invoice: updatedInvoice,
       paymentIntent: paymentIntent,
       message: 'Invoice marked as paid'
-    })
+    }, { status: 200 })
   } catch (error: any) {
     console.error('Mark as paid error:', error)
     return NextResponse.json(
