@@ -37,13 +37,16 @@ export default function Invoices() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [sortBy, setSortBy] = useState<SortBy>('date')
   const [searchTerm, setSearchTerm] = useState('')
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     fetchInvoices()
     fetchClients()
-  }, [])
+  }, [refreshTrigger])
 
   const fetchInvoices = async () => {
+    console.log('[InvoicesList] Fetching invoices...')
+    setLoading(true)
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
 
@@ -52,31 +55,56 @@ export default function Invoices() {
       return
     }
 
-    const { data } = await supabase
-      .from('invoices')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+    try {
+      const { data } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
 
-    if (data) {
-      const invoicesWithClients = await Promise.all(
-        data.map(async (invoice) => {
-          const { data: client } = await supabase
-            .from('clients')
-            .select('name')
-            .eq('id', invoice.client_id)
-            .single()
-          
-          return {
-            ...invoice,
-            client_name: client?.name || 'Unknown Client'
-          }
-        })
-      )
-      setInvoices(invoicesWithClients)
+      if (data) {
+        console.log('[InvoicesList] Fetched invoices:', data.length)
+        const invoicesWithClients = await Promise.all(
+          data.map(async (invoice) => {
+            const { data: client } = await supabase
+              .from('clients')
+              .select('name')
+              .eq('id', invoice.client_id)
+              .single()
+            
+            return {
+              ...invoice,
+              client_name: client?.name || 'Unknown Client'
+            }
+          })
+        )
+        console.log('[InvoicesList] Updated invoice list with client names')
+        setInvoices(invoicesWithClients)
+      }
+    } catch (err: any) {
+      console.error('[InvoicesList] Error fetching invoices:', err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
+
+  // Public refresh function accessible from detail page
+  const refreshInvoices = () => {
+    console.log('[InvoicesList] Refresh triggered')
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  // Make refresh available globally for cross-component updates
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__refreshInvoices = refreshInvoices
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).__refreshInvoices
+      }
+    }
+  }, [refreshTrigger])
 
   const fetchClients = async () => {
     const { data } = await supabase.from('clients').select('id, name')

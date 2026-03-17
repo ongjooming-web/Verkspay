@@ -92,8 +92,10 @@ export async function POST(
     const timestamp = Date.now()
     const transactionHash = `manual-test-${timestamp}`
 
+    console.log('[mark-paid] Starting invoice update:', { invoiceId: id, userId })
+
     // Begin transaction: Update invoice and create/update payment_intent
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updateData } = await supabase
       .from('invoices')
       .update({
         status: 'paid',
@@ -103,14 +105,17 @@ export async function POST(
       })
       .eq('id', id)
       .eq('user_id', userId)
+      .select()
 
     if (updateError) {
-      console.error('Invoice update error:', updateError)
+      console.error('[mark-paid] Invoice update error:', updateError)
       return NextResponse.json(
         { error: 'Failed to update invoice status' },
         { status: 500 }
       )
     }
+
+    console.log('[mark-paid] Invoice updated:', updateData)
 
     // Check if payment_intent exists
     const { data: existingIntent } = await supabase
@@ -172,13 +177,34 @@ export async function POST(
       paymentIntent = newIntent
     }
 
-    // Return updated invoice
-    const { data: updatedInvoice } = await supabase
+    // Fetch the latest invoice to ensure we return the current state
+    console.log('[mark-paid] Fetching updated invoice from database...')
+    const { data: updatedInvoice, error: fetchError } = await supabase
       .from('invoices')
       .select('*')
       .eq('id', id)
       .single()
 
+    if (fetchError || !updatedInvoice) {
+      console.error('[mark-paid] Error fetching updated invoice:', fetchError)
+      return NextResponse.json(
+        { error: 'Invoice was updated but could not be verified' },
+        { status: 500 }
+      )
+    }
+
+    console.log('[mark-paid] Verified invoice status:', updatedInvoice.status)
+
+    // Ensure status is actually paid
+    if (updatedInvoice.status !== 'paid') {
+      console.error('[mark-paid] Invoice status not properly set to paid:', updatedInvoice.status)
+      return NextResponse.json(
+        { error: 'Invoice status update verification failed' },
+        { status: 500 }
+      )
+    }
+
+    console.log('[mark-paid] Success! Returning updated invoice')
     return NextResponse.json({
       success: true,
       invoice: updatedInvoice,
@@ -186,7 +212,7 @@ export async function POST(
       message: 'Invoice marked as paid'
     }, { status: 200 })
   } catch (error: any) {
-    console.error('Mark as paid error:', error)
+    console.error('[mark-paid] Unexpected error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

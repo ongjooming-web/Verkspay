@@ -370,7 +370,7 @@ export default function InvoiceDetail() {
         </Card>
 
         {/* USDC Payment Card */}
-        {invoice.status !== 'paid' && (
+        {invoice && invoice.status !== 'paid' && (
           <USDCPaymentCard
             invoiceId={invoiceId}
             invoiceAmount={invoice.amount}
@@ -378,6 +378,7 @@ export default function InvoiceDetail() {
             status={invoice.status}
             onPaymentMarked={async () => {
               // Refresh invoice details after payment is marked
+              console.log('[InvoiceDetail] Payment marked, refreshing invoice details...')
               await fetchInvoiceDetails()
               await fetchPaymentRecords()
             }}

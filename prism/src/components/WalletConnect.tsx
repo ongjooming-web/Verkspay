@@ -11,6 +11,27 @@ interface WalletConnectProps {
   readOnly?: boolean
 }
 
+// Mobile detection utilities
+const MOBILE_DETECTION = {
+  isIOS: (): boolean => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+  },
+  isAndroid: (): boolean => {
+    return /Android/.test(navigator.userAgent)
+  },
+  isMobile: (): boolean => {
+    return /iPhone|iPad|iPod|Android/.test(navigator.userAgent)
+  },
+  isMetaMaskMobile: (): boolean => {
+    if (!MOBILE_DETECTION.isMobile()) return false
+    return !!(window as any).ethereum
+  },
+  isPhantomMobile: (): boolean => {
+    if (!MOBILE_DETECTION.isMobile()) return false
+    return !!(window as any).phantom?.solana
+  }
+}
+
 // Address format validators
 const ADDRESS_VALIDATORS = {
   solana: (address: string): boolean => {
@@ -90,6 +111,7 @@ export function WalletConnectComponent({
   const [selectedNetwork, setSelectedNetwork] = useState<'base' | 'ethereum' | 'solana'>('base')
   const [loading, setLoading] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -104,7 +126,8 @@ export function WalletConnectComponent({
 
   useEffect(() => {
     loadWalletData()
-  }, [])
+    checkMobileWalletReturn()
+  }, [user?.id])
 
   // Load stored wallet data from Supabase
   const loadWalletData = async () => {
@@ -113,24 +136,32 @@ export function WalletConnectComponent({
     try {
       const { data: userData } = await supabase.auth.getUser()
       setUser(userData?.user)
+      console.log('[WalletConnect] Current user:', userData?.user?.id)
 
       if (!userData?.user?.id) {
         setLoading(false)
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('wallet_address, usdc_network')
         .eq('id', userData.user.id)
         .single()
 
+      if (profileError) {
+        console.error('[WalletConnect] Profile load error:', profileError)
+      }
+
       if (profile?.wallet_address) {
         const loadedAddress = profile.wallet_address
         const loadedNetwork = (profile.usdc_network || 'base') as 'base' | 'ethereum' | 'solana'
         
+        console.log('[WalletConnect] Loaded wallet:', { address: loadedAddress.slice(0, 6) + '...', network: loadedNetwork })
+        
         // Validate address format matches network
         if (!validateAddressForNetwork(loadedAddress, loadedNetwork)) {
+          console.error('[WalletConnect] Address format validation failed:', { address: loadedAddress, network: loadedNetwork })
           setError(`Invalid ${loadedNetwork} address format stored. Please reconnect.`)
           setNetworkMismatch(true)
           return
@@ -138,9 +169,11 @@ export function WalletConnectComponent({
 
         setConnectedAddress(loadedAddress)
         setSelectedNetwork(loadedNetwork)
+      } else {
+        console.log('[WalletConnect] No wallet connected')
       }
     } catch (err: any) {
-      console.error('Error loading wallet data:', err)
+      console.error('[WalletConnect] Error loading wallet data:', err)
       setError('Failed to load wallet data')
     } finally {
       setLoading(false)
@@ -174,12 +207,204 @@ export function WalletConnectComponent({
   }
 
   /**
+   * Handle mobile wallet deep linking (MetaMask/Phantom on iOS/Android)
+   */
+  const handleMobileWalletConnection = async () => {
+    try {
+      console.log('[WalletConnect] Mobile wallet connection requested', { network: selectedNetwork, isMobile: MOBILE_DETECTION.isMobile() })
+
+      if (!user?.id) {
+        throw new Error('User not authenticated. Please sign in first.')
+      }
+
+      if (selectedNetwork === 'solana') {
+        // Phantom mobile deep link
+        if (!MOBILE_DETECTION.isPhantomMobile()) {
+          throw new Error('Phantom wallet not found on this device. Please install Phantom to connect to Solana.')
+        }
+
+        console.log('[WalletConnect] Using Phantom mobile deep link for Solana')
+        
+        // Store intended action in sessionStorage so we can complete it on return
+        const returnUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''
+        sessionStorage.setItem('phantom_return_url', returnUrl)
+        sessionStorage.setItem('phantom_network', 'solana')
+        sessionStorage.setItem('phantom_user_id', user.id)
+
+        // Redirect to Phantom with deeplink
+        const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(returnUrl)}?ref=prism`
+        window.location.href = phantomDeepLink
+
+        // Give it a moment to redirect
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } else {
+        // MetaMask mobile deep link (Base or Ethereum)
+        if (!MOBILE_DETECTION.isMetaMaskMobile()) {
+          throw new Error('MetaMask wallet not found on this device. Please install MetaMask.')
+        }
+
+        console.log('[WalletConnect] Using MetaMask mobile deep link for', selectedNetwork)
+
+        // Store intended action in sessionStorage
+        const returnUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''
+        sessionStorage.setItem('metamask_return_url', returnUrl)
+        sessionStorage.setItem('metamask_network', selectedNetwork)
+        sessionStorage.setItem('metamask_user_id', user.id)
+
+        // For MetaMask mobile, we trigger the connection and it handles the deeplink
+        const provider = WALLET_PROVIDERS.evm.getProvider()
+        if (provider && provider.request) {
+          try {
+            const accounts = await provider.request({
+              method: 'eth_requestAccounts'
+            })
+            
+            if (accounts && accounts.length > 0) {
+              const address = accounts[0]
+              console.log('[WalletConnect] Got MetaMask address on mobile:', address.slice(0, 6) + '...')
+              
+              // Validate and save immediately on mobile
+              if (validateAddressForNetwork(address, selectedNetwork)) {
+                await saveMobileWalletAddress(address)
+              } else {
+                throw new Error('Invalid address format for ' + selectedNetwork)
+              }
+            }
+          } catch (err: any) {
+            console.error('[WalletConnect] MetaMask mobile connection error:', err)
+            throw err
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[WalletConnect] Mobile wallet error:', err)
+      setError(err.message || 'Failed to connect mobile wallet')
+    }
+  }
+
+  /**
+   * Save wallet address returned from mobile app
+   */
+  const saveMobileWalletAddress = async (address: string) => {
+    try {
+      setSaving(true)
+      console.log('[WalletConnect] Saving mobile wallet address:', address.slice(0, 6) + '...')
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          wallet_address: address,
+          usdc_network: selectedNetwork,
+          payment_method: 'usdc',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+
+      // Verify save
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from('profiles')
+        .select('wallet_address, usdc_network')
+        .eq('id', user.id)
+        .single()
+
+      if (verifyError || verifyProfile?.wallet_address !== address) {
+        throw new Error('Failed to verify wallet save')
+      }
+
+      console.log('[WalletConnect] Mobile wallet saved and verified')
+      setConnectedAddress(address)
+      setSuccess(true)
+
+      if (onWalletConnected) {
+        onWalletConnected(address, selectedNetwork)
+      }
+
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err: any) {
+      console.error('[WalletConnect] Error saving mobile wallet:', err)
+      setError(err.message || 'Failed to save wallet')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /**
+   * Handle checking for mobile wallet connection on page load
+   */
+  const checkMobileWalletReturn = async () => {
+    try {
+      // Check if we're returning from MetaMask
+      const metamaskUserId = sessionStorage.getItem('metamask_user_id')
+      const metamaskNetwork = sessionStorage.getItem('metamask_network')
+      
+      if (metamaskUserId === user?.id && metamaskNetwork) {
+        console.log('[WalletConnect] Detected MetaMask return from mobile app')
+        
+        const provider = WALLET_PROVIDERS.evm.getProvider()
+        if (provider && provider.request) {
+          try {
+            const accounts = await provider.request({
+              method: 'eth_accounts'
+            })
+            
+            if (accounts && accounts.length > 0) {
+              const address = accounts[0]
+              console.log('[WalletConnect] Got MetaMask address on return:', address.slice(0, 6) + '...')
+              await saveMobileWalletAddress(address)
+              
+              // Clean up session
+              sessionStorage.removeItem('metamask_user_id')
+              sessionStorage.removeItem('metamask_network')
+              sessionStorage.removeItem('metamask_return_url')
+            }
+          } catch (err: any) {
+            console.error('[WalletConnect] Error checking MetaMask on return:', err)
+          }
+        }
+      }
+
+      // Check if we're returning from Phantom
+      const phantomUserId = sessionStorage.getItem('phantom_user_id')
+      const phantomNetwork = sessionStorage.getItem('phantom_network')
+      
+      if (phantomUserId === user?.id && phantomNetwork) {
+        console.log('[WalletConnect] Detected Phantom return from mobile app')
+        
+        const provider = WALLET_PROVIDERS.solana.getProvider()
+        if (provider) {
+          try {
+            // Check if already connected
+            if (provider.isConnected) {
+              const response = await provider.connect()
+              const address = response.publicKey.toString()
+              console.log('[WalletConnect] Got Phantom address on return:', address.slice(0, 6) + '...')
+              await saveMobileWalletAddress(address)
+              
+              // Clean up session
+              sessionStorage.removeItem('phantom_user_id')
+              sessionStorage.removeItem('phantom_network')
+              sessionStorage.removeItem('phantom_return_url')
+            }
+          } catch (err: any) {
+            console.error('[WalletConnect] Error checking Phantom on return:', err)
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[WalletConnect] Error in mobile return check:', err)
+    }
+  }
+
+  /**
    * Connect wallet with network-aware provider selection
    */
   const handleConnectWallet = async () => {
     setConnecting(true)
     setError(null)
     setSuccess(false)
+    setSaving(false)
     setNetworkMismatch(false)
 
     try {
@@ -190,6 +415,16 @@ export function WalletConnectComponent({
       if (!user?.id) {
         throw new Error('User not authenticated. Please sign in first.')
       }
+
+      // On mobile, use deep linking approach
+      if (MOBILE_DETECTION.isMobile()) {
+        console.log('[WalletConnect] Mobile detected, using deep linking')
+        setConnecting(false)
+        await handleMobileWalletConnection()
+        return
+      }
+
+      console.log('[WalletConnect] Starting connection for network:', selectedNetwork)
 
       // Get provider for selected network
       const provider = getWalletProvider(selectedNetwork)
@@ -216,28 +451,39 @@ export function WalletConnectComponent({
         } catch (switchErr: any) {
           // Chain not added, user may need to add it manually
           if (switchErr.code !== 4902) {
-            console.warn('Could not switch chain:', switchErr)
+            console.warn('[WalletConnect] Could not switch chain:', switchErr)
           }
         }
       }
 
       // Request wallet connection
+      console.log('[WalletConnect] Requesting connection from wallet...')
       const connectedAddr = await provider.requestConnection()
 
       if (!connectedAddr) {
         throw new Error('Failed to get wallet address')
       }
 
+      console.log('[WalletConnect] Got address:', connectedAddr.slice(0, 6) + '...')
+
       // Validate address format
       if (!validateAddressForNetwork(connectedAddr, selectedNetwork)) {
+        console.error('[WalletConnect] Address validation failed:', { 
+          address: connectedAddr, 
+          network: selectedNetwork,
+          expectedType: NETWORK_CONFIGS[selectedNetwork].type 
+        })
         setNetworkMismatch(true)
         throw new Error(
           `Address format mismatch! Got ${selectedNetwork === 'solana' ? 'EVM' : 'Solana'} address for ${selectedNetwork} network.`
         )
       }
 
-      // Save to Supabase
-      const { error: updateError } = await supabase
+      // Now save to Supabase
+      setSaving(true)
+      console.log('[WalletConnect] Saving to profiles table...')
+
+      const { error: updateError, data: updateData } = await supabase
         .from('profiles')
         .update({
           wallet_address: connectedAddr,
@@ -246,8 +492,37 @@ export function WalletConnectComponent({
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
+        .select()
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('[WalletConnect] Update error:', updateError)
+        throw updateError
+      }
+
+      console.log('[WalletConnect] Saved to database, verifying...')
+      setSaving(false)
+
+      // Verify that the wallet was actually saved
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from('profiles')
+        .select('wallet_address, usdc_network')
+        .eq('id', user.id)
+        .single()
+
+      if (verifyError) {
+        console.error('[WalletConnect] Verification query failed:', verifyError)
+        throw new Error('Could not verify wallet save')
+      }
+
+      if (verifyProfile?.wallet_address !== connectedAddr) {
+        console.error('[WalletConnect] Wallet address not persisted!', {
+          expected: connectedAddr,
+          got: verifyProfile?.wallet_address
+        })
+        throw new Error('Wallet address failed to persist. Please try again.')
+      }
+
+      console.log('[WalletConnect] Wallet successfully saved and verified:', verifyProfile)
 
       setConnectedAddress(connectedAddr)
       setSuccess(true)
@@ -258,11 +533,12 @@ export function WalletConnectComponent({
 
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      console.error('Wallet connection error:', err)
+      console.error('[WalletConnect] Wallet connection error:', err)
       const errorMessage = err.message || 'Failed to connect wallet'
       setError(errorMessage)
     } finally {
       setConnecting(false)
+      setSaving(false)
     }
   }
 
@@ -337,7 +613,8 @@ export function WalletConnectComponent({
   }
 
   const networkType = NETWORK_CONFIGS[selectedNetwork].type
-  const isConnecting = connecting || loading
+  const isConnecting = connecting || loading || saving
+  const isMobile = MOBILE_DETECTION.isMobile()
 
   return (
     <>
@@ -347,9 +624,24 @@ export function WalletConnectComponent({
         </div>
       )}
 
+      {saving && (
+        <div className="mb-4 glass px-4 py-3 rounded-lg border-blue-500/50 bg-blue-500/10 text-blue-300 flex items-center gap-2">
+          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+          ⏳ Saving wallet address to database...
+        </div>
+      )}
+
       {success && (
         <div className="mb-4 glass px-4 py-3 rounded-lg border-green-500/50 bg-green-500/10 text-green-300">
-          ✓ Wallet connected successfully!
+          ✓ Wallet connected and saved successfully!
+        </div>
+      )}
+
+      {isMobile && (
+        <div className="mb-4 glass px-4 py-3 rounded-lg border-blue-400/30 bg-blue-500/10 text-blue-300">
+          <p className="text-sm">
+            📱 <strong>Mobile Mode:</strong> You'll be directed to your wallet app to authorize connection.
+          </p>
         </div>
       )}
 
@@ -414,14 +706,26 @@ export function WalletConnectComponent({
             disabled={isConnecting || readOnly}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/50"
           >
-            {isConnecting ? '⏳ Connecting...' : `🔗 Connect ${networkType === 'solana' ? 'Phantom' : 'Wallet'}`}
+            {connecting ? '⏳ Connecting...' : saving ? '💾 Saving to Database...' : isMobile ? (
+              networkType === 'solana' ? '🔗 Open Phantom' : '🔗 Open MetaMask'
+            ) : (
+              `🔗 Connect ${networkType === 'solana' ? 'Phantom' : 'Wallet'}`
+            )}
           </Button>
 
-          <p className="text-gray-400 text-sm text-center text-xs">
-            {networkType === 'solana' 
-              ? 'Requires Phantom wallet. Download from phantom.app'
-              : 'Supports MetaMask and other EVM wallets'}
-          </p>
+          {isMobile ? (
+            <p className="text-gray-400 text-sm text-center text-xs">
+              {networkType === 'solana' 
+                ? 'Opens Phantom wallet app. Install if needed at phantom.app'
+                : 'Opens MetaMask wallet app. Install if needed at metamask.io'}
+            </p>
+          ) : (
+            <p className="text-gray-400 text-sm text-center text-xs">
+              {networkType === 'solana' 
+                ? 'Requires Phantom wallet. Download from phantom.app'
+                : 'Supports MetaMask and other EVM wallets'}
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

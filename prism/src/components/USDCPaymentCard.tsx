@@ -157,6 +157,8 @@ export function USDCPaymentCard({
         return
       }
 
+      console.log('[USDCPaymentCard] Marking invoice as paid', { invoiceId, walletAddress, network })
+
       // Call the API endpoint
       const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
         method: 'POST',
@@ -168,18 +170,31 @@ export function USDCPaymentCard({
 
       const data = await response.json()
 
+      console.log('[USDCPaymentCard] Mark as paid response:', { status: response.status, data })
+
       if (!response.ok) {
         setMarkAsPayedError(data.error || 'Failed to mark invoice as paid')
         setIsMarkingAsPaid(false)
         return
       }
 
+      // Verify the response includes the updated invoice
+      if (!data.invoice || data.invoice.status !== 'paid') {
+        console.error('[USDCPaymentCard] Invoice status not properly updated:', data.invoice)
+        setMarkAsPayedError('Invoice status was not properly updated. Please refresh the page.')
+        setIsMarkingAsPaid(false)
+        return
+      }
+
+      console.log('[USDCPaymentCard] Invoice successfully marked as paid:', data.invoice)
+
       // Show success message
       setShowSuccessMessage(true)
       setPaymentIntent(data.paymentIntent)
 
-      // Call callback if provided
+      // Call callback if provided - this triggers a re-fetch on the parent
       if (onPaymentMarked) {
+        console.log('[USDCPaymentCard] Calling onPaymentMarked callback')
         onPaymentMarked()
       }
 
@@ -188,6 +203,7 @@ export function USDCPaymentCard({
         setShowSuccessMessage(false)
       }, 3000)
     } catch (err: any) {
+      console.error('[USDCPaymentCard] Error marking as paid:', err)
       setMarkAsPayedError(err.message || 'An error occurred')
     } finally {
       setIsMarkingAsPaid(false)
