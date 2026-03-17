@@ -85,22 +85,34 @@ export async function POST(
       )
     }
 
-    // Get user's wallet address
+    // Get user's payment info (wallet or Stripe)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_address')
+      .select('wallet_address, stripe_account_id, stripe_onboarding_complete')
       .eq('id', userId)
       .single()
 
-    if (!profile?.wallet_address) {
-      console.error('[mark-paid] No wallet address found')
+    // Determine payment recipient
+    let recipientAddress = null
+    let paymentMethod = 'manual'
+
+    if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
+      // User has Stripe connected - will fetch last 4 from Stripe API
+      paymentMethod = 'stripe'
+      recipientAddress = `Stripe: ${profile.stripe_account_id.slice(-4)}`
+    } else if (profile?.wallet_address) {
+      // Fallback to wallet
+      paymentMethod = 'usdc'
+      recipientAddress = profile.wallet_address
+    } else {
+      console.error('[mark-paid] No payment method connected')
       return NextResponse.json(
-        { error: 'Wallet not connected. Please connect a wallet in Settings.' },
+        { error: 'No payment method connected. Please connect Stripe or a wallet in Settings.' },
         { status: 400 }
       )
     }
 
-    console.log('[mark-paid] Wallet address found')
+    console.log('[mark-paid] Payment method:', paymentMethod, 'Recipient:', recipientAddress)
 
     // Generate transaction hash for testing
     const timestamp = Date.now()
@@ -111,7 +123,8 @@ export async function POST(
     const updatePayload = {
       status: 'paid',
       paid_date: new Date().toISOString(),
-      payment_method: 'usdc',
+      payment_method: paymentMethod,
+      payment_recipient: recipientAddress,
       updated_at: new Date().toISOString()
     }
     console.log('[mark-paid] Update payload:', updatePayload)

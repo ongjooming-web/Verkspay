@@ -24,9 +24,14 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
     const searchParams = new URLSearchParams(window.location.search)
     if (searchParams.get('stripe') === 'success') {
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
-      // Reload data after successful onboarding
-      setTimeout(() => loadStripeData(), 1000)
+      // Reload data after successful onboarding with longer delay
+      setTimeout(() => {
+        loadStripeData()
+        setSuccess(false)
+      }, 2000)
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
     }
   }, [])
 
