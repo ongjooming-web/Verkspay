@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ES2017",
     "useDefineForClassFields": true,
     "lib": [
-      "ES2021",
+      "ES2017",
       "DOM",
       "DOM.Iterable"
     ],
+    "useUnknownInCatchVariables": false,
     "module": "ESNext",
     "skipLibCheck": true,
     "esModuleInterop": true,
