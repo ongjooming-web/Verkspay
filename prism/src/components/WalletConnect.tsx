@@ -65,18 +65,29 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
           showQrModal: true
         })
 
-        // Connect - this returns void, accounts come from the provider state
-        await provider.connect()
+        // Connect and get accounts
+        const accounts = await provider.connect()
         
-        // Get accounts from provider
-        const accounts = provider.accounts
-        if (!accounts || accounts.length === 0) {
-          setError('No accounts found')
-          setLoading(false)
-          return
+        // If connect returns accounts, use them; otherwise get from provider state
+        let address: string
+        if (Array.isArray(accounts) && accounts.length > 0) {
+          address = accounts[0]
+        } else if (provider.accounts && provider.accounts.length > 0) {
+          address = provider.accounts[0]
+        } else {
+          // Try requesting accounts directly
+          const requestedAccounts = (await provider.request({
+            method: 'eth_accounts'
+          })) as string[]
+          
+          if (!requestedAccounts || requestedAccounts.length === 0) {
+            setError('No accounts found. Please approve connection in your wallet.')
+            setLoading(false)
+            return
+          }
+          address = requestedAccounts[0]
         }
 
-        const address = accounts[0]
         console.log('[WalletConnect] Connected via WalletConnect:', address)
 
         // Sign message for auth
