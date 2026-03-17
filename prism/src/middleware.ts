@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -12,34 +11,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Create Supabase client
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
-        },
-      },
-    }
-  )
-
-  // Check if user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Check if auth session exists in cookies
+  const authToken = request.cookies.get('sb-fqdipubbyvekhipknxnr-auth-token')?.value
+  const hasSession = !!authToken
 
   // Protected routes
   const protectedRoutes = ['/dashboard', '/clients', '/invoices', '/proposals', '/settings']
@@ -47,25 +21,25 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedRoute) {
     // User trying to access protected route
-    if (!user) {
+    if (!hasSession) {
       // No session - redirect to login
       return NextResponse.redirect(new URL('/login', request.url))
     }
     // User is authenticated - allow access
-    return response
+    return NextResponse.next()
   }
 
   // Auth routes (/login)
   if (pathname === '/login') {
-    if (user) {
+    if (hasSession) {
       // Already authenticated - redirect to dashboard
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     // Not authenticated - allow access to login page
-    return response
+    return NextResponse.next()
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
