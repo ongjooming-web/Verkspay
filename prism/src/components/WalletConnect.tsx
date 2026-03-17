@@ -72,10 +72,23 @@ const WALLET_PROVIDERS = {
         const accounts: string[] = await provider.request({
           method: 'eth_requestAccounts'
         })
-        return accounts[0] || ''
+        if (!accounts || accounts.length === 0) throw new Error('No accounts found')
+        return accounts[0]
       } catch (err: any) {
         if (err.code === 4001) throw new Error('Connection cancelled')
         throw err
+      }
+    },
+    getConnectedAccount: async (): Promise<string | null> => {
+      const provider = WALLET_PROVIDERS.metamask.getProvider()
+      if (!provider) return null
+      try {
+        const accounts: string[] = await provider.request({
+          method: 'eth_accounts'
+        })
+        return accounts?.[0] || null
+      } catch {
+        return null
       }
     },
     disconnect: async (): Promise<void> => {
@@ -101,6 +114,56 @@ export function WalletConnectComponent({
     // Check if on mobile
     setIsMobile(isMobileBrowser())
     loadWalletData()
+    
+    // Auto-detect wallet on return from deep link
+    const checkWalletAuto = async () => {
+      // Small delay to allow wallet providers to load
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      if (isMobileBrowser()) {
+        // Check MetaMask
+        if (isWalletInjected('metamask')) {
+          const provider = WALLET_PROVIDERS.metamask.getProvider()
+          if (provider) {
+            try {
+              const accounts: string[] = await provider.request({
+                method: 'eth_accounts'
+              })
+              if (accounts?.[0]) {
+                const account = accounts[0]
+                console.log('[WalletConnect] Auto-detected MetaMask:', account)
+                setConnectedAddress(account)
+                // Save to DB
+                const { data: userData } = await supabase.auth.getUser()
+                if (userData?.user?.id) {
+                  await supabase.from('profiles').update({ wallet_address: account }).eq('id', userData.user.id)
+                }
+                return
+              }
+            } catch (err) {
+              console.error('[WalletConnect] MetaMask auto-detect error:', err)
+            }
+          }
+        }
+        
+        // Check Phantom
+        if (isWalletInjected('phantom')) {
+          const provider = WALLET_PROVIDERS.phantom.getProvider()
+          if (provider?.publicKey) {
+            const account = provider.publicKey.toString()
+            console.log('[WalletConnect] Auto-detected Phantom:', account)
+            setConnectedAddress(account)
+            // Save to DB
+            const { data: userData } = await supabase.auth.getUser()
+            if (userData?.user?.id) {
+              await supabase.from('profiles').update({ wallet_address: account }).eq('id', userData.user.id)
+            }
+          }
+        }
+      }
+    }
+    
+    checkWalletAuto()
   }, [])
 
   const loadWalletData = async () => {
