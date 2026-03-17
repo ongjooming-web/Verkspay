@@ -31,12 +31,11 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        // Verify user is authenticated
-        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser()
+        // Get authenticated user (middleware already verified this)
+        const { data: { user: authUser } } = await supabase.auth.getUser()
         
-        if (userError || !authUser) {
-          console.error('Not authenticated, redirecting to login')
-          // Use hard redirect instead of router.push for reliability
+        if (!authUser) {
+          // Fallback: middleware should have caught this
           window.location.href = '/login'
           return
         }
