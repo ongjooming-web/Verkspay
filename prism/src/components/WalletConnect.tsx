@@ -56,11 +56,10 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
         // Mobile or no injected provider: use WalletConnect
         const EthereumProvider = (await import('@walletconnect/ethereum-provider')).EthereumProvider
 
-        // @ts-ignore - WalletConnect v2 requires CAIP-2 format for chains, but types expect numbers
         provider = await EthereumProvider.init({
           projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-          chains: ['eip155:1', 'eip155:8453'], // Ethereum, Base (CAIP-2 format)
-          optionalChains: ['eip155:137', 'eip155:56', 'eip155:43114'], // Polygon, BSC, Avalanche
+          chains: [1, 8453], // Ethereum, Base
+          optionalChains: [137, 56, 43114], // Polygon, BSC, Avalanche
           methods: ['eth_sendTransaction', 'eth_signTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v4'],
           events: ['chainChanged', 'accountsChanged'],
           showQrModal: true
@@ -98,7 +97,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
             method: 'personal_sign',
             params: [message, address]
           },
-          'eip155:1' as unknown as number
+          1
         )) as string
 
         await saveWalletAddress(address, signature)
