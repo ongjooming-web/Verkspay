@@ -58,8 +58,8 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
         provider = await EthereumProvider.init({
           projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-          chains: [1, 8453], // Ethereum, Base
-          optionalChains: [137, 56, 43114], // Polygon, BSC, Avalanche
+          chains: ['eip155:1', 'eip155:8453'] as unknown as number[], // Ethereum, Base (CAIP-2 format)
+          optionalChains: ['eip155:137', 'eip155:56', 'eip155:43114'] as unknown as number[], // Polygon, BSC, Avalanche
           methods: ['eth_sendTransaction', 'eth_signTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v4'],
           events: ['chainChanged', 'accountsChanged'],
           showQrModal: true
