@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { WalletConnectComponent } from '@/components/WalletConnect'
 
 interface UserProfile {
   wallet_address?: string
@@ -269,45 +270,44 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Crypto Wallet Settings */}
+        {/* Wallet Connection */}
         <Card className="mb-6">
           <CardHeader>
-            <h2 className="text-2xl font-bold text-white">💰 Crypto Settings</h2>
-            <p className="text-gray-400 text-sm mt-1">Configure your USDC payment wallet</p>
+            <h2 className="text-2xl font-bold text-white">💰 USDC Wallet Connection</h2>
+            <p className="text-gray-400 text-sm mt-1">Connect your wallet to receive USDC payments</p>
           </CardHeader>
           <CardBody>
-            <form onSubmit={handleSaveProfile} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Wallet Address</label>
-                <input
-                  type="text"
-                  value={formData.wallet_address}
-                  onChange={(e) => setFormData({ ...formData, wallet_address: e.target.value })}
-                  placeholder="0x..."
-                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 font-mono"
-                />
-                <p className="text-gray-400 text-xs mt-2">Your Ethereum/Polygon/Base wallet for receiving USDC</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Network</label>
-                <select 
-                  value={formData.preferred_network}
-                  onChange={(e) => setFormData({ ...formData, preferred_network: e.target.value })}
-                  className="glass px-4 py-3 rounded-lg text-white w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
-                >
-                  <option value="base" className="bg-slate-900">Base (Recommended - Fast & Cheap)</option>
-                  <option value="ethereum" className="bg-slate-900">Ethereum (Mainnet)</option>
-                  <option value="polygon" className="bg-slate-900">Polygon (Scaling Solution)</option>
-                  <option value="solana" className="bg-slate-900">Solana</option>
-                </select>
-                <p className="text-gray-400 text-xs mt-2">Network where you'll receive USDC payments</p>
-              </div>
-              <div>
-                <Button type="submit" disabled={saving} className="w-full md:w-auto">
-                  {saving ? '⏳ Saving...' : '✓ Save Crypto Settings'}
-                </Button>
-              </div>
-            </form>
+            <WalletConnectComponent 
+              onWalletConnected={(address, network) => {
+                console.log('Wallet connected:', address, network)
+              }}
+              onWalletDisconnected={() => {
+                console.log('Wallet disconnected')
+              }}
+            />
+          </CardBody>
+        </Card>
+
+        {/* Webhook Configuration (Step 2 Foundation) */}
+        <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
+          <CardHeader>
+            <h2 className="text-2xl font-bold text-white">🔔 Payment Detection (Coming Soon)</h2>
+            <p className="text-gray-400 text-sm mt-1">Automatic payment confirmation via webhooks</p>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div className="glass rounded-lg p-4 border-blue-400/30">
+              <p className="text-blue-300 text-sm mb-3">
+                <strong>Phase 3 Step 2:</strong> This feature will automatically confirm USDC payments using Alchemy webhooks.
+              </p>
+              <ul className="text-gray-300 text-sm space-y-2 ml-4 list-disc">
+                <li>Real-time payment notifications</li>
+                <li>Automatic invoice status updates</li>
+                <li>Transaction history tracking</li>
+              </ul>
+            </div>
+            <Button disabled className="w-full md:w-auto opacity-50 cursor-not-allowed">
+              🔒 Coming Soon - Phase 3 Step 2
+            </Button>
           </CardBody>
         </Card>
 

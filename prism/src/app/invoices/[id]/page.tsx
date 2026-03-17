@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { USDCPaymentCard } from '@/components/USDCPaymentCard'
 import Link from 'next/link'
 
 interface Invoice {
@@ -368,19 +369,29 @@ export default function InvoiceDetail() {
           </CardBody>
         </Card>
 
-        {/* Payment Section */}
+        {/* USDC Payment Card */}
+        {invoice.status !== 'paid' && (
+          <USDCPaymentCard
+            invoiceId={invoiceId}
+            invoiceAmount={invoice.amount}
+            invoiceNumber={invoice.invoice_number}
+            status={invoice.status}
+          />
+        )}
+
+        {/* Legacy Payment Section (for manual marking) */}
         {invoice.status !== 'paid' && (
           <Card className="mb-8">
             <CardHeader>
-              <h2 className="text-2xl font-bold text-white">💳 Payment</h2>
+              <h2 className="text-2xl font-bold text-white">💳 Mark as Paid</h2>
             </CardHeader>
             <CardBody className="space-y-4">
-              <p className="text-gray-400">Mark this invoice as paid via USDC</p>
+              <p className="text-gray-400">Manually confirm receipt of payment</p>
               <Button 
                 onClick={() => setShowPaymentModal(true)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/50 w-full md:w-auto"
               >
-                💰 Mark as Paid (USDC)
+                ✓ Confirm Payment Received
               </Button>
             </CardBody>
           </Card>

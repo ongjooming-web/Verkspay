@@ -16,6 +16,7 @@ interface Invoice {
   status: string
   due_date: string
   created_at: string
+  payment_method?: string
 }
 
 type FilterStatus = 'all' | 'draft' | 'sent' | 'paid' | 'overdue'
@@ -365,10 +366,17 @@ export default function Invoices() {
                           Due: {new Date(invoice.due_date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-4 w-full md:w-auto">
-                        <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(invoice.status)}`}>
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
+                      <div className="flex items-center gap-4 w-full md:w-auto flex-wrap md:flex-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(invoice.status)}`}>
+                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                          </span>
+                          {invoice.status !== 'paid' && (
+                            <span className="px-3 py-2 rounded-full text-sm font-medium border border-green-400/50 bg-green-500/10 text-green-300">
+                              💰 USDC Ready
+                            </span>
+                          )}
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
