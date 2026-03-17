@@ -376,6 +376,11 @@ export default function InvoiceDetail() {
             invoiceAmount={invoice.amount}
             invoiceNumber={invoice.invoice_number}
             status={invoice.status}
+            onPaymentMarked={async () => {
+              // Refresh invoice details after payment is marked
+              await fetchInvoiceDetails()
+              await fetchPaymentRecords()
+            }}
           />
         )}
 

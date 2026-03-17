@@ -10,13 +10,15 @@ interface USDCPaymentCardProps {
   invoiceAmount: number
   invoiceNumber: string
   status?: string
+  onPaymentMarked?: () => void
 }
 
 export function USDCPaymentCard({
   invoiceId,
   invoiceAmount,
   invoiceNumber,
-  status = 'pending'
+  status = 'pending',
+  onPaymentMarked
 }: USDCPaymentCardProps) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [network, setNetwork] = useState<'base' | 'ethereum' | 'solana'>('base')
@@ -24,6 +26,9 @@ export function USDCPaymentCard({
   const [error, setError] = useState<string | null>(null)
   const [paymentIntent, setPaymentIntent] = useState<any>(null)
   const [showQR, setShowQR] = useState(false)
+  const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false)
+  const [markAsPayedError, setMarkAsPayedError] = useState<string | null>(null)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   const NETWORK_INFO = {
     base: {
@@ -122,6 +127,70 @@ export function USDCPaymentCard({
       setError('Failed to load payment information')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleMarkAsPaid = async () => {
+    setIsMarkingAsPaid(true)
+    setMarkAsPayedError(null)
+    setShowSuccessMessage(false)
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData?.user?.id) {
+        setMarkAsPayedError('User not authenticated')
+        setIsMarkingAsPaid(false)
+        return
+      }
+
+      if (!walletAddress) {
+        setMarkAsPayedError('Wallet address not found')
+        setIsMarkingAsPaid(false)
+        return
+      }
+
+      // Get the session to get the JWT token
+      const { data: session } = await supabase.auth.getSession()
+      if (!session?.session?.access_token) {
+        setMarkAsPayedError('Authentication token not found')
+        setIsMarkingAsPaid(false)
+        return
+      }
+
+      // Call the API endpoint
+      const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setMarkAsPayedError(data.error || 'Failed to mark invoice as paid')
+        setIsMarkingAsPaid(false)
+        return
+      }
+
+      // Show success message
+      setShowSuccessMessage(true)
+      setPaymentIntent(data.paymentIntent)
+
+      // Call callback if provided
+      if (onPaymentMarked) {
+        onPaymentMarked()
+      }
+
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSuccessMessage(false)
+      }, 3000)
+    } catch (err: any) {
+      setMarkAsPayedError(err.message || 'An error occurred')
+    } finally {
+      setIsMarkingAsPaid(false)
     }
   }
 
@@ -273,6 +342,64 @@ export function USDCPaymentCard({
         <div className="glass rounded-lg p-3 border-amber-400/30 bg-amber-500/10">
           <p className="text-amber-300 text-sm">
             <strong>Note:</strong> {network === 'base' ? 'Base has minimal transaction fees (~$0.01)' : network === 'ethereum' ? 'Ethereum fees vary by network congestion' : 'Solana has low transaction fees (~$0.00025)'}
+          </p>
+        </div>
+
+        {/* Error Message */}
+        {markAsPayedError && (
+          <div className="glass rounded-lg p-4 border-red-500/30 bg-red-500/10">
+            <p className="text-red-300 text-sm">
+              <span className="font-bold">❌ Error:</span> {markAsPayedError}
+            </p>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
+            <p className="text-green-300 text-sm">
+              <span className="font-bold">✓ Success!</span> Invoice marked as paid
+            </p>
+            {paymentIntent?.transaction_hash && (
+              <p className="text-gray-400 text-xs mt-2 font-mono break-all">
+                Transaction: {paymentIntent.transaction_hash}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Mark as Paid Button */}
+        <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
+          <p className="text-gray-400 text-sm">
+            💳 <strong>Testing?</strong> Manually mark as paid for testing purposes:
+          </p>
+          <button
+            onClick={handleMarkAsPaid}
+            disabled={isMarkingAsPaid}
+            className={`
+              w-full px-4 py-3 rounded-lg font-semibold transition
+              flex items-center justify-center gap-2
+              ${
+                isMarkingAsPaid
+                  ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 hover:shadow-lg hover:shadow-green-500/50'
+              }
+            `}
+          >
+            {isMarkingAsPaid ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Marking as Paid...</span>
+              </>
+            ) : (
+              <>
+                <span>✓</span>
+                <span>Mark as Paid (Test)</span>
+              </>
+            )}
+          </button>
+          <p className="text-gray-500 text-xs italic">
+            This creates a test payment record. In production, payments are tracked automatically via webhook.
           </p>
         </div>
       </CardBody>
