@@ -97,7 +97,7 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
             method: 'personal_sign',
             params: [message, address]
           },
-          'eip155:1'
+          1
         )) as string
 
         await saveWalletAddress(address, signature)
