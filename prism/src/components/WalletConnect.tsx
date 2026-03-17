@@ -1,24 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
-
-// Lazy load AppKit component - SSR breaks wallet libs
-const WalletConnectAppKit = dynamic(
-  () => import('./WalletConnectAppKit').then(mod => ({ default: mod.WalletConnectAppKit })),
-  { ssr: false, loading: () => <div className="text-gray-400 text-sm">Loading wallet...</div> }
-)
 
 interface WalletConnectProps {
   onWalletConnected?: (address: string) => void
 }
 
 export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps) {
-  const [useMobile, setUseMobile] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,23 +18,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
-    
-    // Detect mobile or lack of window.ethereum
-    const isMobileDevice = /iPhone|iPad|Android/i.test(navigator.userAgent)
-    const hasEthereum = typeof window !== 'undefined' && !!window.ethereum
-    
-    // Use AppKit if mobile OR no window.ethereum available
-    const shouldUseMobile = isMobileDevice || !hasEthereum
-    setUseMobile(shouldUseMobile)
-    
-    console.log('[WalletConnect] Detection:', {
-      isMobileDevice,
-      hasEthereum,
-      useMobile: shouldUseMobile,
-      userAgent: navigator.userAgent
-    })
-    
     loadWalletData()
   }, [])
 
@@ -74,7 +48,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  // Direct connection via window.ethereum (desktop with MetaMask/Phantom)
   const handleConnectWallet = async () => {
     setLoading(true)
     setError(null)
@@ -103,22 +76,6 @@ export function WalletConnectComponent({ onWalletConnected }: WalletConnectProps
 
       const address = accounts[0]
       console.log('[WalletConnect] Connected address:', address)
-
-      // Sign message for authentication
-      const message = `Sign in to Prism
-Wallet: ${address}
-Timestamp: ${Date.now()}`
-
-      try {
-        const signature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [message, address]
-        }) as string
-        console.log('[WalletConnect] Message signed:', signature)
-      } catch (signErr) {
-        console.warn('[WalletConnect] Message signing failed, continuing without signature:', signErr)
-        // Continue without signature - address is already verified by connection
-      }
 
       // Get current user
       const { data: userData } = await supabase.auth.getUser()
@@ -180,15 +137,6 @@ Timestamp: ${Date.now()}`
     } catch (err) {
       console.error('[WalletConnect] Disconnect error:', err)
     }
-  }
-
-  // Return AppKit component for mobile, direct ethereum for desktop
-  if (!isMounted) {
-    return null
-  }
-
-  if (useMobile) {
-    return <WalletConnectAppKit onWalletConnected={onWalletConnected} />
   }
 
   return (
