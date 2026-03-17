@@ -42,12 +42,9 @@ export default function Login() {
         setLoading(false)
       } else {
         console.log('Login successful:', data)
-        setSuccess('Login successful! Redirecting...')
-        
-        // Wait a moment then redirect
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
+        // Immediate redirect - don't wait
+        console.log('Redirecting to /dashboard now...')
+        window.location.href = '/dashboard'
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)
