@@ -57,108 +57,96 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-6 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-6 leading-tight">
-                Proposals, contracts, invoices — and crypto. Finally together.
-              </h1>
-              <p className="text-xl text-gray-300 mb-8">
-                Manage your entire freelance operation in one place. Get paid in USDC instantly. No middlemen, no delays.
-              </p>
-              <div className="flex gap-4">
-                <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-white">
-                  Start for Free
-                </Link>
-                <Link href="/dashboard" className="border border-white/30 backdrop-blur-xl px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition text-white">
-                  View Demo
-                </Link>
-              </div>
+        <section className="max-w-7xl mx-auto px-6 py-24">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+              Get paid faster. Chase invoices less.
+            </h1>
+            <p className="text-xl text-gray-300 mb-4">
+              Prism is invoicing built for freelancers — smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
+            </p>
+            
+            {/* Social Proof */}
+            <div className="flex justify-center items-center gap-2 mb-8 text-sm text-gray-400">
+              <span>✓ Trusted by freelancers in 10+ countries</span>
             </div>
-            <div className="backdrop-blur-xl border border-white/20 rounded-2xl p-8 bg-white/5">
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Revenue</span>
-                  <span className="text-2xl font-bold text-green-400">$12.5K</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Invoices</span>
-                  <span className="text-2xl font-bold text-blue-400">24</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Clients</span>
-                  <span className="text-2xl font-bold text-purple-400">8</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Proposals</span>
-                  <span className="text-2xl font-bold text-pink-400">5</span>
-                </div>
-              </div>
+
+            <div className="flex gap-4 justify-center">
+              <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-white">
+                Start for Free
+              </Link>
+              <Link href="/pricing" className="border border-white/30 backdrop-blur-xl px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition text-white">
+                View Pricing
+              </Link>
             </div>
           </div>
         </section>
 
         {/* Features Section */}
         <section id="features" className="max-w-7xl mx-auto px-6 py-20">
-          <h2 className="text-4xl font-bold text-center mb-16">Everything You Need</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h2 className="text-4xl font-bold text-center mb-16">Designed for Freelancers</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
             {[
-              { icon: '📄', title: 'Proposals & Contracts', desc: 'Create professional proposals in minutes. Sign and track every contract.' },
+              { icon: '🧾', title: 'Smart Invoicing', desc: 'Create, send, and track invoices. Get automatic payment reminders so clients actually pay on time.' },
+              { icon: '📧', title: 'Payment Reminders', desc: 'Day 1 polite, Day 3 follow-up, Day 7 urgent. Stop chasing overdue invoices manually.' },
+              { icon: '💳', title: 'Stripe Payments', desc: 'Accept payments directly. Track partial payments. See exactly who owes you money.' },
+            ].map((feature, idx) => (
+              <div key={idx} className="backdrop-blur-xl border border-white/20 rounded-xl p-8 bg-white/5 hover:bg-white/10 transition">
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                <p className="text-gray-400 text-sm">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Additional Features Below */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[
               { icon: '👥', title: 'Client CRM', desc: 'Keep all client info organized. Never lose a conversation.' },
-              { icon: '🧾', title: 'Invoicing', desc: 'Create, send, and track invoices instantly. Know what\'s owed.' },
-              { icon: '⚙️', title: 'Team Management', desc: 'Collaborate with teammates. Assign tasks and manage permissions.' },
-              { icon: '💰', title: 'Crypto Payments', desc: 'Accept USDC on Base, Ethereum & Solana. Instant settlement.' },
               { icon: '📊', title: 'Dashboard', desc: 'Real-time visibility into revenue, pipeline, and cash flow.' },
             ].map((feature, idx) => (
-              <div key={idx} className="backdrop-blur-xl border border-white/20 rounded-xl p-6 bg-white/5 hover:bg-white/10 transition">
-                <div className="text-3xl mb-3">{feature.icon}</div>
+              <div key={idx} className="backdrop-blur-xl border border-white/20 rounded-xl p-8 bg-white/5 hover:bg-white/10 transition">
+                <div className="text-4xl mb-4">{feature.icon}</div>
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.desc}</p>
+                <p className="text-gray-400 text-sm">{feature.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Crypto Section */}
-        <section id="crypto" className="max-w-7xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-4xl font-bold mb-6">Crypto Payments Built In</h2>
-          <div className="backdrop-blur-xl border border-white/20 rounded-xl p-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 mb-8">
-            <p className="text-2xl font-semibold mb-4">💙 USDC on Base, Ethereum & Solana</p>
-            <p className="text-gray-300 mb-6">Get paid instantly. No payment processors, no 3% fees, no waiting. Settle anywhere in the world in seconds.</p>
+        {/* Crypto Section - Secondary Feature */}
+        <section id="crypto" className="max-w-7xl mx-auto px-6 py-20">
+          <div className="backdrop-blur-xl border border-white/20 rounded-xl p-12 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold mb-4">Also accept crypto — for instant global payments</h2>
+              <p className="text-lg text-gray-300 mb-6">
+                USDC on Base, Ethereum & Solana. Get paid instantly with zero payment processor fees. Settle anywhere in the world in seconds.
+              </p>
+              <p className="text-sm text-gray-400">Coming in Phase 2 — free for all plans when launched.</p>
+            </div>
           </div>
         </section>
 
-        {/* Pricing Section */}
-        <section id="pricing" className="max-w-7xl mx-auto px-6 py-20">
-          <h2 className="text-4xl font-bold text-center mb-16">Simple Pricing That Scales</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Free', price: '$0', features: ['5 invoices/month', '3 payment links/month', 'Basic CRM', 'Contract templates', 'Community support'] },
-              { name: 'Pro', price: '$49', features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe integration', 'Auto-confirmation', 'Email support', 'Advanced reporting'] },
-              { name: 'Enterprise', price: '$199', features: ['Everything in Pro', 'Team management (5 users)', 'API access', 'Webhooks', 'Dedicated support', 'Custom branding'] },
-            ].map((plan, idx) => (
-              <div key={idx} className={`backdrop-blur-xl border rounded-xl p-8 transition ${idx === 1 ? 'border-purple-500 bg-purple-500/10 ring-2 ring-purple-500/50' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}>
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p className="text-3xl font-bold text-purple-400 mb-6">{plan.price}<span className="text-lg text-gray-400">/mo</span></p>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="text-gray-300 flex items-center gap-2">
-                      <span className="text-green-400">✓</span> {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/signup" className="w-full block text-center bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
-                  Get Started
-                </Link>
-              </div>
-            ))}
+        {/* Pricing CTA Section */}
+        <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 text-center">
+          <h2 className="text-4xl font-bold mb-6">Simple Pricing That Scales</h2>
+          <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+            Start free with 5 invoices/month. Upgrade to Pro when you're ready to scale.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-white">
+              View Pricing
+            </Link>
+            <Link href="/pricing" className="border border-white/30 backdrop-blur-xl px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition text-white">
+              Compare Plans
+            </Link>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to streamline your freelance business?</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Join freelancers and agencies using Prism to manage proposals, contracts, invoices, and get paid in crypto.</p>
+          <h2 className="text-4xl font-bold mb-6">Ready to get paid faster?</h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Join freelancers using Prism to manage invoices, collect payments, and track cash flow without the headache.</p>
           <Link href="/signup" className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition text-white text-lg">
             Start Free Today
           </Link>
