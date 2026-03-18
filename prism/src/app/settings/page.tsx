@@ -225,52 +225,6 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Billing */}
-        <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-2xl font-bold text-white">Billing & Plan</h2>
-            <p className="text-gray-400 text-sm mt-1">View and manage your subscription</p>
-          </CardHeader>
-          <CardBody className="space-y-6">
-            <div className="flex justify-between items-center py-4 border-b border-white/10">
-              <div>
-                <h3 className="font-bold text-white text-lg">Current Plan</h3>
-                <p className="text-gray-400 text-sm">Free Plan</p>
-              </div>
-              <span className="text-blue-400 font-semibold">$0/month</span>
-            </div>
-            <div className="py-4">
-              <h3 className="font-bold text-white mb-4">Plan Features</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">Unlimited clients</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">Unlimited invoices</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">Proposal management</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">Contract templates</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">USDC crypto payments</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-green-400 text-lg">✓</span>
-                  <span className="text-gray-300">Email notifications</span>
-                </div>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
         {/* Payment Methods */}
         <div className="mb-6 space-y-6">
           {/* Stripe Payments */}
@@ -484,13 +438,25 @@ function BillingSection() {
       <CardBody className="space-y-6">
         {/* Current Plan */}
         <div className="glass rounded-lg p-4 border-blue-400/30">
-          <p className="text-gray-400 text-sm mb-1">Current Plan</p>
-          <p className="text-2xl font-bold text-blue-400">{tierDisplay}</p>
-          {tier !== 'free' && (
-            <p className="text-gray-400 text-sm mt-2">
-              Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
-            </p>
-          )}
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Current Plan</p>
+              <p className="text-2xl font-bold text-blue-400">{tierDisplay}</p>
+              {tier !== 'free' && (
+                <p className="text-gray-400 text-sm mt-2">
+                  Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
+                </p>
+              )}
+            </div>
+            {tier === 'free' && (
+              <Button
+                onClick={() => handleUpgrade('pro')}
+                className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 whitespace-nowrap"
+              >
+                Upgrade →
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Usage Stats */}
