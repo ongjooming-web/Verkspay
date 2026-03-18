@@ -118,7 +118,9 @@ export function PaymentCard({
         return
       }
       
-      if (!session?.access_token) {
+      let accessToken = session?.access_token
+      
+      if (!accessToken) {
         console.log('[PaymentCard] No session found, attempting refresh...')
         // Try to refresh if no session
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
@@ -128,10 +130,9 @@ export function PaymentCard({
           setIsMarkingAsPaid(false)
           return
         }
-        session = refreshData.session
+        accessToken = refreshData.session.access_token
       }
 
-      const accessToken = session.access_token
       console.log('[PaymentCard] Got access token, length:', accessToken.length)
       console.log('[PaymentCard] Marking invoice as paid:', invoiceId)
 
