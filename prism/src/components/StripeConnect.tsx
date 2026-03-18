@@ -183,6 +183,36 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
             <span className="text-gray-400 text-sm">Loading payment setup...</span>
           </div>
+        ) : stripeAccountId && !stripeOnboardingComplete ? (
+          // Stripe connected but onboarding incomplete
+          <>
+            <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 border border-yellow-400/50 rounded-lg w-fit">
+              <span className="text-yellow-400 text-lg">⚠️</span>
+              <span className="text-yellow-300 font-semibold text-sm">Stripe Pending Verification</span>
+            </div>
+
+            <div className="glass rounded-lg p-4 border-yellow-400/30">
+              <p className="text-gray-400 text-sm mb-2">Stripe Account ID</p>
+              <p className="text-white font-mono text-xs break-all">{stripeAccountId}</p>
+              <p className="text-yellow-300 text-xs mt-3">
+                ⚠️ <strong>Account is connected but verification is pending.</strong> Complete identity verification and add a bank account to enable payments.
+              </p>
+            </div>
+
+            <Button
+              onClick={handleConnectStripe}
+              className="w-full px-4 py-2 bg-yellow-600/70 hover:bg-yellow-700/70 text-white rounded-lg transition"
+            >
+              Complete Verification
+            </Button>
+
+            <Button
+              onClick={handleDisconnectStripe}
+              className="w-full px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg transition"
+            >
+              Disconnect Stripe
+            </Button>
+          </>
         ) : stripeAccountId && stripeOnboardingComplete ? (
           <>
             <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
