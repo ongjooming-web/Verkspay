@@ -29,6 +29,9 @@ export function Navigation() {
           <Link href="/invoices" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Invoices
           </Link>
+          <Link href="/pricing" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
+            Pricing
+          </Link>
           <Link href="/proposals" className="text-gray-300 hover:text-blue-400 transition-colors font-medium">
             Proposals
           </Link>

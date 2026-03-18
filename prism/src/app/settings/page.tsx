@@ -316,6 +316,9 @@ export default function Settings() {
           </CardBody>
         </Card>
 
+        {/* Billing Section */}
+        <BillingSection />
+
         {/* Danger Zone */}
         <Card className="border-red-500/30 bg-gradient-to-r from-red-500/5 to-red-500/10">
           <CardHeader className="border-b border-red-500/20">
@@ -341,5 +344,209 @@ export default function Settings() {
         </Card>
       </div>
     </div>
+  )
+}
+
+/**
+ * Billing Section Component
+ */
+function BillingSection() {
+  const [profile, setProfile] = useState<any>(null)
+  const [invoiceCount, setInvoiceCount] = useState(0)
+  const [paymentLinkCount, setPaymentLinkCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadBillingData()
+  }, [])
+
+  const loadBillingData = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData?.user) return
+
+      // Get profile with subscription info
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('subscription_tier, subscription_status')
+        .eq('id', userData.user.id)
+        .single()
+
+      setProfile(profileData)
+
+      // Count invoices this month
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+      const { data: invoices, count: invCount } = await supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userData.user.id)
+        .gte('created_at', monthStart.toISOString())
+
+      setInvoiceCount(invCount || 0)
+
+      // Count payment links this month
+      const { data: links, count: linkCount } = await supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userData.user.id)
+        .eq('stripe_payment_session_id IS NOT', null)
+        .gte('payment_link_generated_at', monthStart.toISOString())
+
+      setPaymentLinkCount(linkCount || 0)
+    } catch (err) {
+      console.error('Error loading billing data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+    try {
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+
+      if (!token) {
+        alert('Session expired. Please refresh and try again.')
+        return
+      }
+
+      const response = await fetch('/api/billing/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ plan })
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error('Error upgrading:', err)
+      alert('Failed to start upgrade. Please try again.')
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+
+      if (!token) {
+        alert('Session expired. Please refresh and try again.')
+        return
+      }
+
+      const response = await fetch('/api/billing/customer-portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error('Error opening portal:', err)
+      alert('Failed to open billing portal. Please try again.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card className="mb-6 border-blue-500/30">
+        <CardBody>
+          <div className="animate-pulse">Loading billing info...</div>
+        </CardBody>
+      </Card>
+    )
+  }
+
+  const tier = profile?.subscription_tier || 'free'
+  const tierDisplay = tier.charAt(0).toUpperCase() + tier.slice(1)
+  const invoiceLimit = tier === 'free' ? 5 : Infinity
+  const linkLimit = tier === 'free' ? 3 : Infinity
+
+  return (
+    <Card className="mb-6 border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+      <CardHeader>
+        <h2 className="text-2xl font-bold text-white">💳 Subscription</h2>
+      </CardHeader>
+      <CardBody className="space-y-6">
+        {/* Current Plan */}
+        <div className="glass rounded-lg p-4 border-blue-400/30">
+          <p className="text-gray-400 text-sm mb-1">Current Plan</p>
+          <p className="text-2xl font-bold text-blue-400">{tierDisplay}</p>
+          {tier !== 'free' && (
+            <p className="text-gray-400 text-sm mt-2">
+              Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Usage Stats */}
+        {tier === 'free' && (
+          <div className="space-y-3">
+            <p className="text-gray-400 text-sm font-semibold">Usage This Month</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="glass rounded-lg p-3 border-yellow-400/30 bg-yellow-500/10">
+                <p className="text-yellow-300 text-sm font-semibold">{invoiceCount}/5</p>
+                <p className="text-gray-400 text-xs">Invoices</p>
+              </div>
+              <div className="glass rounded-lg p-3 border-yellow-400/30 bg-yellow-500/10">
+                <p className="text-yellow-300 text-sm font-semibold">{paymentLinkCount}/3</p>
+                <p className="text-gray-400 text-xs">Payment Links</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 flex-wrap">
+          {tier === 'free' && (
+            <>
+              <Button
+                onClick={() => handleUpgrade('pro')}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600"
+              >
+                Upgrade to Pro - $49/mo
+              </Button>
+              <Button
+                onClick={() => handleUpgrade('enterprise')}
+                variant="outline"
+                className="flex-1 border-purple-400/50 text-purple-300 hover:bg-purple-500/10"
+              >
+                Enterprise - $199/mo
+              </Button>
+            </>
+          )}
+
+          {tier !== 'free' && (
+            <Button
+              onClick={handleManageSubscription}
+              className="w-full bg-blue-600/70 hover:bg-blue-700/70 text-white"
+            >
+              📋 Manage Subscription
+            </Button>
+          )}
+        </div>
+
+        {/* Info */}
+        <p className="text-gray-400 text-xs">
+          {tier === 'free'
+            ? 'Free tier limited to 5 invoices and 3 payment links per month.'
+            : 'You have access to all Pro features including unlimited invoices and payment links.'}
+        </p>
+      </CardBody>
+    </Card>
   )
 }
