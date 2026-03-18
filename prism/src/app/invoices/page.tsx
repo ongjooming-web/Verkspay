@@ -19,7 +19,7 @@ interface Invoice {
   payment_method?: string
 }
 
-type FilterStatus = 'all' | 'draft' | 'sent' | 'paid' | 'overdue'
+type FilterStatus = 'all' | 'unpaid' | 'paid' | 'paid_partial' | 'overdue'
 type SortBy = 'date' | 'amount' | 'due_date'
 
 export default function Invoices() {
@@ -34,6 +34,19 @@ export default function Invoices() {
   })
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  
+  // Auto-update overdue status based on due_date
+  const updateOverdueStatus = async () => {
+    const now = new Date()
+    for (const invoice of invoices) {
+      if (invoice.status !== 'paid' && new Date(invoice.due_date) < now && invoice.status !== 'overdue') {
+        await supabase
+          .from('invoices')
+          .update({ status: 'overdue' })
+          .eq('id', invoice.id)
+      }
+    }
+  }
   const [sortBy, setSortBy] = useState<SortBy>('date')
   const [searchTerm, setSearchTerm] = useState('')
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -159,7 +172,7 @@ export default function Invoices() {
           client_id: formData.client_id,
           amount: parseFloat(formData.amount),
           due_date: formData.due_date,
-          status: 'draft',
+          status: 'unpaid',
           description: formData.description,
         },
       ])
@@ -182,9 +195,20 @@ export default function Invoices() {
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'paid': return 'bg-green-500/20 border-green-400/30 text-green-300'
-      case 'draft': return 'bg-gray-500/20 border-gray-400/30 text-gray-300'
+      case 'paid_partial': return 'bg-amber-500/20 border-amber-400/30 text-amber-300'
+      case 'unpaid': return 'bg-blue-500/20 border-blue-400/30 text-blue-300'
       case 'overdue': return 'bg-red-500/20 border-red-400/30 text-red-300'
-      default: return 'bg-blue-500/20 border-blue-400/30 text-blue-300'
+      default: return 'bg-gray-500/20 border-gray-400/30 text-gray-300'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch(status) {
+      case 'paid': return 'Paid'
+      case 'paid_partial': return 'Partially Paid'
+      case 'unpaid': return 'Unpaid'
+      case 'overdue': return 'Overdue'
+      default: return status
     }
   }
 
@@ -215,12 +239,10 @@ export default function Invoices() {
     .reduce((sum, inv) => sum + inv.amount, 0)
   
   const pendingAmount = invoices
-    .filter(inv => inv.status !== 'paid')
+    .filter(inv => inv.status === 'unpaid' || inv.status === 'paid_partial' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.amount, 0)
 
-  const overdue = invoices.filter(inv => 
-    inv.status !== 'paid' && new Date(inv.due_date) < new Date()
-  ).length
+  const overdueCount = invoices.filter(inv => inv.status === 'overdue').length
 
   return (
     <div className="min-h-screen relative z-10">
@@ -257,7 +279,7 @@ export default function Invoices() {
           <Card className="hover:scale-105 hover:border-red-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Overdue Invoices</p>
-              <p className="text-3xl font-bold text-red-400">{overdue}</p>
+              <p className="text-3xl font-bold text-red-400">{overdueCount}</p>
             </CardBody>
           </Card>
         </div>
@@ -356,7 +378,7 @@ export default function Invoices() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {(['all', 'draft', 'sent', 'paid', 'overdue'] as FilterStatus[]).map(status => (
+              {(['all', 'unpaid', 'paid_partial', 'paid', 'overdue'] as FilterStatus[]).map(status => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
@@ -366,7 +388,7 @@ export default function Invoices() {
                       : 'glass text-gray-300 hover:text-white'
                   }`}
                 >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {status === 'all' ? 'All' : status === 'paid_partial' ? 'Partially Paid' : status.charAt(0).toUpperCase() + status.slice(1)}
                 </button>
               ))}
             </div>
