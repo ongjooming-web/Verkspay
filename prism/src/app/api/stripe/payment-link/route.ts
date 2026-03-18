@@ -1,6 +1,5 @@
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
 
 // Initialize Stripe with API version
@@ -15,18 +14,8 @@ export async function POST(req: NextRequest) {
     console.log('[stripe/payment-link] Creating payment link for invoice:', invoiceId)
     console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail)
 
-    // Verify auth token using shared helper
-    const { user, error: authError } = await requireAuth(req)
-    if (authError) {
-      console.error('[stripe/payment-link] Auth error:', authError)
-      return NextResponse.json(
-        { error: authError.message },
-        { status: authError.status }
-      )
-    }
-
-    const userId = user.id
-    console.log('[stripe/payment-link] Authenticated user:', userId)
+    // This is a PUBLIC endpoint - clients don't need to be logged in
+    // Verification happens by checking invoice exists and is unpaid
 
     if (!invoiceId || !amount || !clientEmail) {
       return NextResponse.json(
