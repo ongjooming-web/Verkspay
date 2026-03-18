@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+
+// Initialize Stripe client
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20'
+})
 
 // Use service role to write to database
 const supabase = createClient(
