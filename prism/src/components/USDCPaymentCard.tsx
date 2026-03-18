@@ -106,23 +106,31 @@ export function PaymentCard({
     setMarkAsPayedError(null)
 
     try {
-      const { data: session } = await supabase.auth.getSession()
-      if (!session?.session?.access_token) {
-        setMarkAsPayedError('Authentication failed')
+      console.log('[PaymentCard] Refreshing auth session...')
+      // Refresh session to ensure token is valid
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError || !refreshData.session?.access_token) {
+        console.error('[PaymentCard] Session refresh failed:', refreshError)
+        setMarkAsPayedError('Session expired. Please refresh the page and try again.')
         setIsMarkingAsPaid(false)
         return
       }
 
+      const accessToken = refreshData.session.access_token
+      console.log('[PaymentCard] Session refreshed, token available')
       console.log('[PaymentCard] Marking invoice as paid:', invoiceId)
 
-      // Call the mark-paid endpoint
+      // Call the mark-paid endpoint with refreshed token
+      console.log('[PaymentCard] Sending mark-paid request with token')
       const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.session.access_token}`
+          Authorization: `Bearer ${accessToken}`
         }
       })
+
+      console.log('[PaymentCard] Mark-paid response status:', response.status)
 
       const data = await response.json()
 

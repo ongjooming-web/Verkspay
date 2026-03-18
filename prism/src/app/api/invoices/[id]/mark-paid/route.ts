@@ -29,6 +29,8 @@ export async function POST(
 
     // Create client with the user's auth token
     const token = authHeader.replace('Bearer ', '')
+    console.log('[mark-paid] Token extracted from header, length:', token.length)
+    
     const userClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
@@ -47,10 +49,16 @@ export async function POST(
       error: authError
     } = await userClient.auth.getUser()
 
+    console.log('[mark-paid] Auth check - user:', user?.id, 'error:', authError?.message)
+
     if (authError || !user) {
-      console.error('[mark-paid] Auth error:', authError)
+      console.error('[mark-paid] Auth error details:', {
+        errorCode: authError?.name,
+        errorMessage: authError?.message,
+        errorStatus: authError?.status
+      })
       return NextResponse.json(
-        { error: 'Unauthorized: Invalid token' },
+        { error: 'Unauthorized: Invalid token', details: authError?.message },
         { status: 401 }
       )
     }
