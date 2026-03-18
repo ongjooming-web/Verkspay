@@ -1,27 +1,81 @@
-import { supabase } from './supabase'
+/**
+ * Shared auth helpers for API routes
+ * Use these to maintain consistent auth patterns across endpoints
+ */
 
-export async function getUser() {
+import { NextRequest, NextResponse } from 'next/server'
+import { getSupabaseAuth } from './supabase-server'
+
+export interface AuthResult {
+  user: any
+  error: any
+}
+
+/**
+ * Verify Bearer token from Authorization header
+ * Returns user if valid, error if invalid
+ */
+export async function verifyAuth(req: NextRequest): Promise<AuthResult> {
   try {
-    const { data, error } = await supabase.auth.getUser()
-    if (error || !data?.user) {
-      return null
+    const authHeader = req.headers.get('authorization')
+
+    if (!authHeader) {
+      return {
+        user: null,
+        error: {
+          message: 'Missing authorization header',
+          status: 401
+        }
+      }
     }
-    return data.user
-  } catch (err) {
-    console.error('Error getting user:', err)
-    return null
+
+    const token = authHeader.replace('Bearer ', '')
+
+    if (!token) {
+      return {
+        user: null,
+        error: {
+          message: 'Invalid authorization header format',
+          status: 401
+        }
+      }
+    }
+
+    // Verify token using Supabase auth
+    const supabaseAuth = getSupabaseAuth()
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      return {
+        user: null,
+        error: {
+          message: authError?.message || 'Unauthorized',
+          status: 401
+        }
+      }
+    }
+
+    return {
+      user,
+      error: null
+    }
+  } catch (err: any) {
+    return {
+      user: null,
+      error: {
+        message: err.message || 'Auth verification failed',
+        status: 401
+      }
+    }
   }
 }
 
-export async function getSession() {
-  try {
-    const { data, error } = await supabase.auth.getSession()
-    if (error || !data?.session) {
-      return null
-    }
-    return data.session
-  } catch (err) {
-    console.error('Error getting session:', err)
-    return null
-  }
+/**
+ * Require auth and return user or error response
+ * Usage in route handlers:
+ * const { user, error } = await requireAuth(req)
+ * if (error) return NextResponse.json({ error: error.message }, { status: error.status })
+ */
+export async function requireAuth(req: NextRequest): Promise<AuthResult> {
+  return verifyAuth(req)
 }

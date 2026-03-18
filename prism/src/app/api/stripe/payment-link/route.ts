@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 // Initialize Stripe with API version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -14,30 +15,13 @@ export async function POST(req: NextRequest) {
     console.log('[stripe/payment-link] Creating payment link for invoice:', invoiceId)
     console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail)
 
-    // Verify auth token (user must own the invoice)
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Missing authorization header' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Use service role to verify token
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    )
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
-
-    if (authError || !user) {
+    // Verify auth token using shared helper
+    const { user, error: authError } = await requireAuth(req)
+    if (authError) {
       console.error('[stripe/payment-link] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized: Invalid token' },
-        { status: 401 }
+        { error: authError.message },
+        { status: authError.status }
       )
     }
 
@@ -51,11 +35,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Initialize Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    )
+    // Get Supabase server client
+    const supabase = getSupabaseServer()
 
     // Fetch invoice
     const { data: invoice, error: invoiceError } = await supabase

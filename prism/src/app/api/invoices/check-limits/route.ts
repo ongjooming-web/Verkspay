@@ -1,35 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkSubscriptionLimits } from '@/lib/subscription-limits'
-import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
     const { limitType } = await req.json()
 
-    // Get auth token
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
+    // Verify auth using shared helper
+    const { user, error: authError } = await requireAuth(req)
+    if (authError) {
+      console.error('[invoices/check-limits] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify token using service role (safer than passing anon key)
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token)
-
-    if (userError || !user) {
-      console.error('[invoices/check-limits] Auth error:', userError)
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authError.message },
+        { status: authError.status }
       )
     }
 

@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,53 +12,21 @@ export async function POST(
     const { id } = await context.params
     console.log('[mark-paid] Request received for invoice:', id)
 
-    // Create Supabase client inside function to avoid build-time instantiation
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    )
-
-    // Get the authorization header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      console.error('[mark-paid] No authorization header')
+    // Verify auth
+    const { user, error: authError } = await requireAuth(request)
+    if (authError) {
+      console.error('[mark-paid] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized: Missing authorization header' },
-        { status: 401 }
+        { error: authError.message },
+        { status: authError.status }
       )
     }
 
-    // Verify token using Supabase service role (safe auth)
-    const token = authHeader.replace('Bearer ', '')
-    console.log('[mark-paid] Token extracted from header, length:', token.length)
+    const userId = user.id
+    console.log('[mark-paid] Authenticated user:', userId)
 
-    let userId: string
-
-    try {
-      // Use Supabase auth to verify token (not manual JWT decode)
-      const supabaseAuth = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-      )
-
-      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
-
-      if (authError || !user) {
-        console.error('[mark-paid] Auth error:', authError)
-        return NextResponse.json(
-          { error: 'Unauthorized: Invalid token' },
-          { status: 401 }
-        )
-      }
-
-      userId = user.id
-      console.log('[mark-paid] Authenticated user:', userId)
-
-      // Now use service role to update invoice
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-      )
+    // Get Supabase server client for all database operations
+    const supabase = getSupabaseServer()
 
     // Verify the user owns this invoice using service role
     const { data: invoice, error: invoiceError } = await supabase
@@ -179,18 +148,11 @@ export async function POST(
 
     console.log('[mark-paid] Status verified as paid. Returning success.')
 
-      return NextResponse.json({
-        success: true,
-        invoice: updatedInvoice,
-        message: 'Invoice marked as paid'
-      }, { status: 200 })
-    } catch (err: any) {
-      console.error('[mark-paid] Error in mark-paid handler:', err)
-      return NextResponse.json(
-        { error: 'Failed to process request: ' + err.message },
-        { status: 400 }
-      )
-    }
+    return NextResponse.json({
+      success: true,
+      invoice: updatedInvoice,
+      message: 'Invoice marked as paid'
+    }, { status: 200 })
   } catch (error: any) {
     console.error('[mark-paid] Unexpected error:', error)
     return NextResponse.json(
