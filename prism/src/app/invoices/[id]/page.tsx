@@ -42,7 +42,6 @@ export default function InvoiceDetail() {
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<any>({})
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   useEffect(() => {
     fetchInvoiceDetails()
@@ -145,39 +144,7 @@ export default function InvoiceDetail() {
     }
   }
 
-  const handleMarkAsPaid = async () => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-
-    if (!userId || !invoice) return
-
-    // Update invoice status
-    await supabase
-      .from('invoices')
-      .update({
-        status: 'paid',
-        paid_date: new Date().toISOString(),
-        payment_method: 'usdc'
-      })
-      .eq('id', invoiceId)
-      .eq('user_id', userId)
-
-    // Create payment record
-    await supabase
-      .from('payment_records')
-      .insert([
-        {
-          user_id: userId,
-          invoice_id: invoiceId,
-          payment_type: 'usdc',
-          amount_paid: invoice.amount,
-          status: 'completed'
-        }
-      ])
-
-    await fetchInvoiceDetails()
-    await fetchPaymentRecords()
-  }
+  // handleMarkAsPaid removed - now handled by PaymentCard component
 
   if (loading) {
     return (
@@ -402,23 +369,7 @@ export default function InvoiceDetail() {
           />
         )}
 
-        {/* Legacy Payment Section (for manual marking) */}
-        {invoice.status !== 'paid' && (
-          <Card className="mb-8">
-            <CardHeader>
-              <h2 className="text-2xl font-bold text-white">💳 Mark as Paid</h2>
-            </CardHeader>
-            <CardBody className="space-y-4">
-              <p className="text-gray-400">Manually confirm receipt of payment</p>
-              <Button 
-                onClick={() => setShowPaymentModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/50 w-full md:w-auto"
-              >
-                ✓ Confirm Payment Received
-              </Button>
-            </CardBody>
-          </Card>
-        )}
+
 
         {/* Payment Records */}
         {paymentRecords.length > 0 && (
@@ -455,22 +406,12 @@ export default function InvoiceDetail() {
         )}
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <PaymentModal
-          invoice={invoice}
-          onClose={() => setShowPaymentModal(false)}
-          onConfirm={async () => {
-            await handleMarkAsPaid()
-            setShowPaymentModal(false)
-          }}
-        />
-      )}
     </div>
   )
 }
 
-function PaymentModal({ invoice, onClose, onConfirm }: any) {
+// Legacy PaymentModal - REMOVED (using PaymentCard component instead)
+function _LegacyPaymentModal({ invoice, onClose, onConfirm }: any) {
   const [step, setStep] = useState<'address' | 'confirm' | 'success'>('address')
   const [gasEstimate] = useState(2.5)
 
