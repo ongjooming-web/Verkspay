@@ -47,6 +47,34 @@ export default function PaymentPage() {
     fetchInvoiceData()
   }, [invoiceId])
 
+  // Check if invoice is marked as paid when success page shows
+  useEffect(() => {
+    if (!successFromUrl || !data || data.invoice.status === 'paid') {
+      return
+    }
+
+    const markInvoiceAsPaid = async () => {
+      console.log('[PaymentPage] Checking if invoice marked as paid (webhook)')
+      try {
+        // Fetch fresh copy to see if webhook updated it
+        const response = await fetch(`/api/invoices/${invoiceId}/public`)
+        if (response.ok) {
+          const freshData = await response.json()
+          if (freshData.invoice.status === 'paid') {
+            console.log('[PaymentPage] Invoice confirmed paid via webhook')
+            setData(freshData)
+          }
+        }
+      } catch (err) {
+        console.error('[PaymentPage] Error checking invoice status:', err)
+      }
+    }
+
+    // Give webhook 2 seconds to process, then check
+    const timer = setTimeout(markInvoiceAsPaid, 2000)
+    return () => clearTimeout(timer)
+  }, [successFromUrl, invoiceId, data?.invoice.status])
+
   const fetchInvoiceData = async () => {
     try {
       console.log('[PaymentPage] Fetching invoice:', invoiceId)
@@ -119,39 +147,6 @@ export default function PaymentPage() {
 
   // Show success state if redirected from Stripe
   if (successFromUrl && data) {
-    // Mark invoice as paid if webhook hasn't done it yet (fallback)
-    useEffect(() => {
-      const markInvoiceAsPaid = async () => {
-        if (data.invoice.status === 'paid') {
-          console.log('[PaymentPage] Invoice already marked as paid by webhook')
-          return
-        }
-
-        console.log('[PaymentPage] Marking invoice as paid (webhook fallback)')
-        try {
-          // Fetch a fresh copy of the invoice first
-          const response = await fetch(`/api/invoices/${invoiceId}/public`)
-          if (response.ok) {
-            const freshData = await response.json()
-            if (freshData.invoice.status === 'paid') {
-              console.log('[PaymentPage] Invoice confirmed paid via webhook')
-              setData(freshData)
-              return
-            }
-          }
-
-          // If still not paid, call mark-paid as fallback
-          console.log('[PaymentPage] Webhook did not mark as paid, using fallback')
-          // Note: This would need auth token, so webhook should handle it
-          // For now, just show as paid on frontend
-        } catch (err) {
-          console.error('[PaymentPage] Error checking invoice status:', err)
-        }
-      }
-
-      markInvoiceAsPaid()
-    }, [invoiceId, data.invoice.status])
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 py-12">
         <div className="max-w-2xl mx-auto">
