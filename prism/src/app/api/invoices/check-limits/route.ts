@@ -17,22 +17,16 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Get user
-    const supabaseClient = createClient(
+    // Verify token using service role (safer than passing anon key)
+    const supabaseAuth = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        }
-      }
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token)
 
     if (userError || !user) {
+      console.error('[invoices/check-limits] Auth error:', userError)
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -14,6 +14,36 @@ export async function POST(req: NextRequest) {
     console.log('[stripe/payment-link] Creating payment link for invoice:', invoiceId)
     console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail)
 
+    // Verify auth token (user must own the invoice)
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Missing authorization header' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Use service role to verify token
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      console.error('[stripe/payment-link] Auth error:', authError)
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid token' },
+        { status: 401 }
+      )
+    }
+
+    const userId = user.id
+    console.log('[stripe/payment-link] Authenticated user:', userId)
+
     if (!invoiceId || !amount || !clientEmail) {
       return NextResponse.json(
         { error: 'Missing required fields: invoiceId, amount, clientEmail' },
@@ -39,6 +69,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Invoice not found' },
         { status: 404 }
+      )
+    }
+
+    // Verify user owns this invoice (ownership check)
+    if (invoice.user_id !== userId) {
+      console.error('[stripe/payment-link] User does not own this invoice:', { userId, invoice_user_id: invoice.user_id })
+      return NextResponse.json(
+        { error: 'Unauthorized: You do not own this invoice' },
+        { status: 403 }
       )
     }
 

@@ -27,34 +27,30 @@ export async function POST(
       )
     }
 
-    // Extract and verify the token
+    // Verify token using Supabase service role (safe auth)
     const token = authHeader.replace('Bearer ', '')
     console.log('[mark-paid] Token extracted from header, length:', token.length)
 
-    // Decode JWT and extract user ID
-    // Token format: header.payload.signature
-    // Payload contains: { sub: userId, ... }
-    try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format')
-      }
+    let userId: string
 
-      // Decode the payload (middle part)
-      const payload = JSON.parse(
-        Buffer.from(parts[1], 'base64').toString('utf-8')
+    try {
+      // Use Supabase auth to verify token (not manual JWT decode)
+      const supabaseAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
       )
 
-      const userId = payload.sub
-      console.log('[mark-paid] User ID from token:', userId)
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
 
-      if (!userId) {
+      if (authError || !user) {
+        console.error('[mark-paid] Auth error:', authError)
         return NextResponse.json(
-          { error: 'Unauthorized: Invalid token format' },
+          { error: 'Unauthorized: Invalid token' },
           { status: 401 }
         )
       }
 
+      userId = user.id
       console.log('[mark-paid] Authenticated user:', userId)
 
       // Now use service role to update invoice
@@ -188,11 +184,11 @@ export async function POST(
         invoice: updatedInvoice,
         message: 'Invoice marked as paid'
       }, { status: 200 })
-    } catch (tokenError: any) {
-      console.error('[mark-paid] Token processing error:', tokenError)
+    } catch (err: any) {
+      console.error('[mark-paid] Error in mark-paid handler:', err)
       return NextResponse.json(
-        { error: 'Failed to process token: ' + tokenError.message },
-        { status: 401 }
+        { error: 'Failed to process request: ' + err.message },
+        { status: 400 }
       )
     }
   } catch (error: any) {
