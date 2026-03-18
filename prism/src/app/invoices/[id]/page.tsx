@@ -259,14 +259,7 @@ export default function InvoiceDetail() {
     )
   }
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'paid': return 'bg-green-500/20 border-green-400/30 text-green-300'
-      case 'draft': return 'bg-gray-500/20 border-gray-400/30 text-gray-300'
-      case 'overdue': return 'bg-red-500/20 border-red-400/30 text-red-300'
-      default: return 'bg-blue-500/20 border-blue-400/30 text-blue-300'
-    }
-  }
+
 
   const isOverdue = invoice.status !== 'paid' && new Date(invoice.due_date) < new Date()
 
