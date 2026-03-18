@@ -30,7 +30,6 @@ export default function Invoices() {
     client_id: '',
     amount: '',
     due_date: '',
-    status: 'draft',
     description: '',
   })
   const [loading, setLoading] = useState(true)
@@ -160,7 +159,7 @@ export default function Invoices() {
           client_id: formData.client_id,
           amount: parseFloat(formData.amount),
           due_date: formData.due_date,
-          status: formData.status,
+          status: 'draft',
           description: formData.description,
         },
       ])
@@ -309,19 +308,6 @@ export default function Invoices() {
                       required
                       className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
                     />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
-                    >
-                      <option value="draft" className="bg-slate-900">Draft</option>
-                      <option value="sent" className="bg-slate-900">Sent</option>
-                      <option value="paid" className="bg-slate-900">Paid</option>
-                      <option value="overdue" className="bg-slate-900">Overdue</option>
-                    </select>
                   </div>
                 </div>
                 <div>
