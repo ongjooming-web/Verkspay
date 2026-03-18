@@ -110,10 +110,8 @@ export async function POST(req: NextRequest) {
         ],
         customer_creation: 'always',
         billing_address_collection: 'auto',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?cancelled=true`,
         after_completion: {
-          type: 'redirect',
+          type: 'redirect' as const,
           redirect: {
             url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`
           }
