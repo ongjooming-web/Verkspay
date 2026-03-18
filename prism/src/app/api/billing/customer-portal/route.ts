@@ -21,38 +21,23 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Extract and verify JWT
-    let userId: string
+    // Verify token using Supabase auth (safer than manual JWT decode)
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-    try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format')
-      }
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
 
-      const payload = JSON.parse(
-        Buffer.from(parts[1], 'base64').toString('utf-8')
-      )
-
-      userId = payload.sub
-
-      console.log('[billing/customer-portal] Token decoded - user:', userId)
-
-      if (!userId) {
-        throw new Error('Missing userId in token')
-      }
-
-      // Verify token is from our Supabase instance
-      if (payload.aud !== 'authenticated') {
-        throw new Error('Invalid token audience')
-      }
-    } catch (err: any) {
-      console.error('[billing/customer-portal] Token validation error:', err)
+    if (authError || !user) {
+      console.error('[billing/customer-portal] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Invalid token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
+
+    const userId = user.id // guaranteed UUID from Supabase
 
     // Use service role to get profile
     const supabase = createClient(

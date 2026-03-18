@@ -30,52 +30,24 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Use Supabase service role to validate token securely
-    const supabase = createClient(
+    // Verify token using Supabase auth (safer than manual JWT decode)
+    const supabaseAuth = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Validate token using service role
-    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(
-      '' // Will fail, but we need to use getUser properly
-    )
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
 
-    // Actually, let's decode the token directly but verify it's from our Supabase instance
-    // Extract and verify JWT
-    let userId: string
-    let userEmail: string
-
-    try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format')
-      }
-
-      const payload = JSON.parse(
-        Buffer.from(parts[1], 'base64').toString('utf-8')
-      )
-
-      userId = payload.sub
-      userEmail = payload.email
-
-      console.log('[billing/create-checkout] Token decoded - user:', userId)
-
-      if (!userId || !userEmail) {
-        throw new Error('Missing userId or email in token')
-      }
-
-      // Verify token is from our Supabase instance by checking aud claim
-      if (payload.aud !== 'authenticated') {
-        throw new Error('Invalid token audience')
-      }
-    } catch (err: any) {
-      console.error('[billing/create-checkout] Token validation error:', err)
+    if (authError || !user) {
+      console.error('[billing/create-checkout] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Invalid token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
+
+    const userId = user.id // guaranteed UUID from Supabase
+    const userEmail = user.email! // from verified token
 
     console.log('[billing/create-checkout] User:', userId, 'Email:', userEmail)
 
