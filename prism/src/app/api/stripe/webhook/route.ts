@@ -39,6 +39,96 @@ export async function POST(req: NextRequest) {
     console.log('[Stripe Webhook] Account:', event.account)
     console.log('[Stripe Webhook] Created:', new Date(event.created * 1000).toISOString())
 
+    // Handle customer.subscription.created (new subscription)
+    if (event.type === 'customer.subscription.created') {
+      const subscription = event.data.object as Stripe.Subscription
+      const userId = subscription.metadata?.userId
+      const plan = subscription.metadata?.plan
+
+      console.log('[Stripe Webhook] Subscription created for user:', userId, 'Plan:', plan)
+
+      if (userId) {
+        // Determine tier from plan
+        const tier = plan === 'enterprise' ? 'enterprise' : 'pro'
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_id: subscription.id,
+            subscription_status: subscription.status,
+            subscription_tier: tier,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('[Stripe Webhook] Failed to update subscription:', updateError)
+        } else {
+          console.log('[Stripe Webhook] ✓ Subscription updated for user:', userId)
+        }
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
+    // Handle customer.subscription.updated (plan changed or renewed)
+    if (event.type === 'customer.subscription.updated') {
+      const subscription = event.data.object as Stripe.Subscription
+      const userId = subscription.metadata?.userId
+      const plan = subscription.metadata?.plan
+
+      console.log('[Stripe Webhook] Subscription updated for user:', userId, 'Status:', subscription.status)
+
+      if (userId) {
+        const tier = plan === 'enterprise' ? 'enterprise' : 'pro'
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_status: subscription.status,
+            subscription_tier: tier,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('[Stripe Webhook] Failed to update subscription:', updateError)
+        } else {
+          console.log('[Stripe Webhook] ✓ Subscription updated for user:', userId)
+        }
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
+    // Handle customer.subscription.deleted (cancelled subscription)
+    if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription
+      const userId = subscription.metadata?.userId
+
+      console.log('[Stripe Webhook] Subscription cancelled for user:', userId)
+
+      if (userId) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_id: null,
+            subscription_status: 'cancelled',
+            subscription_tier: 'free',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('[Stripe Webhook] Failed to cancel subscription:', updateError)
+        } else {
+          console.log('[Stripe Webhook] ✓ Subscription cancelled for user:', userId)
+        }
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
     // Handle checkout.session.completed (from Payment Links)
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
