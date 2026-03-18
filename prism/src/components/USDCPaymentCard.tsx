@@ -165,7 +165,7 @@ export function USDCPaymentCard({
           <p className="text-red-300 text-sm">
             <span className="font-bold">❌ Error:</span> {error}
           </p>
-        </Card>
+        </CardBody>
       </Card>
     )
   }
