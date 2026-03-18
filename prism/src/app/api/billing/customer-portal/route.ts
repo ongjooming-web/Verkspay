@@ -21,31 +21,33 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Create Supabase client with user token
-    const supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        }
+    // Decode JWT to get userId (without Supabase auth validation)
+    let userId: string
+
+    try {
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format')
       }
-    )
 
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+      const payload = JSON.parse(
+        Buffer.from(parts[1], 'base64').toString('utf-8')
+      )
 
-    if (userError || !user) {
-      console.error('[billing/customer-portal] Auth error:', userError)
+      userId = payload.sub
+
+      console.log('[billing/customer-portal] Decoded user:', userId)
+
+      if (!userId) {
+        throw new Error('Missing userId in token')
+      }
+    } catch (err: any) {
+      console.error('[billing/customer-portal] Token decode error:', err)
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Invalid token' },
         { status: 401 }
       )
     }
-
-    const userId = user.id
 
     console.log('[billing/customer-portal] User:', userId)
 

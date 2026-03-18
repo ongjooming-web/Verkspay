@@ -30,34 +30,37 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Create Supabase client with user token
-    const supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        }
+    // Decode JWT to get userId (without Supabase auth validation)
+    let userId: string
+    let userEmail: string
+
+    try {
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format')
       }
-    )
 
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+      const payload = JSON.parse(
+        Buffer.from(parts[1], 'base64').toString('utf-8')
+      )
 
-    if (userError || !user) {
-      console.error('[billing/create-checkout] Auth error:', userError)
+      userId = payload.sub
+      userEmail = payload.email
+
+      console.log('[billing/create-checkout] Decoded user:', userId, 'Email:', userEmail)
+
+      if (!userId || !userEmail) {
+        throw new Error('Missing userId or email in token')
+      }
+    } catch (err: any) {
+      console.error('[billing/create-checkout] Token decode error:', err)
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Invalid token' },
         { status: 401 }
       )
     }
 
-    const userId = user.id
-    const userEmail = user.email
 
-    console.log('[billing/create-checkout] User:', userId, 'Email:', userEmail)
 
     // Use service role to get/update profile
     const supabase = createClient(
