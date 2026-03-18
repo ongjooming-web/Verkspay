@@ -36,8 +36,15 @@ export default function PaymentPage() {
   const [clientEmail, setClientEmail] = useState('')
   const [showEmailInput, setShowEmailInput] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [successFromUrl, setSuccessFromUrl] = useState(false)
 
   useEffect(() => {
+    // Check for success query param
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('success') === 'true') {
+      setSuccessFromUrl(true)
+    }
+    
     fetchInvoiceData()
   }, [invoiceId])
 
@@ -55,6 +62,7 @@ export default function PaymentPage() {
 
       const result = await response.json()
       console.log('[PaymentPage] Invoice loaded:', result)
+      console.log('[PaymentPage] Freelancer full_name:', result.freelancer?.full_name)
       setData(result)
     } catch (err: any) {
       console.error('[PaymentPage] Error fetching invoice:', err)
@@ -108,6 +116,38 @@ export default function PaymentPage() {
       setError(err.message || 'Failed to process payment')
       setIsProcessing(false)
     }
+  }
+
+  // Show success state if redirected from Stripe
+  if (successFromUrl && data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 py-12">
+        <div className="max-w-2xl mx-auto">
+          <Card className="mb-8 border-green-500/30 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+            <CardBody className="text-center py-12 space-y-6">
+              <div className="text-6xl mb-4">✅</div>
+              <h1 className="text-4xl font-bold text-green-400">Payment Successful!</h1>
+              <p className="text-gray-300 text-lg">
+                Thank you, your payment of <span className="text-green-400 font-bold">${data.invoice.amount.toFixed(2)}</span> has been received
+              </p>
+              
+              <div className="glass rounded-lg p-4 border-green-400/30 bg-green-500/10 mt-6">
+                <p className="text-gray-400 text-sm mb-1">Invoice Number</p>
+                <p className="text-white font-mono text-lg">{data.invoice.invoice_number}</p>
+              </div>
+
+              <p className="text-gray-400 text-sm pt-4">
+                A confirmation email will be sent shortly.
+              </p>
+            </CardBody>
+          </Card>
+
+          <div className="text-center text-gray-400 text-sm">
+            <p>Powered by <span className="text-blue-400 font-semibold">Prism</span></p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
