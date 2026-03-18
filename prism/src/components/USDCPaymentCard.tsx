@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardBody, CardHeader } from './Card'
-import { QRCodeDisplay } from './QRCodeDisplay'
 
 interface USDCPaymentCardProps {
   invoiceId: string
@@ -20,7 +19,10 @@ export function USDCPaymentCard({
   status = 'pending',
   onPaymentMarked
 }: USDCPaymentCardProps) {
+  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'crypto' | null>(null)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
+  const [recipientName, setRecipientName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showQR, setShowQR] = useState(false)
@@ -29,13 +31,13 @@ export function USDCPaymentCard({
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
-    loadWalletAddress()
+    loadPaymentDetails()
   }, [invoiceId])
 
   /**
-   * Load wallet address from user's profile
+   * Load payment details from user's profile
    */
-  const loadWalletAddress = async () => {
+  const loadPaymentDetails = async () => {
     setLoading(true)
     setError(null)
 
@@ -47,30 +49,37 @@ export function USDCPaymentCard({
         return
       }
 
-      // Get saved wallet address
+      // Get profile with both payment methods
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('wallet_address')
+        .select('wallet_address, stripe_account_id, stripe_onboarding_complete, full_name')
         .eq('id', userData.user.id)
         .single()
 
       if (profileError) {
         console.error('Profile error:', profileError)
-        setError('Failed to load wallet')
+        setError('Failed to load payment details')
         setLoading(false)
         return
       }
 
-      if (!profile?.wallet_address) {
-        setError('Wallet not connected. Please connect a wallet in Settings to receive USDC payments.')
-        setWalletAddress(null)
+      // Determine which payment method to use
+      if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
+        // Stripe connected and verified
+        setPaymentMethod('bank')
+        setStripeAccountId(profile.stripe_account_id)
+        setRecipientName(profile.full_name || userData.user.email || 'Your Account')
+      } else if (profile?.wallet_address) {
+        // Fallback to wallet
+        setPaymentMethod('crypto')
+        setWalletAddress(profile.wallet_address)
+      } else {
+        setError('No payment method connected. Please connect Stripe or a wallet in Settings.')
         setLoading(false)
         return
       }
-
-      setWalletAddress(profile.wallet_address)
     } catch (err: any) {
-      console.error('Error loading wallet:', err)
+      console.error('Error loading payment details:', err)
       setError('Failed to load payment information')
     } finally {
       setLoading(false)
@@ -78,28 +87,13 @@ export function USDCPaymentCard({
   }
 
   /**
-   * Mark invoice as paid and refresh
+   * Mark invoice as paid
    */
   const handleMarkAsPaid = async () => {
     setIsMarkingAsPaid(true)
     setMarkAsPayedError(null)
-    setShowSuccessMessage(false)
 
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user?.id) {
-        setMarkAsPayedError('User not authenticated')
-        setIsMarkingAsPaid(false)
-        return
-      }
-
-      if (!walletAddress) {
-        setMarkAsPayedError('Wallet address not found')
-        setIsMarkingAsPaid(false)
-        return
-      }
-
-      // Get auth session for token
       const { data: session } = await supabase.auth.getSession()
       if (!session?.session?.access_token) {
         setMarkAsPayedError('Authentication failed')
@@ -107,7 +101,7 @@ export function USDCPaymentCard({
         return
       }
 
-      console.log('[USDCPaymentCard] Marking invoice as paid:', invoiceId)
+      console.log('[PaymentCard] Marking invoice as paid:', invoiceId)
 
       // Call the mark-paid endpoint
       const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
@@ -126,14 +120,14 @@ export function USDCPaymentCard({
         return
       }
 
-      console.log('[USDCPaymentCard] Invoice marked as paid successfully')
+      console.log('[PaymentCard] Invoice marked as paid successfully')
 
       // Show success
       setShowSuccessMessage(true)
 
       // Trigger parent refresh
       if (onPaymentMarked) {
-        console.log('[USDCPaymentCard] Refreshing parent component')
+        console.log('[PaymentCard] Refreshing parent component')
         onPaymentMarked()
       }
 
@@ -142,183 +136,224 @@ export function USDCPaymentCard({
         setShowSuccessMessage(false)
       }, 3000)
     } catch (err: any) {
-      console.error('[USDCPaymentCard] Error marking as paid:', err)
+      console.error('[PaymentCard] Error marking as paid:', err)
       setMarkAsPayedError(err.message || 'An error occurred')
     } finally {
       setIsMarkingAsPaid(false)
     }
   }
 
-  // Don't show payment card if already paid
-  if (status === 'paid') {
-    return null
-  }
-
   // Show loading state
   if (loading) {
     return (
-      <Card className="mb-6">
+      <Card className="mb-6 border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
         <CardBody>
-          <div className="flex items-center justify-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
-            <p className="text-gray-300 ml-4">Loading payment options...</p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+            <span className="text-gray-400 text-sm">Loading payment details...</span>
           </div>
         </CardBody>
       </Card>
     )
   }
 
-  // Show error if wallet not connected
+  // Show error state
   if (error) {
     return (
-      <Card className="mb-6 border-amber-500/30 bg-amber-500/10">
+      <Card className="mb-6 border-red-500/30 bg-gradient-to-r from-red-500/5 to-red-500/10">
         <CardBody>
-          <p className="text-amber-300 text-sm">
-            <span className="font-bold">ℹ️ USDC Payment Unavailable:</span> {error}
+          <p className="text-red-300 text-sm">
+            <span className="font-bold">❌ Error:</span> {error}
           </p>
-        </CardBody>
+        </Card>
       </Card>
     )
   }
 
-  // Don't show if no wallet
-  if (!walletAddress) {
+  // Don't show if no payment method
+  if (!paymentMethod) {
     return null
   }
 
-  return (
-    <Card className="mb-6 border-green-500/30 bg-gradient-to-r from-green-500/5 to-blue-500/5">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">💳 Send Payment</h2>
-            <p className="text-gray-400 text-sm mt-1">Pay with Stripe bank account</p>
+  // Stripe Bank Payment Card
+  if (paymentMethod === 'bank' && stripeAccountId) {
+    return (
+      <Card className="mb-6 border-green-500/30 bg-gradient-to-r from-green-500/5 to-blue-500/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white">💳 Send Payment</h2>
+              <p className="text-gray-400 text-sm mt-1">Pay with Stripe bank account</p>
+            </div>
+            <span className="text-3xl">✓</span>
           </div>
-          <span className="text-3xl">✓</span>
-        </div>
-      </CardHeader>
-      <CardBody className="space-y-6">
-        {/* Payment ready badge */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
-          <span className="text-green-400 text-lg">●</span>
-          <span className="text-green-300 font-semibold text-sm">Recipient Address (USD)</span>
-        </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          {/* Payment method badge */}
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
+            <span className="text-green-400 text-lg">●</span>
+            <span className="text-green-300 font-semibold text-sm">Stripe Bank Transfer</span>
+          </div>
 
-        {/* Amount display */}
-        <div>
-          <p className="text-gray-400 text-sm mb-2">Amount</p>
-          <p className="text-3xl font-bold text-blue-400">
-            ${invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
-          </p>
-        </div>
+          {/* Amount */}
+          <div>
+            <p className="text-gray-400 text-sm mb-2">Amount</p>
+            <p className="text-3xl font-bold text-blue-400">
+              ${invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
+            </p>
+          </div>
 
-        {/* Recipient address (with QR code toggle) */}
-        <div className="space-y-3">
-          <p className="text-gray-400 text-sm font-semibold">Recipient Address (USD):</p>
-          
-          <div className="glass rounded-lg p-4 border-blue-400/30 flex items-center gap-2">
-            <code className="flex-1 text-white font-mono text-xs break-all">
-              {walletAddress}
-            </code>
+          {/* Recipient details */}
+          <div className="space-y-4">
+            {/* Recipient name */}
+            <div>
+              <p className="text-gray-400 text-sm mb-2">Recipient</p>
+              <div className="glass rounded-lg p-3 border-blue-400/30">
+                <p className="text-white text-sm">{recipientName}</p>
+              </div>
+            </div>
+
+            {/* Stripe account ID */}
+            <div>
+              <p className="text-gray-400 text-sm mb-2">Stripe Account</p>
+              <div className="glass rounded-lg p-3 border-blue-400/30 flex items-center gap-2">
+                <code className="flex-1 text-white font-mono text-xs break-all">
+                  {stripeAccountId}
+                </code>
+                <button
+                  onClick={() => navigator.clipboard.writeText(stripeAccountId)}
+                  className="px-3 py-2 bg-blue-600/50 hover:bg-blue-700/50 rounded text-sm text-white transition whitespace-nowrap"
+                  title="Copy account ID"
+                >
+                  📋 Copy
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mark as paid section */}
+          <div className="border-t border-gray-700 pt-6">
+            <p className="text-gray-400 text-sm mb-4">
+              Once payment is sent, mark the invoice as paid:
+            </p>
+
+            {markAsPayedError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <p className="text-red-300 text-sm">{markAsPayedError}</p>
+              </div>
+            )}
+
             <button
-              onClick={() => navigator.clipboard.writeText(walletAddress)}
-              className="px-3 py-2 bg-blue-600/50 hover:bg-blue-700/50 rounded text-sm text-white transition whitespace-nowrap"
-              title="Copy address"
+              onClick={handleMarkAsPaid}
+              disabled={isMarkingAsPaid}
+              className={`
+                w-full px-4 py-2 rounded-lg font-semibold transition
+                ${
+                  isMarkingAsPaid
+                    ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600'
+                }
+              `}
             >
-              📋 Copy
+              {isMarkingAsPaid ? 'Marking as paid...' : '✓ Mark as Paid'}
             </button>
           </div>
 
-          {/* QR Code toggle */}
-          <button
-            onClick={() => setShowQR(!showQR)}
-            className="w-full px-4 py-2 glass rounded-lg text-white hover:bg-white/10 transition text-sm flex items-center justify-center gap-2"
-          >
-            <span>{showQR ? '▼ Hide QR Code' : '▶ Show QR Code'}</span>
-            <span>📱</span>
-          </button>
-
-          {showQR && (
-            <div className="mt-4">
-              <QRCodeDisplay
-                walletAddress={walletAddress}
-                amount={invoiceAmount}
-                network="base"
-                currency="USDC"
-              />
+          {showSuccessMessage && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+              <p className="text-green-300 text-sm font-semibold">✓ Invoice marked as paid!</p>
             </div>
           )}
-        </div>
+        </CardBody>
+      </Card>
+    )
+  }
 
-        {/* Instructions */}
-        <div className="glass rounded-lg p-4 border-blue-400/30">
-          <h3 className="text-white font-semibold mb-3">📝 Steps</h3>
-          <ol className="space-y-2 text-gray-300 text-sm">
-            <li><span className="text-blue-400 font-bold">1.</span> Copy or scan the wallet address above</li>
-            <li><span className="text-blue-400 font-bold">2.</span> Open your wallet (MetaMask, Phantom, etc.)</li>
-            <li><span className="text-blue-400 font-bold">3.</span> Send {invoiceAmount} USDC to the address</li>
-            <li><span className="text-blue-400 font-bold">4.</span> After payment confirms, click "Mark as Paid" below</li>
-          </ol>
-        </div>
-
-        {/* Info */}
-        <div className="flex gap-4 text-sm text-gray-400">
-          <div className="flex items-start gap-2">
-            <span>💡</span>
-            <span>No intermediaries — funds go directly to this wallet</span>
+  // Wallet Payment Card (legacy)
+  if (paymentMethod === 'crypto' && walletAddress) {
+    return (
+      <Card className="mb-6 border-green-500/30 bg-gradient-to-r from-green-500/5 to-blue-500/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white">💰 Pay with Wallet</h2>
+              <p className="text-gray-400 text-sm mt-1">Send to wallet address below</p>
+            </div>
+            <span className="text-3xl">✓</span>
           </div>
-        </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          {/* Payment ready badge */}
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
+            <span className="text-green-400 text-lg">●</span>
+            <span className="text-green-300 font-semibold text-sm">Recipient Address</span>
+          </div>
 
-        {/* Error message */}
-        {markAsPayedError && (
-          <div className="glass rounded-lg p-4 border-red-500/30 bg-red-500/10">
-            <p className="text-red-300 text-sm">
-              <span className="font-bold">❌ Error:</span> {markAsPayedError}
+          {/* Amount display */}
+          <div>
+            <p className="text-gray-400 text-sm mb-2">Amount</p>
+            <p className="text-3xl font-bold text-blue-400">
+              ${invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
             </p>
           </div>
-        )}
 
-        {/* Success message */}
-        {showSuccessMessage && (
-          <div className="glass rounded-lg p-4 border-green-500/30 bg-green-500/10">
-            <p className="text-green-300 text-sm">
-              <span className="font-bold">✓ Success!</span> Invoice marked as paid
-            </p>
+          {/* Recipient address */}
+          <div className="space-y-3">
+            <p className="text-gray-400 text-sm font-semibold">Recipient Address:</p>
+
+            <div className="glass rounded-lg p-4 border-blue-400/30 flex items-center gap-2">
+              <code className="flex-1 text-white font-mono text-xs break-all">
+                {walletAddress}
+              </code>
+              <button
+                onClick={() => navigator.clipboard.writeText(walletAddress)}
+                className="px-3 py-2 bg-blue-600/50 hover:bg-blue-700/50 rounded text-sm text-white transition whitespace-nowrap"
+                title="Copy address"
+              >
+                📋 Copy
+              </button>
+            </div>
           </div>
-        )}
 
-        {/* Mark as Paid button */}
-        <div className="pt-4 border-t border-white/10">
-          <p className="text-gray-400 text-sm mb-3">
-            ✓ <strong>Received payment?</strong> Mark the invoice as paid:
-          </p>
-          <button
-            onClick={handleMarkAsPaid}
-            disabled={isMarkingAsPaid}
-            className={`
-              w-full px-4 py-3 rounded-lg font-semibold transition
-              flex items-center justify-center gap-2
-              ${
-                isMarkingAsPaid
-                  ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 hover:shadow-lg hover:shadow-green-500/50'
-              }
-            `}
-          >
-            {isMarkingAsPaid ? (
-              <>
-                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Updating...</span>
-              </>
-            ) : (
-              <>
-                <span>✓</span>
-                <span>Mark as Paid</span>
-              </>
+          {/* Mark as paid section */}
+          <div className="border-t border-gray-700 pt-6">
+            <p className="text-gray-400 text-sm mb-4">
+              Once payment is sent, mark the invoice as paid:
+            </p>
+
+            {markAsPayedError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <p className="text-red-300 text-sm">{markAsPayedError}</p>
+              </div>
             )}
-          </button>
-        </div>
-      </CardBody>
-    </Card>
-  )
+
+            <button
+              onClick={handleMarkAsPaid}
+              disabled={isMarkingAsPaid}
+              className={`
+                w-full px-4 py-2 rounded-lg font-semibold transition
+                ${
+                  isMarkingAsPaid
+                    ? 'bg-gray-600/50 text-gray-300 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600'
+                }
+              `}
+            >
+              {isMarkingAsPaid ? 'Marking as paid...' : '✓ Mark as Paid'}
+            </button>
+          </div>
+
+          {showSuccessMessage && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+              <p className="text-green-300 text-sm font-semibold">✓ Invoice marked as paid!</p>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+    )
+  }
+
+  return null
 }
+
+export { USDCPaymentCard as default }
