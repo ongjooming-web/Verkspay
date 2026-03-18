@@ -28,7 +28,8 @@
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/wallet-adapter-react": "^0.15.33",
     "stripe": "^16.11.0",
-    "pg": "^8.11.0"
+    "pg": "^8.11.0",
+    "resend": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
