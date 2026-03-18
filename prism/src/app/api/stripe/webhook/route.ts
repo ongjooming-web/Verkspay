@@ -109,40 +109,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 })
     }
 
-    // Legacy: Handle old checkout sessions (for backward compatibility)
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
-      const invoiceId = session.metadata?.invoiceId
-      const userId = session.metadata?.userId
-
-      console.log('[Stripe Webhook] Legacy checkout session completed for invoice:', invoiceId)
-
-      if (invoiceId && userId) {
-        // Update invoice status to paid
-        const { error } = await supabase
-          .from('invoices')
-          .update({
-            status: 'paid',
-            paid_at: new Date().toISOString()
-          })
-          .eq('id', invoiceId)
-          .eq('user_id', userId)
-
-        if (error) {
-          console.error('[Stripe Webhook] Update invoice error:', error)
-          return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 })
-        }
-
-        // Update payment intent
-        await supabase
-          .from('payment_intents')
-          .update({ status: 'completed' })
-          .eq('stripe_session_id', session.id)
-
-        console.log('[Stripe Webhook] Invoice marked as paid:', invoiceId)
-      }
-    }
-
     return NextResponse.json({ received: true })
   } catch (err: any) {
     console.error('[Stripe Webhook] Error:', err)
