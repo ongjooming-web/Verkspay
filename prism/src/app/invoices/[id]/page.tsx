@@ -7,6 +7,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { PaymentCard } from '@/components/USDCPaymentCard'
+import { PartialPaymentModal } from '@/components/PartialPaymentModal'
 import Link from 'next/link'
 
 interface Invoice {
@@ -46,6 +47,8 @@ export default function InvoiceDetail() {
   const [editData, setEditData] = useState<any>({})
   const [sendingReminder, setSendingReminder] = useState(false)
   const [reminderMessage, setReminderMessage] = useState('')
+  const [showManualPaymentModal, setShowManualPaymentModal] = useState(false)
+  const [showStripePaymentModal, setShowStripePaymentModal] = useState(false)
 
   useEffect(() => {
     fetchInvoiceDetails()
@@ -546,6 +549,51 @@ export default function InvoiceDetail() {
 
 
 
+        {/* Partial Payments Card */}
+        {invoice && invoice.status !== 'paid' && (
+          <Card className="mb-8 border-purple-500/30 bg-purple-500/5">
+            <CardHeader>
+              <h2 className="text-2xl font-bold text-white">💜 Partial Payments</h2>
+              <p className="text-gray-400 text-sm mt-1">Record payments or create payment links</p>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              {/* Payment Summary */}
+              <div className="glass rounded-lg p-4 border-purple-400/30">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Total Amount</p>
+                    <p className="text-xl font-bold text-white">${invoice.amount.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Amount Paid</p>
+                    <p className="text-xl font-bold text-green-400">${(invoice.amount_paid || 0).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Remaining</p>
+                    <p className="text-xl font-bold text-red-400">${(invoice.remaining_balance || invoice.amount).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => setShowManualPaymentModal(true)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  💰 Record Manual
+                </Button>
+                <Button
+                  onClick={() => setShowStripePaymentModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  💳 Create Link
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
         {/* Payment Records */}
         {paymentRecords.length > 0 && (
           <Card>
@@ -578,6 +626,37 @@ export default function InvoiceDetail() {
               ))}
             </CardBody>
           </Card>
+        )}
+
+        {/* Partial Payment Modals */}
+        {showManualPaymentModal && (
+          <PartialPaymentModal
+            invoiceId={invoiceId}
+            invoiceNumber={invoice?.invoice_number || ''}
+            remainingBalance={invoice?.remaining_balance || invoice?.amount || 0}
+            type="manual"
+            onClose={() => setShowManualPaymentModal(false)}
+            onSuccess={() => {
+              setShowManualPaymentModal(false)
+              fetchInvoiceDetails()
+              fetchPaymentRecords()
+            }}
+          />
+        )}
+
+        {showStripePaymentModal && (
+          <PartialPaymentModal
+            invoiceId={invoiceId}
+            invoiceNumber={invoice?.invoice_number || ''}
+            remainingBalance={invoice?.remaining_balance || invoice?.amount || 0}
+            type="stripe"
+            onClose={() => setShowStripePaymentModal(false)}
+            onSuccess={() => {
+              setShowStripePaymentModal(false)
+              fetchInvoiceDetails()
+              fetchPaymentRecords()
+            }}
+          />
         )}
       </div>
 
