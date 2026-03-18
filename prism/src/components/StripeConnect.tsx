@@ -126,8 +126,12 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
         return
       }
 
-      // Call API to create Stripe Connect account
-      const response = await fetch('/api/stripe/connect', {
+      // Determine which endpoint to call
+      const endpoint = stripeAccountId ? '/api/stripe/connect/resume' : '/api/stripe/connect'
+      console.log('[StripeConnect] Calling endpoint:', endpoint, 'stripeAccountId:', stripeAccountId)
+
+      // Call API to create or resume Stripe account
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,13 +142,14 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create Stripe account')
+        setError(data.error || 'Failed to handle Stripe account')
         setLoading(false)
         return
       }
 
       // Redirect to Stripe onboarding
       if (data.url) {
+        console.log('[StripeConnect] Redirecting to:', data.url)
         window.location.href = data.url
       }
     } catch (err: any) {
