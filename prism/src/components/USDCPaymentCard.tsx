@@ -106,18 +106,33 @@ export function PaymentCard({
     setMarkAsPayedError(null)
 
     try {
-      console.log('[PaymentCard] Refreshing auth session...')
-      // Refresh session to ensure token is valid
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-      if (refreshError || !refreshData.session?.access_token) {
-        console.error('[PaymentCard] Session refresh failed:', refreshError)
-        setMarkAsPayedError('Session expired. Please refresh the page and try again.')
+      console.log('[PaymentCard] Getting current session...')
+      
+      // First, just get the current session without refreshing
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) {
+        console.error('[PaymentCard] Session error:', sessionError)
+        setMarkAsPayedError('Failed to get session. Please try again.')
         setIsMarkingAsPaid(false)
         return
       }
+      
+      if (!session?.access_token) {
+        console.log('[PaymentCard] No session found, attempting refresh...')
+        // Try to refresh if no session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        if (refreshError || !refreshData.session?.access_token) {
+          console.error('[PaymentCard] Refresh failed:', refreshError)
+          setMarkAsPayedError('Session expired. Please refresh the page and try again.')
+          setIsMarkingAsPaid(false)
+          return
+        }
+        session = refreshData.session
+      }
 
-      const accessToken = refreshData.session.access_token
-      console.log('[PaymentCard] Session refreshed, token available')
+      const accessToken = session.access_token
+      console.log('[PaymentCard] Got access token, length:', accessToken.length)
       console.log('[PaymentCard] Marking invoice as paid:', invoiceId)
 
       // Call the mark-paid endpoint with refreshed token

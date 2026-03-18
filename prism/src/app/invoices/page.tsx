@@ -401,7 +401,7 @@ export default function Invoices() {
                           </span>
                           {invoice.status !== 'paid' && (
                             <span className="px-3 py-2 rounded-full text-sm font-medium border border-green-400/50 bg-green-500/10 text-green-300">
-                              💰 USDC Ready
+                              💳 Ready to Pay
                             </span>
                           )}
                         </div>
