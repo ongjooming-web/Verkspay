@@ -76,26 +76,40 @@ export async function POST(req: NextRequest) {
 
     console.log('[stripe/payment-link] Stripe account:', profile.stripe_account_id)
 
-    // Create Stripe Payment Link
-    // Using connected account via Stripe API
+    // Create Stripe Product and Price first
+    const product = await stripe.products.create(
+      {
+        name: `Invoice ${invoice.invoice_number}`,
+        description: invoice.description || 'Invoice payment',
+        type: 'service'
+      },
+      {
+        stripeAccount: profile.stripe_account_id
+      }
+    )
+
+    const price = await stripe.prices.create(
+      {
+        product: product.id,
+        unit_amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd'
+      },
+      {
+        stripeAccount: profile.stripe_account_id
+      }
+    )
+
+    // Create Stripe Payment Link with the price
     const paymentLink = await stripe.paymentLinks.create(
       {
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `Invoice ${invoice.invoice_number}`,
-                description: invoice.description || 'Invoice payment'
-              },
-              unit_amount: Math.round(amount * 100) // Convert to cents
-            },
+            price: price.id,
             quantity: 1
           }
         ],
-        customer_data: {
-          email: clientEmail
-        },
+        customer_creation: 'always',
+        billing_address_collection: 'auto',
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?cancelled=true`,
         after_completion: {
