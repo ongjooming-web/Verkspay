@@ -24,6 +24,8 @@ interface Invoice {
   payment_method?: string
   reminder_sent_count?: number
   last_reminder_sent_at?: string
+  amount_paid?: number
+  remaining_balance?: number
 }
 
 interface PaymentRecord {
