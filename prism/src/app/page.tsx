@@ -133,9 +133,9 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-center mb-16">Simple Pricing That Scales</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: 'Free', price: '$0', features: ['3 active clients', '5 invoices/month', 'Basic CRM', 'Contract templates', 'Crypto payments'] },
-              { name: 'Pro', price: '$49', features: ['Unlimited clients', 'Unlimited invoices', 'Advanced CRM', 'Contract templates', 'Crypto payments', 'Priority support'] },
-              { name: 'Agency', price: '$299', features: ['Everything in Pro', 'Team management', 'Custom branding', 'API access', 'Dedicated support'] },
+              { name: 'Free', price: '$0', features: ['5 invoices/month', '3 payment links/month', 'Basic CRM', 'Contract templates', 'Community support'] },
+              { name: 'Pro', price: '$49', features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe integration', 'Auto-confirmation', 'Email support', 'Advanced reporting'] },
+              { name: 'Enterprise', price: '$199', features: ['Everything in Pro', 'Team management (5 users)', 'API access', 'Webhooks', 'Dedicated support', 'Custom branding'] },
             ].map((plan, idx) => (
               <div key={idx} className={`backdrop-blur-xl border rounded-xl p-8 transition ${idx === 1 ? 'border-purple-500 bg-purple-500/10 ring-2 ring-purple-500/50' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}>
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
