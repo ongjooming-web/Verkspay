@@ -119,6 +119,25 @@ export default function Invoices() {
 
     if (!userId) return
 
+    // Check subscription limits
+    try {
+      const response = await fetch('/api/invoices/check-limits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limitType: 'invoices' })
+      })
+
+      const result = await response.json()
+
+      if (!result.allowed) {
+        alert(`⛔ ${result.error}\n\nCurrent usage: ${result.count}/${result.limit} invoices this month`)
+        return
+      }
+    } catch (err) {
+      console.error('Error checking limits:', err)
+      // Continue anyway if check fails
+    }
+
     const invoiceNumber = `INV-${Date.now()}`
     const { data, error } = await supabase
       .from('invoices')
