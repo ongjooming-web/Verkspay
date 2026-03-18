@@ -45,14 +45,25 @@ export async function POST(req: NextRequest) {
     console.log('[Stripe Resume] Generating account link for:', profile.stripe_account_id)
 
     // Generate state param with userId
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64')
+    const stateObj = { userId }
+    const state = Buffer.from(JSON.stringify(stateObj)).toString('base64')
+    
+    console.log('[Stripe Resume] State object:', stateObj)
+    console.log('[Stripe Resume] Encoded state:', state)
+    console.log('[Stripe Resume] App URL:', process.env.NEXT_PUBLIC_APP_URL)
+
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?state=${encodeURIComponent(state)}`
+    const refreshUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/refresh?state=${encodeURIComponent(state)}`
+    
+    console.log('[Stripe Resume] Return URL:', returnUrl)
+    console.log('[Stripe Resume] Refresh URL:', refreshUrl)
 
     // Generate new account onboarding link for existing account
     const accountLink = await stripe.accountLinks.create({
       account: profile.stripe_account_id,
       type: 'account_onboarding',
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?state=${encodeURIComponent(state)}`,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/refresh?state=${encodeURIComponent(state)}`
+      return_url: returnUrl,
+      refresh_url: refreshUrl
     })
 
     console.log('[Stripe Resume] Generated account link:', accountLink.url)

@@ -62,17 +62,28 @@ export async function POST(req: NextRequest) {
       .eq('id', userId)
 
     // Generate state param with userId
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64')
+    const stateObj = { userId }
+    const state = Buffer.from(JSON.stringify(stateObj)).toString('base64')
+    
+    console.log('[Stripe Connect] State object:', stateObj)
+    console.log('[Stripe Connect] Encoded state:', state)
+    console.log('[Stripe Connect] App URL:', process.env.NEXT_PUBLIC_APP_URL)
+
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?state=${encodeURIComponent(state)}`
+    const refreshUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/refresh?state=${encodeURIComponent(state)}`
+    
+    console.log('[Stripe Connect] Return URL:', returnUrl)
+    console.log('[Stripe Connect] Refresh URL:', refreshUrl)
 
     // Generate account onboarding link with state
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       type: 'account_onboarding',
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?state=${encodeURIComponent(state)}`,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/refresh?state=${encodeURIComponent(state)}`
+      return_url: returnUrl,
+      refresh_url: refreshUrl
     })
 
-    console.log('[Stripe] Generated onboarding link:', accountLink.url)
+    console.log('[Stripe Connect] Generated onboarding link:', accountLink.url)
 
     return NextResponse.json({ url: accountLink.url })
   } catch (err: any) {

@@ -14,6 +14,11 @@ const supabase = createClient(
 )
 
 export async function GET(req: NextRequest) {
+  console.log('[Stripe Return] ========== HANDLER CALLED ==========')
+  console.log('[Stripe Return] Full URL:', req.url)
+  console.log('[Stripe Return] Method:', req.method)
+  console.log('[Stripe Return] Timestamp:', new Date().toISOString())
+  
   try {
     console.log('[Stripe Return] ========== HANDLER STARTED ==========')
     console.log('[Stripe Return] Full URL:', req.url)
