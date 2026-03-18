@@ -28,6 +28,7 @@ export function PartialPaymentModal({
   const [clientEmail, setClientEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [paymentLink, setPaymentLink] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     const parsedAmount = parseFloat(amount)
@@ -57,38 +58,49 @@ export function PartialPaymentModal({
   }
 
   const handleManualPayment = async (paymentAmount: number) => {
-    const { data: session } = await (window as any).supabase.auth.getSession()
-    const token = session?.session?.access_token
+    try {
+      const supabase = (window as any).supabase
+      if (!supabase) {
+        setError('Supabase not initialized')
+        return
+      }
 
-    if (!token) {
-      setError('Session expired. Please refresh.')
-      return
-    }
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
 
-    const response = await fetch(`/api/invoices/${invoiceId}/record-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        amount: paymentAmount,
-        paymentMethod,
-        paymentDate,
-        notes: notes || null
+      if (!token) {
+        setError('Session expired. Please refresh.')
+        return
+      }
+
+      const response = await fetch(`/api/invoices/${invoiceId}/record-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: paymentAmount,
+          paymentMethod,
+          paymentDate,
+          notes: notes || null
+        })
       })
-    })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (!response.ok) {
-      setError(data.error || 'Failed to record payment')
-      return
+      if (!response.ok) {
+        setError(data.error || 'Failed to record payment')
+        return
+      }
+
+      alert('✅ Payment recorded successfully!')
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      console.error('[PartialPaymentModal] Manual payment error:', err)
+      setError(err.message || 'Failed to process payment')
     }
-
-    alert('✅ Payment recorded successfully!')
-    onSuccess()
-    onClose()
   }
 
   const handleStripePayment = async (paymentAmount: number) => {
@@ -97,26 +109,85 @@ export function PartialPaymentModal({
       return
     }
 
-    const response = await fetch(`/api/invoices/${invoiceId}/partial-payment-link`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        amount: paymentAmount,
-        clientEmail
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/partial-payment-link`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: paymentAmount,
+          clientEmail
+        })
       })
-    })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (!response.ok) {
-      setError(data.error || 'Failed to create payment link')
-      return
+      if (!response.ok) {
+        setError(data.error || 'Failed to create payment link')
+        return
+      }
+
+      // Show shareable link instead of redirecting
+      setPaymentLink(data.payment_url)
+    } catch (err: any) {
+      console.error('[PartialPaymentModal] Stripe payment error:', err)
+      setError(err.message || 'Failed to create payment link')
     }
+  }
 
-    // Redirect to Stripe payment link
-    window.location.href = data.payment_url
+  if (paymentLink) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        <Card className="relative max-w-md w-full">
+          <CardHeader>
+            <h3 className="text-2xl font-bold text-white">✅ Link Created!</h3>
+            <p className="text-gray-400 text-sm mt-2">Share this link with your client</p>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div className="glass rounded-lg p-4 border-green-400/30 bg-green-500/10">
+              <p className="text-gray-400 text-xs mb-2">PAYMENT LINK</p>
+              <p className="text-white text-sm font-mono break-all">{paymentLink}</p>
+            </div>
+            <div className="glass rounded-lg p-4 border-blue-400/30">
+              <p className="text-gray-400 text-xs mb-2">AMOUNT</p>
+              <p className="text-2xl font-bold text-blue-300">${amount}</p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentLink)
+                  alert('Link copied to clipboard!')
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                📋 Copy Link
+              </Button>
+              <Button
+                onClick={() => window.open(paymentLink, '_blank')}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                🔗 Open Link
+              </Button>
+            </div>
+            <Button
+              onClick={() => {
+                setPaymentLink(null)
+                onClose()
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Done
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -148,6 +219,7 @@ export function PartialPaymentModal({
                 onChange={(e) => setAmount(e.target.value)}
                 className="glass w-full pl-7 pr-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
                 placeholder="0.00"
+                disabled={loading}
               />
             </div>
             <p className="text-gray-500 text-xs mt-1">Max: ${remainingBalance.toFixed(2)}</p>
@@ -160,6 +232,7 @@ export function PartialPaymentModal({
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
+                disabled={loading}
                 className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
               >
                 <option value="stripe" className="bg-slate-900">Stripe</option>
@@ -179,6 +252,7 @@ export function PartialPaymentModal({
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
+                disabled={loading}
                 className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
               />
             </div>
@@ -193,6 +267,7 @@ export function PartialPaymentModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Payment reference, check number, etc."
                 rows={3}
+                disabled={loading}
                 className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
               />
             </div>
@@ -207,6 +282,7 @@ export function PartialPaymentModal({
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
                 placeholder="client@example.com"
+                disabled={loading}
                 className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
               />
             </div>
