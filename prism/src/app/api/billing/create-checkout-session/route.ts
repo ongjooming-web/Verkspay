@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     console.log('[billing/create-checkout] Checking for existing subscription...')
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('profiles')
-      .select('subscription_tier, subscription_id')
+      .select('subscription_tier, subscription_id, stripe_customer_id')
       .eq('id', userId)
       .single()
 
