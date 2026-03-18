@@ -31,22 +31,8 @@ export async function POST(
     const token = authHeader.replace('Bearer ', '')
     console.log('[mark-paid] Token extracted from header, length:', token.length)
 
-    // Use service role to verify the token and get user
-    // The service role client can verify JWT tokens directly
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    )
-
-    // Verify token by getting user with the token
-    const { data: userData, error: tokenError } = await adminClient.auth.admin.getUserById(
-      // We'll extract user ID from token instead
-      // First, just try to get the session
-      ''
-    )
-
-    // Actually, let's use a simpler approach - just decode the JWT and get the user ID
-    // The token format is: header.payload.signature
+    // Decode JWT and extract user ID
+    // Token format: header.payload.signature
     // Payload contains: { sub: userId, ... }
     try {
       const parts = token.split('.')

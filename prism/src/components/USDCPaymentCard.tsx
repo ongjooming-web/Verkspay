@@ -19,6 +19,8 @@ export function PaymentCard({
   status = 'pending',
   onPaymentMarked
 }: PaymentCardProps) {
+  console.log('[PaymentCard] Initialized with invoiceId:', invoiceId, 'Type:', typeof invoiceId)
+  
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'crypto' | null>(null)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
@@ -134,10 +136,17 @@ export function PaymentCard({
       }
 
       console.log('[PaymentCard] Got access token, length:', accessToken.length)
-      console.log('[PaymentCard] Marking invoice as paid:', invoiceId)
+      console.log('[PaymentCard] Marking invoice as paid:', invoiceId, 'Type:', typeof invoiceId)
+
+      // Validate invoiceId format
+      if (!invoiceId || invoiceId.length === 0) {
+        setMarkAsPayedError('Invalid invoice ID')
+        setIsMarkingAsPaid(false)
+        return
+      }
 
       // Call the mark-paid endpoint with refreshed token
-      console.log('[PaymentCard] Sending mark-paid request with token')
+      console.log('[PaymentCard] Sending mark-paid request to: /api/invoices/' + invoiceId + '/mark-paid')
       const response = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
         method: 'POST',
         headers: {
