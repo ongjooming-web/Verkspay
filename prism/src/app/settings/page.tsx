@@ -358,14 +358,20 @@ function BillingSection() {
 
   const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
     try {
+      console.log('[BillingSection] Starting upgrade for plan:', plan)
+      
       const { data: session } = await supabase.auth.getSession()
       const token = session?.session?.access_token
 
+      console.log('[BillingSection] Token available:', !!token)
+
       if (!token) {
-        alert('Session expired. Please refresh and try again.')
+        alert('❌ Session expired. Please refresh the page and try again.')
         return
       }
 
+      console.log('[BillingSection] Calling checkout endpoint...')
+      
       const response = await fetch('/api/billing/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -375,14 +381,26 @@ function BillingSection() {
         body: JSON.stringify({ plan })
       })
 
+      console.log('[BillingSection] Response status:', response.status)
+
       const data = await response.json()
+      
+      console.log('[BillingSection] Response data:', data)
+
+      if (!response.ok) {
+        alert(`❌ Error: ${data.error || 'Failed to create checkout session'}`)
+        return
+      }
 
       if (data.url) {
+        console.log('[BillingSection] Redirecting to:', data.url)
         window.location.href = data.url
+      } else {
+        alert('❌ No checkout URL returned')
       }
-    } catch (err) {
-      console.error('Error upgrading:', err)
-      alert('Failed to start upgrade. Please try again.')
+    } catch (err: any) {
+      console.error('[BillingSection] Error upgrading:', err)
+      alert(`❌ Error: ${err.message || 'Failed to start upgrade'}`)
     }
   }
 
