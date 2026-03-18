@@ -93,17 +93,17 @@ export default function PricingPage() {
       name: 'Enterprise',
       price: '$199',
       period: '/month',
-      description: 'For agencies & teams',
+      description: 'For teams & enterprises',
       features: [
         'Everything in Pro',
-        'Team accounts (5 users)',
+        'Team management (5 users)',
         'API access',
         'Webhooks',
-        'Priority support',
-        'Custom integrations'
+        'Dedicated support',
+        'Custom branding'
       ],
       button: {
-        text: 'Contact Sales',
+        text: 'Get Started',
         action: 'enterprise'
       },
       highlighted: false
@@ -170,8 +170,6 @@ export default function PricingPage() {
                     onClick={() => {
                       if (plan.button.action === 'free') {
                         window.location.href = '/invoices'
-                      } else if (plan.button.action === 'enterprise') {
-                        handleContact()
                       } else {
                         handleUpgrade(plan.button.action as 'pro' | 'enterprise')
                       }
