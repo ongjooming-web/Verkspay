@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20'
@@ -19,30 +20,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get auth token from header
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify token using Supabase auth (safer than manual JWT decode)
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
-
-    if (authError || !user) {
+    // Verify auth using shared helper
+    const { user, error: authError } = await requireAuth(req)
+    if (authError) {
       console.error('[billing/create-checkout] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authError.message },
+        { status: authError.status }
       )
     }
 
@@ -50,6 +34,9 @@ export async function POST(req: NextRequest) {
     const userEmail = user.email! // from verified token
 
     console.log('[billing/create-checkout] User:', userId, 'Email:', userEmail)
+
+    // Get Supabase server client
+    const supabase = getSupabaseServer()
 
     // Check for duplicate subscription (Issue #4)
     console.log('[billing/create-checkout] Checking for existing subscription...')

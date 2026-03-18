@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20'
@@ -21,29 +22,20 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Verify token using Supabase auth (safer than manual JWT decode)
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
-
-    if (authError || !user) {
+    // Verify auth using shared helper
+    const { user, error: authError } = await requireAuth(req)
+    if (authError) {
       console.error('[billing/customer-portal] Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authError.message },
+        { status: authError.status }
       )
     }
 
     const userId = user.id // guaranteed UUID from Supabase
 
-    // Use service role to get profile
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    // Get Supabase server client
+    const supabase = getSupabaseServer()
 
     // Get user profile
     const { data: profile, error: profileError } = await supabase
