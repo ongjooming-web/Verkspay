@@ -44,7 +44,6 @@ export async function GET(req: NextRequest) {
     // Check if onboarding is actually complete by retrieving account details
     console.log('[Stripe Return] Retrieving Stripe account details for:', stripeAccountId)
     
-    let account: any
     let isOnboardingComplete = false
     
     try {
