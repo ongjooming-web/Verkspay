@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
     )
 
     // Create Stripe Payment Link with the price
+    // Include metadata to track the invoice
     const paymentLink = await stripe.paymentLinks.create(
       {
         line_items: [
@@ -108,6 +109,10 @@ export async function POST(req: NextRequest) {
             quantity: 1
           }
         ],
+        metadata: {
+          invoiceId: invoiceId,
+          freelancerId: invoice.user_id
+        },
         customer_creation: 'always',
         billing_address_collection: 'auto',
         after_completion: {

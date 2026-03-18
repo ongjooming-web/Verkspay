@@ -35,12 +35,46 @@ export async function POST(req: NextRequest) {
 
     console.log('[Stripe Webhook] Event type:', event.type, 'Account:', event.account)
 
-    // Handle payment_intent.succeeded (from Payment Links)
+    // Handle checkout.session.completed (from Payment Links)
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session
+      const invoiceId = session.metadata?.invoiceId
+      const freelancerId = session.metadata?.freelancerId
+
+      console.log('[Stripe Webhook] Checkout completed for invoice:', invoiceId, 'Session:', session.id)
+
+      if (!invoiceId) {
+        console.log('[Stripe Webhook] No invoiceId in metadata, skipping')
+        return NextResponse.json({ received: true }, { status: 200 })
+      }
+
+      // Update invoice to paid
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          status: 'paid',
+          paid_date: new Date().toISOString(),
+          payment_method: 'stripe',
+          payment_recipient: `Stripe Payment • ${session.id.slice(0, 12)}...`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoiceId)
+
+      if (updateError) {
+        console.error('[Stripe Webhook] Failed to update invoice:', updateError)
+      } else {
+        console.log('[Stripe Webhook] Invoice marked as paid:', invoiceId)
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
+    // Handle payment_intent.succeeded (legacy - for backward compatibility)
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log('[Stripe Webhook] Payment intent succeeded:', paymentIntent.id)
 
-      // Find invoice by payment intent ID (stored when creating payment link)
+      // Try to find invoice by stored session ID
       const { data: invoices, error: searchError } = await supabase
         .from('invoices')
         .select('*')
@@ -61,7 +95,7 @@ export async function POST(req: NextRequest) {
           status: 'paid',
           paid_date: new Date().toISOString(),
           payment_method: 'stripe',
-          payment_recipient: `Stripe Payment Link • ${paymentIntent.id.slice(0, 12)}...`,
+          payment_recipient: `Stripe Payment • ${paymentIntent.id.slice(0, 12)}...`,
           updated_at: new Date().toISOString()
         })
         .eq('id', invoice.id)
@@ -75,13 +109,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 })
     }
 
-    // Handle checkout.session.completed (legacy - for backward compatibility)
+    // Legacy: Handle old checkout sessions (for backward compatibility)
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
       const invoiceId = session.metadata?.invoiceId
       const userId = session.metadata?.userId
 
-      console.log('[Stripe Webhook] Payment completed for invoice:', invoiceId)
+      console.log('[Stripe Webhook] Legacy checkout session completed for invoice:', invoiceId)
 
       if (invoiceId && userId) {
         // Update invoice status to paid
