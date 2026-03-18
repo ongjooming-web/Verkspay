@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
+import { supabase } from '@/lib/supabase'
 
 interface PartialPaymentModalProps {
   invoiceId: string
@@ -59,12 +60,6 @@ export function PartialPaymentModal({
 
   const handleManualPayment = async (paymentAmount: number) => {
     try {
-      const supabase = (window as any).supabase
-      if (!supabase) {
-        setError('Supabase not initialized')
-        return
-      }
-
       const { data: session } = await supabase.auth.getSession()
       const token = session?.session?.access_token
 
