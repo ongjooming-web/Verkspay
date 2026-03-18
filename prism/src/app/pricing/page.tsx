@@ -10,7 +10,7 @@ import Link from 'next/link'
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
 
-  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+  const handleUpgrade = async (plan: 'starter' | 'pro') => {
     try {
       setLoading(true)
       const { data: session } = await supabase.auth.getSession()
@@ -23,13 +23,19 @@ export default function PricingPage() {
 
       const token = session.session.access_token
 
+      // Map frontend plan names to backend plan names
+      const planMap = {
+        'starter': 'pro', // Stripe price_pro is actually our "Starter" now
+        'pro': 'enterprise' // Stripe price_enterprise is actually our "Pro"
+      }
+
       const response = await fetch('/api/billing/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ plan })
+        body: JSON.stringify({ plan: planMap[plan] })
       })
 
       const data = await response.json()
@@ -47,16 +53,13 @@ export default function PricingPage() {
     }
   }
 
-  const handleContact = () => {
-    window.location.href = 'mailto:support@prismops.xyz?subject=Enterprise%20Inquiry'
-  }
-
   const plans = [
     {
       name: 'Free',
       price: '$0',
       period: 'Forever',
-      description: 'Perfect for getting started',
+      description: 'Perfect for trying Prism',
+      subtext: 'Most freelancers upgrade within 2 weeks',
       features: [
         '5 invoices/month',
         '3 payment links/month',
@@ -71,42 +74,46 @@ export default function PricingPage() {
       highlighted: false
     },
     {
+      name: 'Starter',
+      price: '$19',
+      period: '/month',
+      description: 'For freelancers scaling up',
+      features: [
+        'Unlimited invoices',
+        '15 payment links/month',
+        'Clients get paid receipts automatically — no manual follow-up',
+        'Smart payment reminders (Day 1, 3, 7)',
+        'Track partial payments to see exactly what clients owe',
+        'Email support'
+      ],
+      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. This is built for you.',
+      button: {
+        text: 'Upgrade to Starter',
+        action: 'starter'
+      },
+      highlighted: false
+    },
+    {
       name: 'Pro',
       price: '$49',
       period: '/month',
-      description: 'For growing freelancers',
+      description: 'For serious freelancers & agencies',
+      social_proof: '★★★★★ Used by 200+ freelancers',
       features: [
-        'Unlimited invoices',
+        'Everything in Starter',
         'Unlimited payment links',
+        'See which clients owe you money at a glance',
+        'Recurring invoices for retainers',
         'Stripe payment integration',
-        'Auto-invoice confirmation',
-        'Email support',
-        'Advanced reporting (coming soon)'
+        'API access (coming soon)',
+        'Priority email support'
       ],
+      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. This is built for you.',
       button: {
         text: 'Upgrade to Pro',
         action: 'pro'
       },
       highlighted: true
-    },
-    {
-      name: 'Enterprise',
-      price: '$199',
-      period: '/month',
-      description: 'For teams & enterprises',
-      features: [
-        'Everything in Pro',
-        'Team management (5 users)',
-        'API access',
-        'Webhooks',
-        'Dedicated support',
-        'Custom branding'
-      ],
-      button: {
-        text: 'Get Started',
-        action: 'enterprise'
-      },
-      highlighted: false
     }
   ]
 
@@ -117,8 +124,8 @@ export default function PricingPage() {
       <div className="max-w-7xl mx-auto px-6 py-20">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-white mb-4">Simple, Transparent Pricing</h1>
-          <p className="text-gray-400 text-lg">Choose the plan that works for your business</p>
+          <h1 className="text-5xl font-bold text-white mb-4">Invoicing Built for Freelancers</h1>
+          <p className="text-gray-400 text-lg">Not for accountants. For you.</p>
         </div>
 
         {/* Pricing Cards */}
@@ -146,6 +153,9 @@ export default function PricingPage() {
                 <CardHeader>
                   <h2 className="text-3xl font-bold text-white">{plan.name}</h2>
                   <p className="text-gray-400 text-sm mt-1">{plan.description}</p>
+                  {(plan as any).subtext && (
+                    <p className="text-gray-500 text-xs italic mt-2">{(plan as any).subtext}</p>
+                  )}
 
                   {/* Price */}
                   <div className="mt-6 mb-4">
@@ -154,7 +164,14 @@ export default function PricingPage() {
                   </div>
                 </CardHeader>
 
-                <CardBody className="space-y-8">
+                <CardBody className="space-y-6">
+                  {/* Social Proof */}
+                  {(plan as any).social_proof && (
+                    <div className="text-center text-amber-400 text-sm font-semibold">
+                      {(plan as any).social_proof}
+                    </div>
+                  )}
+
                   {/* Features */}
                   <ul className="space-y-3">
                     {plan.features.map((feature, i) => (
@@ -165,13 +182,20 @@ export default function PricingPage() {
                     ))}
                   </ul>
 
+                  {/* Comparison Text */}
+                  {(plan as any).comparison && (
+                    <div className="border-t border-blue-400/20 pt-4 mt-6">
+                      <p className="text-gray-400 text-xs italic">{(plan as any).comparison}</p>
+                    </div>
+                  )}
+
                   {/* Button */}
                   <Button
                     onClick={() => {
                       if (plan.button.action === 'free') {
                         window.location.href = '/invoices'
                       } else {
-                        handleUpgrade(plan.button.action as 'pro' | 'enterprise')
+                        handleUpgrade(plan.button.action as 'starter' | 'pro')
                       }
                     }}
                     disabled={loading && plan.button.action !== 'free'}
@@ -189,19 +213,20 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* FAQ / Info */}
+        {/* Team Waitlist CTA */}
         <div className="text-center mt-20">
-          <Card className="max-w-2xl mx-auto border-blue-500/20">
+          <Card className="max-w-2xl mx-auto border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-purple-500/10">
             <CardBody className="text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">Have questions?</h3>
+              <h3 className="text-2xl font-bold text-white mb-2">Need team access?</h3>
               <p className="text-gray-400 mb-6">
-                All plans include 14-day free trial. Cancel anytime, no credit card required for Free tier.
+                Team management for 2-5 users, API access, and webhooks coming soon.
               </p>
-              <Link href="/">
-                <Button variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/10">
-                  ← Back to Home
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => window.location.href = 'mailto:support@prismops.xyz?subject=Team%20Waitlist'}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                🚀 Join the Waitlist
+              </Button>
             </CardBody>
           </Card>
         </div>
