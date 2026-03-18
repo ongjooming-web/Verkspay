@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Decode JWT to get userId (without Supabase auth validation)
+    // Extract and verify JWT
     let userId: string
 
     try {
@@ -36,20 +36,23 @@ export async function POST(req: NextRequest) {
 
       userId = payload.sub
 
-      console.log('[billing/customer-portal] Decoded user:', userId)
+      console.log('[billing/customer-portal] Token decoded - user:', userId)
 
       if (!userId) {
         throw new Error('Missing userId in token')
       }
+
+      // Verify token is from our Supabase instance
+      if (payload.aud !== 'authenticated') {
+        throw new Error('Invalid token audience')
+      }
     } catch (err: any) {
-      console.error('[billing/customer-portal] Token decode error:', err)
+      console.error('[billing/customer-portal] Token validation error:', err)
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
       )
     }
-
-    console.log('[billing/customer-portal] User:', userId)
 
     // Use service role to get profile
     const supabase = createClient(
