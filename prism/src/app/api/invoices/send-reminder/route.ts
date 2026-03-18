@@ -109,7 +109,8 @@ export async function POST(req: NextRequest) {
       invoiceNumber: invoice.invoice_number,
       amount: invoice.amount,
       dueDate: invoice.due_date,
-      freelancerName: profile.full_name || 'the freelancer'
+      freelancerName: profile.full_name || 'the freelancer',
+      invoiceId: invoiceId
     }
 
     // Get appropriate template based on reminder count
