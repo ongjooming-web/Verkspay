@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import { PaymentCard } from '@/components/PaymentCard'
+import { PaymentCard } from '@/components/USDCPaymentCard'
 import Link from 'next/link'
 
 interface Invoice {
