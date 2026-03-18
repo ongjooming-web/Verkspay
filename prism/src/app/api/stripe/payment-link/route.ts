@@ -53,14 +53,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify user owns this invoice (ownership check)
-    if (invoice.user_id !== userId) {
-      console.error('[stripe/payment-link] User does not own this invoice:', { userId, invoice_user_id: invoice.user_id })
-      return NextResponse.json(
-        { error: 'Unauthorized: You do not own this invoice' },
-        { status: 403 }
-      )
-    }
+
 
     // Check if invoice already paid
     if (invoice.status === 'paid') {
@@ -70,30 +63,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check subscription limits for payment links
-    console.log('[stripe/payment-link] Checking subscription limits for user:', invoice.user_id)
-    const { checkSubscriptionLimits } = await import('@/lib/subscription-limits')
-    const limitCheck = await checkSubscriptionLimits(
-      invoice.user_id,
-      'payment_links',
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
 
-    if (!limitCheck.allowed) {
-      console.log('[stripe/payment-link] Payment link limit exceeded:', limitCheck)
-      return NextResponse.json(
-        {
-          error: limitCheck.error,
-          code: 'LIMIT_EXCEEDED',
-          count: limitCheck.count,
-          limit: limitCheck.limit,
-          tier: limitCheck.tier
-        },
-        { status: 402 } // 402 Payment Required
-      )
-    }
-
-    console.log('[stripe/payment-link] ✓ Payment link limit check passed')
 
     // Fetch freelancer profile to get Stripe account
     const { data: profile, error: profileError } = await supabase

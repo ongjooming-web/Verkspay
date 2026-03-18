@@ -119,8 +119,7 @@ export default function PaymentPage() {
         body: JSON.stringify({
           invoiceId,
           amount: data?.invoice.amount,
-          clientEmail,
-          freelancerId: data?.freelancer
+          clientEmail
         })
       })
 
