@@ -76,15 +76,18 @@ export async function POST(req: NextRequest) {
 
     console.log('[stripe/payment-link] Stripe account:', profile.stripe_account_id)
 
-    // Create Stripe Product and Price first
+    // Create Stripe Product and Price on MAIN account
+    // This ensures webhook fires on main account
     const product = await stripe.products.create(
       {
         name: `Invoice ${invoice.invoice_number}`,
         description: invoice.description || 'Invoice payment',
-        type: 'service'
-      },
-      {
-        stripeAccount: profile.stripe_account_id
+        type: 'service',
+        metadata: {
+          invoiceId: invoiceId,
+          freelancerId: invoice.user_id,
+          freelancerStripeAccount: profile.stripe_account_id
+        }
       }
     )
 
@@ -93,14 +96,11 @@ export async function POST(req: NextRequest) {
         product: product.id,
         unit_amount: Math.round(amount * 100), // Convert to cents
         currency: 'usd'
-      },
-      {
-        stripeAccount: profile.stripe_account_id
       }
     )
 
-    // Create Stripe Payment Link with the price
-    // Include metadata to track the invoice
+    // Create Stripe Payment Link on MAIN account
+    // Money will be transferred to freelancer via transfer
     const paymentLink = await stripe.paymentLinks.create(
       {
         line_items: [
@@ -111,7 +111,8 @@ export async function POST(req: NextRequest) {
         ],
         metadata: {
           invoiceId: invoiceId,
-          freelancerId: invoice.user_id
+          freelancerId: invoice.user_id,
+          freelancerStripeAccount: profile.stripe_account_id
         },
         customer_creation: 'always',
         billing_address_collection: 'auto',
@@ -121,10 +122,6 @@ export async function POST(req: NextRequest) {
             url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`
           }
         }
-      },
-      {
-        // Send request to connected Stripe account
-        stripeAccount: profile.stripe_account_id
       }
     )
 
