@@ -21,6 +21,8 @@ interface Invoice {
   created_at: string
   paid_date?: string
   payment_method?: string
+  reminder_sent_count?: number
+  last_reminder_sent_at?: string
 }
 
 interface PaymentRecord {
@@ -42,6 +44,8 @@ export default function InvoiceDetail() {
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<any>({})
+  const [sendingReminder, setSendingReminder] = useState(false)
+  const [reminderMessage, setReminderMessage] = useState('')
 
   useEffect(() => {
     fetchInvoiceDetails()
@@ -122,6 +126,71 @@ export default function InvoiceDetail() {
     if (!error) {
       await fetchInvoiceDetails()
       setIsEditing(false)
+    }
+  }
+
+  const handleSendReminder = async () => {
+    if (!invoice) return
+
+    // Check if invoice is paid
+    if (invoice.status === 'paid') {
+      alert('Cannot send reminder for paid invoice')
+      return
+    }
+
+    // Check if invoice is overdue
+    const dueDate = new Date(invoice.due_date)
+    const now = new Date()
+    if (dueDate > now) {
+      alert('Invoice is not yet due. Cannot send reminder.')
+      return
+    }
+
+    // Check reminder limit
+    const reminderCount = invoice.reminder_sent_count || 0
+    if (reminderCount >= 3) {
+      alert('Maximum reminders (3) already sent for this invoice')
+      return
+    }
+
+    setSendingReminder(true)
+    setReminderMessage('')
+
+    try {
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+
+      if (!token) {
+        alert('Session expired. Please refresh and try again.')
+        setSendingReminder(false)
+        return
+      }
+
+      const response = await fetch('/api/invoices/send-reminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ invoiceId: invoice.id })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setReminderMessage(`❌ Error: ${data.error || 'Failed to send reminder'}`)
+      } else {
+        setReminderMessage(`✅ ${data.message}`)
+        // Refresh invoice to show updated reminder count
+        setTimeout(() => {
+          fetchInvoiceDetails()
+          setReminderMessage('')
+        }, 2000)
+      }
+    } catch (err: any) {
+      setReminderMessage(`❌ Error: ${err.message || 'Failed to send reminder'}`)
+    } finally {
+      setSendingReminder(false)
     }
   }
 
@@ -380,6 +449,96 @@ export default function InvoiceDetail() {
               console.log('[InvoiceDetail] Refresh complete, new status should be visible')
             }}
           />
+        )}
+
+        {/* Smart Payment Reminders Card */}
+        {invoice && invoice.status !== 'paid' && new Date(invoice.due_date) < new Date() && (
+          <Card className="mb-8 border-amber-500/30 bg-amber-500/5">
+            <CardHeader>
+              <h2 className="text-2xl font-bold text-white">📧 Payment Reminders</h2>
+              <p className="text-gray-400 text-sm mt-1">Send automatic payment reminders to your client</p>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              {/* Reminder Status */}
+              <div className="glass rounded-lg p-4 border-amber-400/30">
+                <p className="text-gray-400 text-sm mb-2">Reminder Status</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-amber-300">
+                      {invoice.reminder_sent_count || 0} of 3
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      {invoice.reminder_sent_count === 0 && '🔔 No reminders sent yet'}
+                      {invoice.reminder_sent_count === 1 && '⚠️ First reminder sent (Day 1)'}
+                      {invoice.reminder_sent_count === 2 && '⚠️ Second reminder sent (Day 3)'}
+                      {invoice.reminder_sent_count === 3 && '🔴 Final reminder sent (Day 7) - No more reminders available'}
+                    </p>
+                  </div>
+                </div>
+
+                {invoice.last_reminder_sent_at && (
+                  <p className="text-gray-400 text-xs mt-3 border-t border-white/10 pt-3">
+                    Last sent: {new Date(invoice.last_reminder_sent_at).toLocaleString()}
+                  </p>
+                )}
+              </div>
+
+              {/* Send Reminder Button */}
+              <div>
+                {invoice.reminder_sent_count && invoice.reminder_sent_count < 3 ? (
+                  <>
+                    <p className="text-gray-400 text-xs mb-3">
+                      {invoice.reminder_sent_count === 1 && '📩 Send a follow-up (Day 3 template)'}
+                      {invoice.reminder_sent_count === 2 && '🚨 Send final urgent reminder (Day 7 template)'}
+                    </p>
+                    <Button
+                      onClick={handleSendReminder}
+                      disabled={sendingReminder}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      {sendingReminder ? '⏳ Sending...' : '📧 Send Next Reminder'}
+                    </Button>
+                  </>
+                ) : invoice.reminder_sent_count === 0 ? (
+                  <>
+                    <p className="text-gray-400 text-xs mb-3">
+                      Send a polite payment reminder to your client
+                    </p>
+                    <Button
+                      onClick={handleSendReminder}
+                      disabled={sendingReminder}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {sendingReminder ? '⏳ Sending...' : '📧 Send Reminder'}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="glass border-amber-400/30 bg-amber-500/10 px-4 py-3 rounded-lg text-amber-300">
+                    ✅ All 3 reminders have been sent to this client
+                  </div>
+                )}
+              </div>
+
+              {/* Message Display */}
+              {reminderMessage && (
+                <div className={`glass rounded-lg p-3 text-sm ${reminderMessage.includes('✅') ? 'border-green-400/30 bg-green-500/10 text-green-300' : 'border-red-400/30 bg-red-500/10 text-red-300'}`}>
+                  {reminderMessage}
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="border-t border-white/10 pt-4">
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  <strong>How it works:</strong> Reminders escalate over time:
+                  <br />• <strong>Day 1:</strong> Polite reminder
+                  <br />• <strong>Day 3:</strong> Friendly follow-up
+                  <br />• <strong>Day 7:</strong> Final urgent request
+                  <br /><br />
+                  Emails include invoice details and a "Pay Now" button linking to your payment page.
+                </p>
+              </div>
+            </CardBody>
+          </Card>
         )}
 
 
