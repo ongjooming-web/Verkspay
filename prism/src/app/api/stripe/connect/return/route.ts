@@ -44,18 +44,24 @@ export async function GET(req: NextRequest) {
     // Check if onboarding is actually complete by retrieving account details
     console.log('[Stripe Return] Retrieving Stripe account details for:', stripeAccountId)
     
-    const Stripe = require('stripe')
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+    let account: any
+    let isOnboardingComplete = false
     
-    const account = await stripe.accounts.retrieve(stripeAccountId)
-    const isOnboardingComplete = account.details_submitted === true
-    
-    console.log('[Stripe Return] Account details:', {
-      details_submitted: account.details_submitted,
-      charges_enabled: account.charges_enabled,
-      payouts_enabled: account.payouts_enabled,
-      requirements: account.requirements
-    })
+    try {
+      const account = await stripe.accounts.retrieve(stripeAccountId)
+      isOnboardingComplete = account.details_submitted === true
+      
+      console.log('[Stripe Return] Account details:', {
+        details_submitted: account.details_submitted,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        requirements: account.requirements
+      })
+    } catch (stripeErr: any) {
+      console.error('[Stripe Return] Error retrieving account:', stripeErr.message)
+      // Don't fail, just set to false and continue
+      isOnboardingComplete = false
+    }
 
     // Update or insert profile with Stripe account info
     console.log('[Stripe Return] Saving stripe_account_id for user:', userId)
@@ -89,7 +95,11 @@ export async function GET(req: NextRequest) {
     // Redirect to settings with success param
     return NextResponse.redirect(new URL('/settings?stripe=success', process.env.NEXT_PUBLIC_APP_URL!))
   } catch (err: any) {
-    console.error('[Stripe Return] Unexpected error:', err)
+    console.error('[Stripe Return] Unexpected error:', {
+      message: err.message,
+      code: err.code,
+      stack: err.stack
+    })
     return NextResponse.redirect(new URL('/settings?stripe=error', process.env.NEXT_PUBLIC_APP_URL!))
   }
 }
