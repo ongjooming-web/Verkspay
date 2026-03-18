@@ -218,7 +218,20 @@ export default function InvoiceDetail() {
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap justify-end">
+                {invoice.status !== 'paid' && (
+                  <Button 
+                    onClick={() => {
+                      const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+                      navigator.clipboard.writeText(paymentUrl)
+                      alert('Payment link copied to clipboard!')
+                    }}
+                    className="bg-green-600/80 hover:bg-green-700/80"
+                    title="Copy shareable payment link"
+                  >
+                    🔗 Share Payment Link
+                  </Button>
+                )}
                 <Button 
                   onClick={() => setIsEditing(true)}
                   className="bg-blue-600/80 hover:bg-blue-700/80"

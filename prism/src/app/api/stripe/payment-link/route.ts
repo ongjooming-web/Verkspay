@@ -2,109 +2,142 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Initialize Stripe with API version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20'
 })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   try {
-    const { invoiceId } = await req.json()
+    const { invoiceId, amount, clientEmail } = await req.json()
 
-    if (!invoiceId) {
-      return NextResponse.json({ error: 'invoiceId required' }, { status: 400 })
-    }
+    console.log('[stripe/payment-link] Creating payment link for invoice:', invoiceId)
+    console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail)
 
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get user's Stripe account
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('stripe_account_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.stripe_account_id) {
+    if (!invoiceId || !amount || !clientEmail) {
       return NextResponse.json(
-        { error: 'Stripe account not connected' },
+        { error: 'Missing required fields: invoiceId, amount, clientEmail' },
         { status: 400 }
       )
     }
 
-    // Get invoice details
-    const { data: invoice } = await supabase
+    // Initialize Supabase
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+
+    // Fetch invoice
+    const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .select('*')
       .eq('id', invoiceId)
-      .eq('user_id', user.id)
       .single()
 
-    if (!invoice) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (invoiceError || !invoice) {
+      console.error('[stripe/payment-link] Invoice not found:', invoiceError)
+      return NextResponse.json(
+        { error: 'Invoice not found' },
+        { status: 404 }
+      )
     }
 
-    // Get invoice items for line items
-    const { data: lineItems } = await supabase
-      .from('invoice_items')
-      .select('*')
-      .eq('invoice_id', invoiceId)
+    // Check if invoice already paid
+    if (invoice.status === 'paid') {
+      return NextResponse.json(
+        { error: 'Invoice already paid' },
+        { status: 400 }
+      )
+    }
 
-    // Convert to Stripe line items (amount in cents)
-    const stripeLineItems = (lineItems || []).map((item) => ({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: item.description || 'Service',
-          metadata: { invoiceId }
-        },
-        unit_amount: Math.round((item.amount || 0) * 100)
-      },
-      quantity: item.quantity || 1
-    }))
+    // Fetch freelancer profile to get Stripe account
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, stripe_account_id, stripe_onboarding_complete')
+      .eq('id', invoice.user_id)
+      .single()
 
-    // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create(
+    if (profileError || !profile) {
+      console.error('[stripe/payment-link] Profile not found:', profileError)
+      return NextResponse.json(
+        { error: 'Freelancer profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if Stripe is connected
+    if (!profile.stripe_account_id || !profile.stripe_onboarding_complete) {
+      console.error('[stripe/payment-link] Stripe not connected for user:', invoice.user_id)
+      return NextResponse.json(
+        { error: 'Freelancer has not connected Stripe yet' },
+        { status: 400 }
+      )
+    }
+
+    console.log('[stripe/payment-link] Stripe account:', profile.stripe_account_id)
+
+    // Create Stripe Payment Link
+    // Using connected account via Stripe API
+    const paymentLink = await stripe.paymentLinks.create(
       {
-        payment_method_types: ['card'],
-        line_items: stripeLineItems,
-        mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoiceId}?payment=success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoiceId}?payment=cancelled`,
-        customer_email: invoice.client_email,
-        metadata: {
-          invoiceId,
-          userId: user.id
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Invoice ${invoice.invoice_number}`,
+                description: invoice.description || 'Invoice payment'
+              },
+              unit_amount: Math.round(amount * 100) // Convert to cents
+            },
+            quantity: 1
+          }
+        ],
+        customer_data: {
+          email: clientEmail
+        },
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?cancelled=true`,
+        after_completion: {
+          type: 'redirect',
+          redirect: {
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true`
+          }
         }
       },
       {
+        // Send request to connected Stripe account
         stripeAccount: profile.stripe_account_id
       }
     )
 
-    console.log('[Stripe] Created checkout session:', session.id, 'for account:', profile.stripe_account_id)
+    console.log('[stripe/payment-link] Payment link created:', paymentLink.id)
 
-    // Save payment intent to database
-    await supabase.from('payment_intents').insert({
-      invoice_id: invoiceId,
-      user_id: user.id,
-      stripe_session_id: session.id,
-      status: 'pending',
-      amount: invoice.total
-    })
+    // Store the session/link ID in the invoice for webhook matching
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({
+        stripe_payment_session_id: paymentLink.id,
+        payment_link_generated_at: new Date().toISOString()
+      })
+      .eq('id', invoiceId)
 
-    return NextResponse.json({ url: session.url })
-  } catch (err: any) {
-    console.error('[Stripe] Payment link error:', err)
+    if (updateError) {
+      console.error('[stripe/payment-link] Failed to store session ID:', updateError)
+      // Don't fail the request, but log it
+    }
+
+    console.log('[stripe/payment-link] Stored session ID in invoice')
+
+    return NextResponse.json({
+      success: true,
+      payment_url: paymentLink.url,
+      session_id: paymentLink.id
+    }, { status: 200 })
+  } catch (error: any) {
+    console.error('[stripe/payment-link] Error:', error)
     return NextResponse.json(
-      { error: err.message || 'Failed to create payment link' },
+      { error: error.message || 'Failed to create payment link' },
       { status: 500 }
     )
   }

@@ -33,9 +33,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Signature verification failed' }, { status: 400 })
     }
 
-    console.log('[Stripe Webhook] Event type:', event.type)
+    console.log('[Stripe Webhook] Event type:', event.type, 'Account:', event.account)
 
-    // Handle checkout.session.completed
+    // Handle payment_intent.succeeded (from Payment Links)
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent
+      console.log('[Stripe Webhook] Payment intent succeeded:', paymentIntent.id)
+
+      // Find invoice by payment intent ID (stored when creating payment link)
+      const { data: invoices, error: searchError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('stripe_payment_session_id', paymentIntent.id)
+
+      if (searchError || !invoices || invoices.length === 0) {
+        console.log('[Stripe Webhook] No invoice found for payment intent:', paymentIntent.id)
+        return NextResponse.json({ received: true }, { status: 200 })
+      }
+
+      const invoice = invoices[0]
+      console.log('[Stripe Webhook] Found invoice:', invoice.id, 'Marking as paid')
+
+      // Update invoice to paid
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          status: 'paid',
+          paid_date: new Date().toISOString(),
+          payment_method: 'stripe',
+          payment_recipient: `Stripe Payment Link • ${paymentIntent.id.slice(0, 12)}...`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoice.id)
+
+      if (updateError) {
+        console.error('[Stripe Webhook] Failed to update invoice:', updateError)
+      } else {
+        console.log('[Stripe Webhook] Invoice marked as paid:', invoice.id)
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
+    // Handle checkout.session.completed (legacy - for backward compatibility)
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
       const invoiceId = session.metadata?.invoiceId
