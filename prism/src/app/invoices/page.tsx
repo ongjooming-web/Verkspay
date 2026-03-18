@@ -167,7 +167,7 @@ export default function Invoices() {
 
     if (!error && data) {
       setInvoices([{ ...data[0], client_name: clients.find(c => c.id === formData.client_id)?.name || 'Unknown' }, ...invoices])
-      setFormData({ client_id: '', amount: '', due_date: '', status: 'draft', description: '' })
+      setFormData({ client_id: '', amount: '', due_date: '', description: '' })
       setShowForm(false)
     }
   }
