@@ -97,21 +97,22 @@ export async function POST(
     let paymentMethod = 'manual'
 
     if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
-      // User has Stripe connected
+      // User has Stripe connected - use Stripe account ID as recipient
       paymentMethod = 'stripe'
-      const accountIdLast4 = profile.stripe_account_id.slice(-4)
-      recipientAddress = `Stripe Account: acct_...${accountIdLast4}`
+      // Format: "Stripe Bank • acct_1TC7..."
+      const accountIdLast8 = profile.stripe_account_id.slice(-8)
+      recipientAddress = `Stripe Bank • ${profile.stripe_account_id.slice(0, 8)}${accountIdLast8}`
       console.log('[mark-paid] Stripe connected:', profile.stripe_account_id)
     } else if (profile?.wallet_address) {
-      // Fallback to wallet
-      paymentMethod = 'usdc'
+      // Fallback to wallet (if no Stripe)
+      paymentMethod = 'usd'
       recipientAddress = profile.wallet_address
       console.log('[mark-paid] Wallet connected:', profile.wallet_address)
     } else {
       console.error('[mark-paid] No payment method connected')
       console.log('[mark-paid] Profile data:', { stripe_account_id: profile?.stripe_account_id, stripe_onboarding_complete: profile?.stripe_onboarding_complete, wallet_address: profile?.wallet_address })
       return NextResponse.json(
-        { error: 'No payment method connected. Please connect Stripe or a wallet in Settings.' },
+        { error: 'No payment method connected. Please connect Stripe in Settings.' },
         { status: 400 }
       )
     }
