@@ -33,7 +33,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Signature verification failed' }, { status: 400 })
     }
 
-    console.log('[Stripe Webhook] Event type:', event.type, 'Account:', event.account)
+    console.log('[Stripe Webhook] ======== WEBHOOK RECEIVED ========')
+    console.log('[Stripe Webhook] Event ID:', event.id)
+    console.log('[Stripe Webhook] Event type:', event.type)
+    console.log('[Stripe Webhook] Account:', event.account)
+    console.log('[Stripe Webhook] Created:', new Date(event.created * 1000).toISOString())
 
     // Handle checkout.session.completed (from Payment Links)
     if (event.type === 'checkout.session.completed') {
@@ -41,15 +45,22 @@ export async function POST(req: NextRequest) {
       const invoiceId = session.metadata?.invoiceId
       const freelancerId = session.metadata?.freelancerId
 
-      console.log('[Stripe Webhook] Checkout completed for invoice:', invoiceId, 'Session:', session.id)
+      console.log('[Stripe Webhook] Checkout completed')
+      console.log('[Stripe Webhook] Session ID:', session.id)
+      console.log('[Stripe Webhook] Session metadata:', session.metadata)
+      console.log('[Stripe Webhook] Extracted invoiceId:', invoiceId)
+      console.log('[Stripe Webhook] Extracted freelancerId:', freelancerId)
 
       if (!invoiceId) {
-        console.log('[Stripe Webhook] No invoiceId in metadata, skipping')
+        console.log('[Stripe Webhook] ❌ No invoiceId in metadata, skipping')
+        console.log('[Stripe Webhook] Full session object:', JSON.stringify(session, null, 2))
         return NextResponse.json({ received: true }, { status: 200 })
       }
 
+      console.log('[Stripe Webhook] ✓ Found invoiceId, updating invoice...')
+
       // Update invoice to paid
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updateData } = await supabase
         .from('invoices')
         .update({
           status: 'paid',
@@ -60,10 +71,13 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', invoiceId)
 
+      console.log('[Stripe Webhook] Update result:', { error: updateError, data: updateData })
+
       if (updateError) {
-        console.error('[Stripe Webhook] Failed to update invoice:', updateError)
+        console.error('[Stripe Webhook] ❌ Failed to update invoice:', updateError)
+        return NextResponse.json({ error: 'Update failed', details: updateError }, { status: 500 })
       } else {
-        console.log('[Stripe Webhook] Invoice marked as paid:', invoiceId)
+        console.log('[Stripe Webhook] ✓ Invoice marked as paid:', invoiceId)
       }
 
       return NextResponse.json({ received: true }, { status: 200 })
