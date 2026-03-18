@@ -229,7 +229,7 @@ export function StripeConnectComponent({ onStripeConnected }: StripeConnectProps
               <p className="text-gray-400 text-sm mb-2">Stripe Account ID</p>
               <p className="text-white font-mono text-xs break-all">{stripeAccountId}</p>
               <p className="text-gray-500 text-xs mt-2">
-                Clients can pay invoices via card or bank transfer
+                Accept USD payments via card or bank transfer
               </p>
             </div>
 
