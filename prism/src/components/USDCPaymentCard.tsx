@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardBody, CardHeader } from './Card'
 
-interface USDCPaymentCardProps {
+interface PaymentCardProps {
   invoiceId: string
   invoiceAmount: number
   invoiceNumber: string
@@ -12,13 +12,13 @@ interface USDCPaymentCardProps {
   onPaymentMarked?: () => void
 }
 
-export function USDCPaymentCard({
+export function PaymentCard({
   invoiceId,
   invoiceAmount,
   invoiceNumber,
   status = 'pending',
   onPaymentMarked
-}: USDCPaymentCardProps) {
+}: PaymentCardProps) {
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'crypto' | null>(null)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
@@ -49,10 +49,10 @@ export function USDCPaymentCard({
         return
       }
 
-      // Get profile with both payment methods
+      // Get profile with all payment method fields
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('wallet_address, stripe_account_id, stripe_onboarding_complete, full_name')
+        .select('wallet_address, payment_method, stripe_account_id, stripe_onboarding_complete, full_name')
         .eq('id', userData.user.id)
         .single()
 
@@ -63,14 +63,26 @@ export function USDCPaymentCard({
         return
       }
 
-      // Determine which payment method to use
-      if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
-        // Stripe connected and verified
-        setPaymentMethod('bank')
-        setStripeAccountId(profile.stripe_account_id)
-        setRecipientName(profile.full_name || userData.user.email || 'Your Account')
+      // Determine which payment method to use based on profile.payment_method field
+      if (profile?.payment_method === 'bank') {
+        // User has Stripe as primary payment method
+        if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
+          // Stripe connected and fully verified
+          setPaymentMethod('bank')
+          setStripeAccountId(profile.stripe_account_id)
+          setRecipientName(profile.full_name || userData.user.email || 'Your Account')
+        } else {
+          // Stripe selected but not fully connected
+          setError('Stripe account not fully connected. Please complete verification in Settings.')
+          setLoading(false)
+          return
+        }
+      } else if (profile?.payment_method === 'crypto' && profile?.wallet_address) {
+        // User has wallet as primary payment method
+        setPaymentMethod('crypto')
+        setWalletAddress(profile.wallet_address)
       } else if (profile?.wallet_address) {
-        // Fallback to wallet
+        // Fallback to wallet if no payment method specified
         setPaymentMethod('crypto')
         setWalletAddress(profile.wallet_address)
       } else {
@@ -356,4 +368,4 @@ export function USDCPaymentCard({
   return null
 }
 
-export { USDCPaymentCard as default }
+export { PaymentCard as default }

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import { USDCPaymentCard } from '@/components/USDCPaymentCard'
+import { PaymentCard } from '@/components/PaymentCard'
 import Link from 'next/link'
 
 interface Invoice {
@@ -378,7 +378,7 @@ export default function InvoiceDetail() {
 
         {/* USDC Payment Card */}
         {invoice && invoice.status !== 'paid' && (
-          <USDCPaymentCard
+          <PaymentCard
             invoiceId={invoiceId}
             invoiceAmount={invoice.amount}
             invoiceNumber={invoice.invoice_number}
