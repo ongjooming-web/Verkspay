@@ -126,6 +126,12 @@ export default function Invoices() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate form
+    if (!formData.client_id || !formData.amount || !formData.due_date) {
+      alert('Please fill in all required fields: Client, Amount, Due Date')
+      return
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
 
@@ -178,10 +184,18 @@ export default function Invoices() {
       ])
       .select()
 
-    if (!error && data) {
+    if (error) {
+      console.error('[InvoicesList] Error creating invoice:', error)
+      alert(`Error creating invoice: ${error.message}`)
+      return
+    }
+
+    if (data && data.length > 0) {
+      console.log('[InvoicesList] Invoice created successfully:', data[0])
       setInvoices([{ ...data[0], client_name: clients.find(c => c.id === formData.client_id)?.name || 'Unknown' }, ...invoices])
       setFormData({ client_id: '', amount: '', due_date: '', description: '' })
       setShowForm(false)
+      alert('✅ Invoice created successfully!')
     }
   }
 
