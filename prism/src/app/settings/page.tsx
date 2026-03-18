@@ -316,41 +316,62 @@ function BillingSection() {
 
   const loadBillingData = async () => {
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user) return
+      // Use proper Supabase auth method (not JWT decode)
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.error('[BillingSection] Auth error:', authError)
+        setLoading(false)
+        return
+      }
+
+      const userId = user.id
+      console.log('[BillingSection] Loaded user:', userId)
 
       // Get profile with subscription info
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('subscription_tier, subscription_status')
-        .eq('id', userData.user.id)
+        .eq('id', userId)
         .single()
 
-      setProfile(profileData)
+      if (profileError) {
+        console.error('[BillingSection] Profile error:', profileError)
+      } else {
+        setProfile(profileData)
+      }
 
       // Count invoices this month
       const now = new Date()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-      const { data: invoices, count: invCount } = await supabase
+      const { data: invoices, count: invCount, error: invError } = await supabase
         .from('invoices')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userData.user.id)
+        .eq('user_id', userId)
         .gte('created_at', monthStart.toISOString())
 
-      setInvoiceCount(invCount || 0)
+      if (invError) {
+        console.error('[BillingSection] Invoice count error:', invError)
+      } else {
+        setInvoiceCount(invCount || 0)
+      }
 
       // Count payment links this month
-      const { data: links, count: linkCount } = await supabase
+      const { data: links, count: linkCount, error: linkError } = await supabase
         .from('invoices')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userData.user.id)
+        .eq('user_id', userId)
         .eq('stripe_payment_session_id IS NOT', null)
         .gte('payment_link_generated_at', monthStart.toISOString())
 
-      setPaymentLinkCount(linkCount || 0)
+      if (linkError) {
+        console.error('[BillingSection] Payment link count error:', linkError)
+      } else {
+        setPaymentLinkCount(linkCount || 0)
+      }
     } catch (err) {
-      console.error('Error loading billing data:', err)
+      console.error('[BillingSection] Error loading billing data:', err)
     } finally {
       setLoading(false)
     }
@@ -360,16 +381,20 @@ function BillingSection() {
     try {
       console.log('[BillingSection] Starting upgrade for plan:', plan)
       
-      const { data: session } = await supabase.auth.getSession()
-      const token = session?.session?.access_token
+      // Refresh session to ensure token is valid
+      console.log('[BillingSection] Refreshing session...')
+      await supabase.auth.refreshSession()
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      console.log('[BillingSection] Token available:', !!token)
-
-      if (!token) {
+      if (sessionError || !session?.access_token) {
+        console.error('[BillingSection] Session error:', sessionError)
         alert('❌ Session expired. Please refresh the page and try again.')
         return
       }
 
+      const token = session.access_token
+      console.log('[BillingSection] Token available:', !!token)
       console.log('[BillingSection] Calling checkout endpoint...')
       
       const response = await fetch('/api/billing/create-checkout-session', {
@@ -406,13 +431,18 @@ function BillingSection() {
 
   const handleManageSubscription = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession()
-      const token = session?.session?.access_token
+      // Refresh session first
+      await supabase.auth.refreshSession()
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      if (!token) {
-        alert('Session expired. Please refresh and try again.')
+      if (sessionError || !session?.access_token) {
+        console.error('[BillingSection] Session error:', sessionError)
+        alert('❌ Session expired. Please refresh the page and try again.')
         return
       }
+
+      const token = session.access_token
 
       const response = await fetch('/api/billing/customer-portal', {
         method: 'POST',
@@ -424,12 +454,17 @@ function BillingSection() {
 
       const data = await response.json()
 
+      if (!response.ok) {
+        alert(`❌ Error: ${data.error || 'Failed to open billing portal'}`)
+        return
+      }
+
       if (data.url) {
         window.location.href = data.url
       }
-    } catch (err) {
-      console.error('Error opening portal:', err)
-      alert('Failed to open billing portal. Please try again.')
+    } catch (err: any) {
+      console.error('[BillingSection] Error opening portal:', err)
+      alert(`❌ Error: ${err.message || 'Failed to open billing portal'}`)
     }
   }
 
