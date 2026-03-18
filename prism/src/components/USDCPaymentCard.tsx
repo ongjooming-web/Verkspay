@@ -191,8 +191,8 @@ export function USDCPaymentCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">💰 Pay with USDC</h2>
-            <p className="text-gray-400 text-sm mt-1">Send to wallet address below</p>
+            <h2 className="text-2xl font-bold text-white">💳 Send Payment</h2>
+            <p className="text-gray-400 text-sm mt-1">Pay with Stripe bank account</p>
           </div>
           <span className="text-3xl">✓</span>
         </div>
@@ -201,23 +201,23 @@ export function USDCPaymentCard({
         {/* Payment ready badge */}
         <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/50 rounded-lg w-fit">
           <span className="text-green-400 text-lg">●</span>
-          <span className="text-green-300 font-semibold text-sm">USDC Payment Ready</span>
+          <span className="text-green-300 font-semibold text-sm">Recipient Address (USD)</span>
         </div>
 
         {/* Amount display */}
         <div>
-          <p className="text-gray-400 text-sm mb-2">Amount in USDC</p>
+          <p className="text-gray-400 text-sm mb-2">Amount</p>
           <p className="text-3xl font-bold text-blue-400">
-            {invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+            ${invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
           </p>
         </div>
 
         {/* Recipient address (with QR code toggle) */}
         <div className="space-y-3">
-          <p className="text-gray-400 text-sm font-semibold">Send USDC to this wallet address:</p>
+          <p className="text-gray-400 text-sm font-semibold">Recipient Address (USD):</p>
           
           <div className="glass rounded-lg p-4 border-blue-400/30 flex items-center gap-2">
-            <code className="flex-1 text-white font-mono text-sm break-all">
+            <code className="flex-1 text-white font-mono text-xs break-all">
               {walletAddress}
             </code>
             <button
