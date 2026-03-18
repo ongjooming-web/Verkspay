@@ -126,7 +126,14 @@ export default function PaymentPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        setError(errorData.error || 'Failed to create payment link')
+        
+        // Special handling for limit exceeded
+        if (errorData.code === 'LIMIT_EXCEEDED') {
+          setError(`⛔ ${errorData.error}\n\nCurrent usage: ${errorData.count}/${errorData.limit} payment links this month`)
+        } else {
+          setError(errorData.error || 'Failed to create payment link')
+        }
+        
         setIsProcessing(false)
         return
       }
