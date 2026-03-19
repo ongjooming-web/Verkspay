@@ -8,14 +8,27 @@
 
 ## Executive Summary
 
-**Tria Ventures** is a holding company with multiple subsidiaries (Bintang Flavours, Prism, future ventures). This OS provides:
+**Tria Ventures** is a holding company with distinct operational subsidiaries:
 
-1. **Parent-Level Visibility:** Tria Ventures admin sees consolidated financials across all entities
-2. **Entity-Level Operations:** Each subsidiary operates independently with their own accounting, CRM, inventory
-3. **Flexible Reporting:** Roll-up reports (all units) or drill-down (single unit)
-4. **Multi-Account Banking:** Each subsidiary has its own bank details and payment methods
+1. **Tai Chew Hardware & Timber** — Cash retail business
+   - Daily cash reconciliation critical
+   - POS integration (existing system)
+   - No credit terms, immediate payment
+   - Non-standard inventory units (length, volume, batch)
 
-**Core Goal:** Single platform for holding company financial control + operational independence per entity.
+2. **Bintang Flavours** — B2B wholesale/distribution
+   - 4 channels: Distributors, Wholesalers, HoReCa, Ecommerce
+   - Channel-specific pricing tiers
+   - Credit terms per customer (Net 30/60/90/COD)
+   - Overdue tracking + auto reminder emails
+   - Strong CRM + receivables aging
+
+3. **Shared Infrastructure**
+   - Generic webhook receiver (POS, ecommerce)
+   - Consolidated P&L + receivables dashboard
+   - Per-unit bank accounts
+
+**Core Goal:** Flexible platform supporting cash retail (Tai Chew) and B2B credit sales (Bintang) from single backend.
 
 ---
 
@@ -133,6 +146,10 @@ CREATE TABLE contacts (
   city TEXT,
   tags JSONB,
   status TEXT, -- 'prospect', 'contacted', 'sampled', 'active', 'churned'
+  price_tier TEXT, -- Bintang Flavours: 'distributor', 'wholesaler', 'horeca', 'ecommerce' (NULL for Tai Chew)
+  credit_term TEXT, -- Bintang Flavours: 'net_30', 'net_60', 'net_90', 'cod' (NULL for Tai Chew - cash only)
+  credit_limit NUMERIC, -- Max credit allowed for B2B customers (Bintang)
+  outstanding_balance NUMERIC DEFAULT 0, -- Running total of unpaid invoices
   last_contacted_at TIMESTAMP,
   created_at TIMESTAMP
 );
@@ -168,11 +185,18 @@ CREATE TABLE contact_reminders (
 CREATE TABLE skus (
   id UUID PRIMARY KEY,
   business_unit_id UUID REFERENCES business_units,
-  sku_code TEXT, -- 'BF-001'
+  sku_code TEXT, -- 'BF-001', 'TC-HW-001'
   name TEXT,
+  category TEXT, -- For Tai Chew: 'hardware', 'timber', 'tools'; For Bintang: 'spice_blend', 'sauce', etc.
   cost_price NUMERIC,
+  -- Tai Chew: single sale price
   sale_price NUMERIC,
-  unit TEXT,
+  -- Bintang Flavours: tiered pricing (NULL if Tai Chew)
+  distributor_price NUMERIC,
+  wholesaler_price NUMERIC,
+  horeca_price NUMERIC,
+  ecommerce_price NUMERIC,
+  unit TEXT, -- 'box', 'kg', 'meter', 'liter', 'batch' (non-standard units for Tai Chew)
   current_stock INT,
   reorder_level INT,
   supplier_id UUID REFERENCES contacts,
@@ -214,15 +238,17 @@ CREATE TABLE invoices (
   contact_id UUID REFERENCES contacts,
   invoice_number TEXT,
   issue_date DATE,
-  due_date DATE,
-  items JSONB,
+  due_date DATE, -- Auto-calculated from issue_date + contact.credit_term (Bintang); TODAY for Tai Chew
+  items JSONB, -- [{sku_id, qty, unit_price, price_tier_used, total}, ...]
   subtotal NUMERIC,
   tax NUMERIC,
   total NUMERIC,
-  status TEXT,
+  status TEXT, -- 'draft', 'sent', 'unpaid', 'paid_partial', 'paid', 'overdue'
   amount_paid NUMERIC DEFAULT 0,
-  payment_method TEXT,
+  days_overdue INT DEFAULT 0, -- Auto-calculated: (TODAY - due_date)
+  payment_method TEXT, -- Tai Chew: 'cash', 'card'; Bintang: 'bank_transfer', 'duitnow', 'cash'
   payment_bank_account_id UUID REFERENCES bank_accounts,
+  credit_term_applied TEXT, -- 'net_30', 'net_60', etc. (for audit trail)
   notes TEXT,
   created_at TIMESTAMP,
   UNIQUE(business_unit_id, invoice_number)
@@ -256,6 +282,39 @@ CREATE TABLE webhook_logs (
   created_at TIMESTAMP
 );
 
+-- DAILY CASH RECONCILIATION (Tai Chew Hardware)
+CREATE TABLE daily_cash_reconciliation (
+  id UUID PRIMARY KEY,
+  business_unit_id UUID REFERENCES business_units,
+  reconciliation_date DATE,
+  opening_balance NUMERIC,
+  cash_sales NUMERIC,
+  card_sales NUMERIC,
+  expenses NUMERIC,
+  closing_balance NUMERIC,
+  discrepancy NUMERIC, -- closing_balance - expected
+  notes TEXT,
+  reconciled_by UUID REFERENCES users,
+  reconciled_at TIMESTAMP,
+  created_at TIMESTAMP,
+  UNIQUE(business_unit_id, reconciliation_date)
+);
+
+-- OVERDUE INVOICE REMINDERS (Bintang Flavours)
+CREATE TABLE overdue_reminders (
+  id UUID PRIMARY KEY,
+  business_unit_id UUID REFERENCES business_units,
+  invoice_id UUID REFERENCES invoices,
+  contact_id UUID REFERENCES contacts,
+  days_overdue INT,
+  reminder_type TEXT, -- '30_day_overdue', '60_day_overdue', '90_day_overdue'
+  email_sent BOOLEAN DEFAULT false,
+  email_sent_at TIMESTAMP,
+  status TEXT, -- 'pending', 'sent', 'paid'
+  created_at TIMESTAMP,
+  UNIQUE(invoice_id, reminder_type)
+);
+
 -- ACTIVITY LOG (Per Business Unit - but visible to Tria Ventures admin)
 CREATE TABLE activity_log (
   id UUID PRIMARY KEY,
@@ -284,6 +343,82 @@ CREATE VIEW consolidated_p_l AS
   LEFT JOIN transactions t ON t.debit_account_id = a.id OR t.credit_account_id = a.id
   WHERE bu.organization_id = current_org_id
   GROUP BY bu.id, bu.name;
+```
+
+---
+
+## Two Distinct Business Models
+
+### TAI CHEW HARDWARE & TIMBER
+**Model:** Cash retail, immediate payment
+
+**Characteristics:**
+- No credit terms → all sales are immediate (COD/cash/card)
+- POS webhook integration required
+- Daily cash reconciliation is critical
+- Inventory: non-standard units (meters, liters, batches)
+- No CRM tracking needed (retail, not relationship-based)
+- Reports: daily cash flow, daily sales by category, POS vs manual
+
+**Data Structure:**
+- `contacts.price_tier` = NULL (not applicable)
+- `contacts.credit_term` = NULL (always cash)
+- `contacts.outstanding_balance` = always 0
+- `invoices.due_date` = issue_date (immediate payment)
+- `invoices.status` transitions: draft → sent → paid (no unpaid state)
+- Uses `daily_cash_reconciliation` table
+
+**Example Transaction:**
+```
+POS webhook: Customer buys hardware
+→ Invoice created with status='sent'
+→ Payment processed immediately (cash/card)
+→ Invoice status='paid'
+→ Money added to daily cash reconciliation
+```
+
+### BINTANG FLAVOURS
+**Model:** B2B wholesale, credit-based sales
+
+**Characteristics:**
+- 4 distinct channels: Distributors, Wholesalers, HoReCa, Ecommerce
+- Each channel has different pricing tiers
+- Credit terms per customer (Net 30/60/90/COD)
+- Strong CRM: every account has contact history, order history, balance
+- Overdue tracking + automated reminder emails
+- Reports: receivables aging (30/60/90), revenue by channel, top accounts
+
+**Data Structure:**
+- `contacts.price_tier` = 'distributor', 'wholesaler', 'horeca', 'ecommerce'
+- `contacts.credit_term` = 'net_30', 'net_60', 'net_90', 'cod'
+- `contacts.credit_limit` = max credit allowed
+- `contacts.outstanding_balance` = sum of unpaid invoices
+- `skus` has tiered pricing: distributor_price, wholesaler_price, horeca_price, ecommerce_price
+- `invoices.due_date` = issue_date + credit_term (auto-calculated)
+- `invoices.status` transitions: draft → sent → unpaid → paid_partial → paid OR overdue
+- Uses `overdue_reminders` table for auto-emails
+
+**Pricing Logic:**
+When creating invoice:
+1. System fetches customer's `price_tier`
+2. Auto-populates line item price from matching tier (e.g., contact.price_tier='distributor' → use sku.distributor_price)
+3. User can manually override price if needed (special deals, promotions)
+4. Price tier used is stored in invoice line items for audit
+
+**Example Transaction:**
+```
+New order from Distributor ABC:
+1. Create invoice
+2. Add SKU BF-001:
+   - Distributor price: RM 35
+   - Wholesaler price: RM 40
+   - HoReCa price: RM 45
+   - System auto-selects: RM 35 (contact tier = distributor)
+3. Issue invoice with due_date = issue_date + Net 60 days
+4. Send to customer
+5. After 60 days, if unpaid → trigger overdue_reminder
+6. Auto-send email: "Invoice ABC-001 is now 60 days overdue..."
+7. Track outstanding balance on contact record
 ```
 
 ---
@@ -348,7 +483,7 @@ When generating invoices, pull payment details from `bank_accounts` WHERE `busin
 
 ---
 
-## Module Details (Updated for Multi-Entity)
+## Module Details (Updated for Multi-Entity + Dual Models)
 
 ### MODULE 1: ACCOUNTING
 
@@ -356,8 +491,16 @@ When generating invoices, pull payment details from `bank_accounts` WHERE `busin
 - Separate Chart of Accounts per business unit
 - Transaction ledger per unit
 - GL entries auto-generated
-- Consolidated P&L (hold company view)
+- Consolidated P&L (holding company view)
 - Intercompany transaction support (future)
+
+**Tai Chew:**
+- Daily cash reconciliation report
+- Cash account cleared each day
+
+**Bintang Flavours:**
+- Receivables aging report (30/60/90 days overdue)
+- Outstanding balance per customer
 
 **Key Endpoints:**
 ```
@@ -365,44 +508,123 @@ GET    /api/ledger?business_unit_id=X     -- Single unit
 GET    /api/ledger?consolidated=true      -- All units
 POST   /api/transactions                   -- Create GL entry
 GET    /api/accounts/chart                 -- Per unit or consolidated
+GET    /api/daily-cash?business_unit_id=TC -- Tai Chew daily reconciliation
+GET    /api/receivables-aging?business_unit_id=BF -- Bintang aging report
 ```
 
 ### MODULE 2: CRM
 
-**Features:**
-- Contacts per business unit (can't mix Bintang Flavours customers with Prism leads)
-- Purchase history linked to unit
-- Pipeline management per unit
+**Tai Chew (Minimal):**
+- Basic contact records (optional for receipt/warranty)
+- No purchase history tracking (retail)
+- No pipeline
+
+**Bintang Flavours (Critical):**
+- Full contact profiles per distributor/wholesaler/HoReCa/ecommerce channel
+- Complete purchase history (every order)
+- Outstanding balance tracking
+- Price tier + credit term per contact
+- Sales pipeline (if prospecting new accounts)
+- Follow-up reminders for collections
 
 **Key Endpoints:**
 ```
 GET    /api/contacts?business_unit_id=X
-POST   /api/contacts                      -- Creates for user's assigned unit
+GET    /api/contacts?business_unit_id=BF&price_tier=distributor -- Filter by channel
 GET    /api/contacts/[id]/orders
+GET    /api/contacts/[id]/outstanding-balance
+POST   /api/contacts/[id]/credit-limit-update
 ```
 
 ### MODULE 3: POS INTEGRATION
 
 **Features:**
-- Webhook payload includes `business_unit_id` or inferred from store/channel mapping
+- Generic webhook receiver handles both Tai Chew POS and future Bintang ecommerce
+- Webhook payload includes `business_unit_code` or inferred from terminal/store ID
 - Auto-create transactions in correct unit
 - Stock movements in correct unit
 
-**Webhook Enhancement:**
+**Tai Chew POS Webhook:**
 ```json
 {
-  "business_unit_code": "BF",  // or infer from POS terminal ID
-  "order_id": "POS-20260319-001",
+  "business_unit_code": "TC",
+  "order_id": "POS-TC-20260319-001",
   "channel": "pos",
-  ...
+  "customer": { "name": "Anonymous" },
+  "items": [
+    {
+      "sku": "TC-HW-001",
+      "quantity": 2,
+      "unit_price": 45,
+      "total": 90
+    }
+  ],
+  "total": 90,
+  "payment_method": "cash",
+  "timestamp": "2026-03-19T11:30:00Z"
+}
+```
+
+**Bintang Ecommerce Webhook (Future):**
+```json
+{
+  "business_unit_code": "BF",
+  "order_id": "SHOP-BF-20260319-001",
+  "channel": "ecommerce",
+  "customer": { "name": "Distributor ABC", "id": "[contact_id]" },
+  "items": [...],
+  "total": 5400,
+  "payment_method": "bank_transfer",
+  "timestamp": "2026-03-19T11:30:00Z"
 }
 ```
 
 Backend maps `business_unit_code` → `business_unit_id` before processing.
 
-### MODULE 4-6: INVENTORY, EXPENSES, REPORTS
+**Key Endpoints:**
+```
+POST   /api/webhooks/pos          -- Tai Chew POS
+POST   /api/webhooks/ecommerce    -- Bintang Flavours online store
+POST   /api/webhooks/shopee       -- Bintang Shopee
+POST   /api/webhooks/lazada       -- Bintang Lazada
+```
 
-All operate per business unit with optional rollup.
+### MODULE 4: INVENTORY
+
+**Tai Chew:**
+- Non-standard units: meter, liter, batch, pack, box
+- Cost price + single sale price
+- Daily stock reconciliation (physical count vs system)
+
+**Bintang Flavours:**
+- Standard units: kg, liter, box, pack
+- Cost price + tiered pricing (distributor/wholesaler/horeca/ecommerce)
+- Stock levels per channel (if future: separate warehouses)
+
+### MODULE 5: EXPENSES
+
+All per business unit with optional rollup.
+
+### MODULE 6: REPORTS & DASHBOARD
+
+**Tai Chew Reports:**
+- Daily cash flow (opening + sales - expenses = closing)
+- Daily sales by category (hardware vs timber vs tools)
+- POS vs manual sales breakdown
+- Weekly/monthly cash summary
+
+**Bintang Flavours Reports:**
+- Receivables aging (0-30 days, 30-60 days, 60-90 days, >90 days)
+- Revenue by channel (Distributors, Wholesalers, HoReCa, Ecommerce)
+- Top accounts by volume/revenue
+- Price tier performance (distributor vs wholesaler margin %)
+- Outstanding balance per account
+
+**Consolidated (Tria Ventures):**
+- Combined P&L (Tai Chew cash profit + Bintang gross margin)
+- Total receivables (Bintang only)
+- Total cash position (Tai Chew daily + Bintang receivables)
+- Revenue by subsidiary + channel
 
 ---
 
