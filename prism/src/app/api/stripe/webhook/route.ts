@@ -134,12 +134,15 @@ export async function POST(req: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session
       const invoiceId = session.metadata?.invoiceId
       const freelancerId = session.metadata?.freelancerId
+      const partialAmount = session.metadata?.partialAmount
+      const isPartialPayment = session.metadata?.isPartialPayment === 'true'
 
       console.log('[Stripe Webhook] Checkout completed')
       console.log('[Stripe Webhook] Session ID:', session.id)
       console.log('[Stripe Webhook] Session metadata:', session.metadata)
       console.log('[Stripe Webhook] Extracted invoiceId:', invoiceId)
-      console.log('[Stripe Webhook] Extracted freelancerId:', freelancerId)
+      console.log('[Stripe Webhook] Is partial payment:', isPartialPayment)
+      console.log('[Stripe Webhook] Partial amount:', partialAmount)
 
       if (!invoiceId) {
         console.log('[Stripe Webhook] ❌ No invoiceId in metadata, skipping')
@@ -147,27 +150,82 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true }, { status: 200 })
       }
 
-      console.log('[Stripe Webhook] ✓ Found invoiceId, updating invoice...')
+      console.log('[Stripe Webhook] ✓ Found invoiceId, processing payment...')
 
-      // Update invoice to paid
-      const { error: updateError, data: updateData } = await supabase
+      // Fetch current invoice to get amount
+      const { data: invoiceData, error: fetchError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', invoiceId)
+        .single()
+
+      if (fetchError || !invoiceData) {
+        console.error('[Stripe Webhook] ❌ Failed to fetch invoice:', fetchError)
+        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      }
+
+      // Handle partial vs full payment
+      let paymentAmount = parseFloat(partialAmount || '0')
+      if (!isPartialPayment) {
+        // Full payment - use invoice amount
+        paymentAmount = invoiceData.amount
+      }
+
+      console.log('[Stripe Webhook] Payment amount to record:', paymentAmount)
+      console.log('[Stripe Webhook] Invoice total amount:', invoiceData.amount)
+
+      // Calculate new totals
+      const newAmountPaid = (invoiceData.amount_paid || 0) + paymentAmount
+      const newRemainingBalance = invoiceData.amount - newAmountPaid
+
+      // Determine status
+      let newStatus = 'unpaid'
+      if (newAmountPaid >= invoiceData.amount) {
+        newStatus = 'paid'
+      } else if (newAmountPaid > 0) {
+        newStatus = 'paid_partial'
+      }
+
+      console.log('[Stripe Webhook] New totals - Amount paid:', newAmountPaid, 'Remaining:', newRemainingBalance, 'Status:', newStatus)
+
+      // 1. Create payment record
+      const { error: recordError } = await supabase
+        .from('payment_records')
+        .insert([
+          {
+            invoice_id: invoiceId,
+            amount: paymentAmount,
+            payment_method: 'stripe',
+            payment_date: new Date().toISOString().split('T')[0],
+            notes: `Stripe Payment • ${session.id.slice(0, 12)}...`
+          }
+        ])
+
+      if (recordError) {
+        console.error('[Stripe Webhook] ❌ Failed to create payment record:', recordError)
+      } else {
+        console.log('[Stripe Webhook] ✓ Payment record created')
+      }
+
+      // 2. Update invoice
+      const { error: updateError } = await supabase
         .from('invoices')
         .update({
-          status: 'paid',
-          paid_date: new Date().toISOString(),
+          amount_paid: newAmountPaid,
+          remaining_balance: Math.max(0, newRemainingBalance),
+          status: newStatus,
+          paid_date: newStatus === 'paid' ? new Date().toISOString() : invoiceData.paid_date,
           payment_method: 'stripe',
           payment_recipient: `Stripe Payment • ${session.id.slice(0, 12)}...`,
           updated_at: new Date().toISOString()
         })
         .eq('id', invoiceId)
 
-      console.log('[Stripe Webhook] Update result:', { error: updateError, data: updateData })
-
       if (updateError) {
         console.error('[Stripe Webhook] ❌ Failed to update invoice:', updateError)
         return NextResponse.json({ error: 'Update failed', details: updateError }, { status: 500 })
       } else {
-        console.log('[Stripe Webhook] ✓ Invoice marked as paid:', invoiceId)
+        console.log('[Stripe Webhook] ✓ Invoice updated - Status:', newStatus, 'Amount paid:', newAmountPaid)
       }
 
       return NextResponse.json({ received: true }, { status: 200 })
