@@ -66,7 +66,7 @@ export async function POST(
     }
 
     // Create payment record
-    await supabase
+    const { error: paymentRecordError } = await supabase
       .from('payment_records')
       .insert({
         invoice_id: invoiceId,
@@ -76,7 +76,10 @@ export async function POST(
         notes: 'Payment marked as paid via payment success page',
         created_at: new Date().toISOString(),
       })
-      .catch(err => console.error('[mark-paid] Error creating payment record:', err))
+
+    if (paymentRecordError) {
+      console.error('[mark-paid] Error creating payment record:', paymentRecordError)
+    }
 
     console.log(`[mark-paid] Invoice ${invoiceId} marked as ${newStatus}`)
 
