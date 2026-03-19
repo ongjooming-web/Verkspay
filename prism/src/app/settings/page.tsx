@@ -6,8 +6,6 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import { WalletConnectComponent } from '@/components/WalletConnect'
-import { StripeConnectComponent } from '@/components/StripeConnect'
 
 interface UserProfile {
   wallet_address?: string
@@ -225,27 +223,7 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Payment Methods */}
-        <div className="mb-6 space-y-6">
-          {/* Stripe Payments */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">Payment Methods</h2>
-            <StripeConnectComponent 
-              onStripeConnected={(accountId) => {
-                console.log('Stripe connected:', accountId)
-              }}
-            />
-          </div>
-
-          {/* Wallet Connection */}
-          <div>
-            <WalletConnectComponent 
-              onWalletConnected={(address) => {
-                console.log('Wallet connected:', address)
-              }}
-            />
-          </div>
-        </div>
+        {/* Payment Methods - Removed in Phase 1 pivot */}
 
         {/* Webhook Configuration (Step 2 Foundation) */}
         <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
