@@ -153,29 +153,40 @@ export async function POST(req: NextRequest) {
       console.log('[Stripe Webhook] ✓ Found invoiceId, processing payment...')
 
       // Fetch current invoice to get amount
+      console.log('[Stripe Webhook] Fetching invoice ID:', invoiceId)
+      
       const { data: invoiceData, error: fetchError } = await supabase
         .from('invoices')
-        .select('*')
+        .select('id, amount, amount_paid, status')
         .eq('id', invoiceId)
         .single()
 
       if (fetchError || !invoiceData) {
         console.error('[Stripe Webhook] ❌ Failed to fetch invoice:', fetchError)
-        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+        console.error('[Stripe Webhook] Invoice ID used:', invoiceId)
+        return NextResponse.json({ error: 'Invoice not found', invoiceId }, { status: 404 })
       }
 
+      console.log('[Stripe Webhook] ✓ Invoice found:', invoiceData)
+
       // Handle partial vs full payment
-      let paymentAmount = parseFloat(partialAmount || '0')
-      if (!isPartialPayment) {
+      let paymentAmount = 0
+      if (isPartialPayment && partialAmount) {
+        paymentAmount = parseFloat(partialAmount)
+      } else {
         // Full payment - use invoice amount
         paymentAmount = invoiceData.amount
       }
 
-      console.log('[Stripe Webhook] Payment amount to record:', paymentAmount)
+      console.log('[Stripe Webhook] Is partial:', isPartialPayment)
+      console.log('[Stripe Webhook] Partial amount from metadata:', partialAmount)
+      console.log('[Stripe Webhook] Final payment amount to record:', paymentAmount)
+      console.log('[Stripe Webhook] Invoice current amount_paid:', invoiceData.amount_paid)
       console.log('[Stripe Webhook] Invoice total amount:', invoiceData.amount)
 
       // Calculate new totals
-      const newAmountPaid = (invoiceData.amount_paid || 0) + paymentAmount
+      const currentAmountPaid = invoiceData.amount_paid || 0
+      const newAmountPaid = currentAmountPaid + paymentAmount
       const newRemainingBalance = invoiceData.amount - newAmountPaid
 
       // Determine status
@@ -186,7 +197,13 @@ export async function POST(req: NextRequest) {
         newStatus = 'paid_partial'
       }
 
-      console.log('[Stripe Webhook] New totals - Amount paid:', newAmountPaid, 'Remaining:', newRemainingBalance, 'Status:', newStatus)
+      console.log('[Stripe Webhook] CALCULATION:')
+      console.log('[Stripe Webhook]   Current amount_paid:', currentAmountPaid)
+      console.log('[Stripe Webhook]   + Payment amount:', paymentAmount)
+      console.log('[Stripe Webhook]   = New amount_paid:', newAmountPaid)
+      console.log('[Stripe Webhook]   Total invoice amount:', invoiceData.amount)
+      console.log('[Stripe Webhook]   New remaining_balance:', newRemainingBalance)
+      console.log('[Stripe Webhook]   New status:', newStatus)
 
       // 1. Create payment record
       const { error: recordError } = await supabase
