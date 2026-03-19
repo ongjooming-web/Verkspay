@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           due_date,
           status,
           client_id,
-          contacts(id, email, name)
+          clients(id, email, name)
         `)
         .in('status', ['unpaid', 'paid_partial'])
         .lt('due_date', new Date().toISOString())
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get client email
-        const client = Array.isArray(invoice.contacts) ? invoice.contacts[0] : invoice.contacts
+        const client = Array.isArray(invoice.clients) ? invoice.clients[0] : invoice.clients
         if (!client?.email) {
           console.error(`[Cron] Invoice ${invoice.invoice_number}: No client email found`)
           continue
