@@ -87,9 +87,9 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-center mb-16">Designed for Freelancers</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
             {[
-              { icon: '🧾', title: 'Smart Invoicing', desc: 'Create, send, and track invoices. Get automatic payment reminders so clients actually pay on time.' },
+              { icon: '🧾', title: 'Smart Invoicing', desc: 'Create, send, and track invoices instantly. Professional invoices with Stripe payment links.' },
               { icon: '📧', title: 'Payment Reminders', desc: 'Day 1 polite, Day 3 follow-up, Day 7 urgent. Stop chasing overdue invoices manually.' },
-              { icon: '💳', title: 'Stripe Payments', desc: 'Accept payments directly. Track partial payments. See exactly who owes you money.' },
+              { icon: '💳', title: 'Partial Payments', desc: 'Accept partial payments, track remaining balance. See exactly who owes you money.' },
             ].map((feature, idx) => (
               <div key={idx} className="backdrop-blur-xl border border-white/20 rounded-xl p-8 bg-white/5 hover:bg-white/10 transition">
                 <div className="text-4xl mb-4">{feature.icon}</div>
@@ -102,8 +102,8 @@ export default function LandingPage() {
           {/* Additional Features Below */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              { icon: '👥', title: 'Client CRM', desc: 'Keep all client info organized. Never lose a conversation.' },
-              { icon: '📊', title: 'Dashboard', desc: 'Real-time visibility into revenue, pipeline, and cash flow.' },
+              { icon: '👥', title: 'Client Management', desc: 'Organize all clients in one place. Track invoices per client.' },
+              { icon: '📊', title: 'Dashboard', desc: 'Real-time visibility into revenue, pending payments, and overdue invoices.' },
             ].map((feature, idx) => (
               <div key={idx} className="backdrop-blur-xl border border-white/20 rounded-xl p-8 bg-white/5 hover:bg-white/10 transition">
                 <div className="text-4xl mb-4">{feature.icon}</div>
