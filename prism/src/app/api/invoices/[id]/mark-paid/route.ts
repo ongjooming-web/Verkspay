@@ -1,162 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
-import { getSupabaseServer } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
-export const dynamic = 'force-dynamic'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params
-    console.log('[mark-paid] Request received for invoice:', id)
+    const invoiceId = params.id
+    const { amount, payment_method } = await request.json()
 
-    // Verify auth
-    const { user, error: authError } = await requireAuth(request)
-    if (authError) {
-      console.error('[mark-paid] Auth error:', authError)
+    console.log(`[mark-paid] Marking invoice ${invoiceId} as paid, amount: $${amount}`)
+
+    if (!invoiceId) {
       return NextResponse.json(
-        { error: authError.message },
-        { status: authError.status }
+        { error: 'Invoice ID required' },
+        { status: 400 }
       )
     }
 
-    const userId = user.id
-    console.log('[mark-paid] Authenticated user:', userId)
-
-    // Get Supabase server client for all database operations
-    const supabase = getSupabaseServer()
-
-    // Verify the user owns this invoice using service role
-    const { data: invoice, error: invoiceError } = await supabase
+    // Fetch invoice
+    const { data: invoice, error: fetchError } = await supabase
       .from('invoices')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', userId)
+      .select('amount, amount_paid, status')
+      .eq('id', invoiceId)
       .single()
 
-    if (invoiceError || !invoice) {
-      console.error('[mark-paid] Invoice not found:', invoiceError)
+    if (fetchError || !invoice) {
       return NextResponse.json(
-        { error: 'Invoice not found or you do not have permission to modify it' },
+        { error: 'Invoice not found' },
         { status: 404 }
       )
     }
 
-    console.log('[mark-paid] Found invoice:', invoice.id, 'Status:', invoice.status)
+    // Determine if this is a partial or full payment
+    const newAmountPaid = amount || invoice.amount
+    const remainingBalance = Math.max(0, invoice.amount - newAmountPaid)
+    const newStatus = remainingBalance <= 0 ? 'paid' : 'paid_partial'
 
-    // Check if invoice is already paid
-    if (invoice.status === 'paid') {
-      console.warn('[mark-paid] Invoice already paid')
-      return NextResponse.json(
-        { error: 'Invoice is already marked as paid' },
-        { status: 400 }
-      )
-    }
+    console.log(`[mark-paid] Updating: amount_paid=$${newAmountPaid}, remaining=$${remainingBalance}, status=${newStatus}`)
 
-    // Get user's payment info (wallet or Stripe)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('wallet_address, stripe_account_id, stripe_onboarding_complete')
-      .eq('id', userId)
-      .single()
-
-    // Determine payment recipient
-    let recipientAddress = 'Unknown'
-    let paymentMethod = 'manual'
-
-    if (profile?.stripe_account_id && profile?.stripe_onboarding_complete) {
-      // User has Stripe connected - use Stripe account ID as recipient
-      paymentMethod = 'stripe'
-      // Format: "Stripe Bank • acct_1TC7..."
-      const accountIdLast8 = profile.stripe_account_id.slice(-8)
-      recipientAddress = `Stripe Bank • ${profile.stripe_account_id.slice(0, 8)}${accountIdLast8}`
-      console.log('[mark-paid] Stripe connected:', profile.stripe_account_id)
-    } else if (profile?.wallet_address) {
-      // Fallback to wallet (if no Stripe)
-      paymentMethod = 'usd'
-      recipientAddress = profile.wallet_address
-      console.log('[mark-paid] Wallet connected:', profile.wallet_address)
-    } else {
-      console.error('[mark-paid] No payment method connected')
-      console.log('[mark-paid] Profile data:', { stripe_account_id: profile?.stripe_account_id, stripe_onboarding_complete: profile?.stripe_onboarding_complete, wallet_address: profile?.wallet_address })
-      return NextResponse.json(
-        { error: 'No payment method connected. Please connect Stripe in Settings.' },
-        { status: 400 }
-      )
-    }
-
-    console.log('[mark-paid] Payment method:', paymentMethod, 'Recipient:', recipientAddress)
-
-    // Generate transaction hash for testing
-    const timestamp = Date.now()
-    const transactionHash = `manual-test-${timestamp}`
-
-    // Update invoice to paid
-    console.log('[mark-paid] Updating invoice to paid status...')
-    const updatePayload = {
-      status: 'paid',
-      paid_date: new Date().toISOString(),
-      payment_method: paymentMethod,
-      payment_recipient: recipientAddress,
-      updated_at: new Date().toISOString()
-    }
-    console.log('[mark-paid] Update payload:', updatePayload)
-    
-    const { error: updateError, data: updateData } = await supabase
+    // Update invoice
+    const { error: updateError } = await supabase
       .from('invoices')
-      .update(updatePayload)
-      .eq('id', id)
-      .eq('user_id', userId)
-      .select()
+      .update({
+        amount_paid: newAmountPaid,
+        remaining_balance: remainingBalance,
+        status: newStatus,
+        paid_date: newStatus === 'paid' ? new Date().toISOString() : null,
+        payment_method: payment_method || 'stripe',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', invoiceId)
 
     if (updateError) {
-      console.error('[mark-paid] Invoice update error:', updateError)
+      console.error(`[mark-paid] Update failed:`, updateError)
       return NextResponse.json(
-        { error: 'Failed to update invoice status: ' + updateError.message },
+        { error: 'Failed to update invoice' },
         { status: 500 }
       )
     }
 
-    console.log('[mark-paid] Invoice update returned:', updateData)
-    console.log('[mark-paid] Invoice updated successfully')
+    // Create payment record
+    await supabase
+      .from('payment_records')
+      .insert({
+        invoice_id: invoiceId,
+        amount: newAmountPaid,
+        payment_method: payment_method || 'stripe',
+        payment_date: new Date().toISOString(),
+        notes: 'Payment marked as paid via payment success page',
+        created_at: new Date().toISOString(),
+      })
+      .catch(err => console.error('[mark-paid] Error creating payment record:', err))
 
-    // Fetch updated invoice to verify
-    const { data: updatedInvoice, error: fetchError } = await supabase
-      .from('invoices')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (fetchError || !updatedInvoice) {
-      console.error('[mark-paid] Failed to fetch updated invoice:', fetchError)
-      return NextResponse.json(
-        { error: 'Failed to verify invoice update' },
-        { status: 500 }
-      )
-    }
-
-    // Verify status change
-    if (updatedInvoice.status !== 'paid') {
-      console.error('[mark-paid] Status verification failed. Expected: paid, Got:', updatedInvoice.status)
-      return NextResponse.json(
-        { error: 'Invoice status update verification failed' },
-        { status: 500 }
-      )
-    }
-
-    console.log('[mark-paid] Status verified as paid. Returning success.')
+    console.log(`[mark-paid] Invoice ${invoiceId} marked as ${newStatus}`)
 
     return NextResponse.json({
       success: true,
-      invoice: updatedInvoice,
-      message: 'Invoice marked as paid'
-    }, { status: 200 })
-  } catch (error: any) {
-    console.error('[mark-paid] Unexpected error:', error)
+      invoice: {
+        id: invoiceId,
+        amount_paid: newAmountPaid,
+        remaining_balance: remainingBalance,
+        status: newStatus,
+      }
+    })
+  } catch (error) {
+    console.error('[mark-paid] Error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

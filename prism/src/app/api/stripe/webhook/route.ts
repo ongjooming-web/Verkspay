@@ -38,6 +38,10 @@ export async function POST(request: NextRequest) {
         const invoiceId = session.metadata?.invoiceId
         const paymentType = session.metadata?.type
 
+        console.log('[Webhook] checkout.session.completed detected')
+        console.log('[Webhook] Metadata:', { userId, plan, invoiceId, paymentType })
+        console.log('[Webhook] Amount total:', session.amount_total)
+
         // PARTIAL PAYMENT HANDLING
         if (paymentType === 'partial_payment' && invoiceId && session.amount_total) {
           const amountPaid = session.amount_total / 100 // Convert from cents to dollars

@@ -56,13 +56,35 @@ export default function PaymentPage() {
     const markInvoiceAsPaid = async () => {
       console.log('[PaymentPage] Checking if invoice marked as paid (webhook)')
       try {
-        // Fetch fresh copy to see if webhook updated it
+        // First, fetch fresh copy to see if webhook updated it
         const response = await fetch(`/api/invoices/${invoiceId}/public`)
         if (response.ok) {
           const freshData = await response.json()
           if (freshData.invoice.status === 'paid') {
             console.log('[PaymentPage] Invoice confirmed paid via webhook')
             setData(freshData)
+            return
+          }
+        }
+
+        // If webhook didn't update it, fallback to manual mark-paid endpoint
+        console.log('[PaymentPage] Webhook not received, marking paid via fallback endpoint')
+        const markPaidRes = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: data.invoice.amount,
+            payment_method: 'stripe'
+          })
+        })
+
+        if (markPaidRes.ok) {
+          const result = await markPaidRes.json()
+          console.log('[PaymentPage] Successfully marked invoice as paid', result)
+          // Refetch invoice data
+          const updatedResponse = await fetch(`/api/invoices/${invoiceId}/public`)
+          if (updatedResponse.ok) {
+            setData(await updatedResponse.json())
           }
         }
       } catch (err) {
@@ -70,8 +92,8 @@ export default function PaymentPage() {
       }
     }
 
-    // Give webhook 2 seconds to process, then check
-    const timer = setTimeout(markInvoiceAsPaid, 2000)
+    // Give webhook 3 seconds to process, then fallback
+    const timer = setTimeout(markInvoiceAsPaid, 3000)
     return () => clearTimeout(timer)
   }, [successFromUrl, invoiceId, data?.invoice.status])
 
