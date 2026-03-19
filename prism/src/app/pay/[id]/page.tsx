@@ -11,6 +11,8 @@ interface PaymentPageData {
     id: string
     invoice_number: string
     amount: number
+    remaining_balance: number
+    amount_paid: number
     due_date: string
     description?: string
     status: string
@@ -22,6 +24,13 @@ interface PaymentPageData {
     payment_method: string
     stripe_account_id: string
     stripe_onboarding_complete: boolean
+  }
+  paymentDetails?: {
+    bank_name: string
+    bank_account_number: string
+    bank_account_name: string
+    duitnow_id?: string
+    payment_instructions?: string
   }
 }
 
@@ -112,6 +121,7 @@ export default function PaymentPage() {
       const result = await response.json()
       console.log('[PaymentPage] Invoice loaded:', result)
       console.log('[PaymentPage] Freelancer full_name:', result.freelancer?.full_name)
+      console.log('[PaymentPage] Payment details:', result.paymentDetails)
       setData(result)
     } catch (err: any) {
       console.error('[PaymentPage] Error fetching invoice:', err)
@@ -140,7 +150,7 @@ export default function PaymentPage() {
         },
         body: JSON.stringify({
           invoiceId,
-          amount: data?.invoice.amount,
+          amount: data?.invoice.remaining_balance || data?.invoice.amount,
           clientEmail
         })
       })
@@ -183,7 +193,7 @@ export default function PaymentPage() {
               <div className="text-6xl mb-4">✅</div>
               <h1 className="text-4xl font-bold text-green-400">Payment Successful!</h1>
               <p className="text-gray-300 text-lg">
-                Thank you, your payment of <span className="text-green-400 font-bold">${data.invoice.amount.toFixed(2)}</span> has been received
+                Thank you, your payment of <span className="text-green-400 font-bold">RM ${(data.invoice.remaining_balance || data.invoice.amount).toFixed(2)}</span> has been received
               </p>
               
               <div className="glass rounded-lg p-4 border-green-400/30 bg-green-500/10 mt-6">
@@ -232,7 +242,8 @@ export default function PaymentPage() {
     )
   }
 
-  const { invoice, freelancer } = data
+  const { invoice, freelancer, paymentDetails } = data
+  const amountDue = invoice.remaining_balance || invoice.amount
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 py-12">
@@ -253,7 +264,7 @@ export default function PaymentPage() {
               </div>
               <div className="text-right">
                 <p className="text-gray-400 text-sm">Amount Due</p>
-                <p className="text-3xl font-bold text-green-400">${invoice.amount.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-400">RM ${amountDue.toFixed(2)}</p>
               </div>
             </div>
           </CardHeader>
@@ -279,7 +290,7 @@ export default function PaymentPage() {
                   {invoice.line_items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-gray-300">{item.description || 'Item'}</span>
-                      <span className="text-white font-semibold">${item.amount?.toFixed(2) || '0.00'}</span>
+                      <span className="text-white font-semibold">RM ${item.amount?.toFixed(2) || '0.00'}</span>
                     </div>
                   ))}
                 </div>
@@ -294,23 +305,40 @@ export default function PaymentPage() {
               </div>
             )}
 
-            {/* Payment Method */}
-            <div className="border-t border-white/10 pt-4">
-              <p className="text-gray-400 text-sm mb-3 font-semibold">Payment Method</p>
-              {freelancer.payment_method === 'bank' && freelancer.stripe_onboarding_complete ? (
-                <div className="glass rounded-lg p-3 border-green-400/30 bg-green-500/10">
-                  <p className="text-green-300 text-sm">💳 Stripe Bank Transfer</p>
+            {/* Payment Details from Profile - NEW SECTION */}
+            {paymentDetails?.bank_account_number && (
+              <div className="border-t border-white/10 pt-4">
+                <p className="text-gray-400 text-sm mb-3 font-semibold">Payment Methods</p>
+                <div className="space-y-3">
+                  {/* Bank Transfer */}
+                  <div className="glass rounded-lg p-3 border-blue-400/30 bg-blue-500/10">
+                    <p className="text-blue-300 text-sm font-semibold mb-2">🏦 Bank Transfer</p>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-gray-300"><span className="text-gray-400">Bank:</span> {paymentDetails.bank_name}</p>
+                      <p className="text-gray-300"><span className="text-gray-400">Account:</span> {paymentDetails.bank_account_number}</p>
+                      <p className="text-gray-300"><span className="text-gray-400">Name:</span> {paymentDetails.bank_account_name}</p>
+                      <p className="text-gray-400 text-xs mt-2">Reference: {invoice.invoice_number}</p>
+                    </div>
+                  </div>
+
+                  {/* DuitNow */}
+                  {paymentDetails.duitnow_id && (
+                    <div className="glass rounded-lg p-3 border-purple-400/30 bg-purple-500/10">
+                      <p className="text-purple-300 text-sm font-semibold mb-2">⚡ DuitNow (Real-time)</p>
+                      <p className="text-gray-300 text-sm">{paymentDetails.duitnow_id}</p>
+                    </div>
+                  )}
+
+                  {/* Custom Instructions */}
+                  {paymentDetails.payment_instructions && (
+                    <div className="glass rounded-lg p-3 border-amber-400/30 bg-amber-500/10">
+                      <p className="text-amber-300 text-sm font-semibold mb-2">📝 Payment Instructions</p>
+                      <p className="text-gray-300 text-sm">{paymentDetails.payment_instructions}</p>
+                    </div>
+                  )}
                 </div>
-              ) : freelancer.payment_method === 'crypto' ? (
-                <div className="glass rounded-lg p-3 border-purple-400/30 bg-purple-500/10">
-                  <p className="text-purple-300 text-sm">💰 USDC Wallet</p>
-                </div>
-              ) : (
-                <div className="glass rounded-lg p-3 border-red-400/30 bg-red-500/10">
-                  <p className="text-red-300 text-sm">❌ Payment method not available</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -369,7 +397,7 @@ export default function PaymentPage() {
               </div>
             ) : (
               <div className="glass rounded-lg p-4 border-yellow-400/30 bg-yellow-500/10">
-                <p className="text-yellow-300 text-sm">⚠️ Payment is not available for this invoice. Please contact the freelancer.</p>
+                <p className="text-yellow-300 text-sm">⚠️ Payment is not available for this invoice. Please contact the sender.</p>
               </div>
             )}
           </CardBody>

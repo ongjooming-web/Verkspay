@@ -33,61 +33,69 @@ export async function POST(request: NextRequest) {
     console.log('[Cron] Starting smart reminders processing...')
 
     // Find all unpaid/partial invoices that are overdue
-    let invoices: any[] = []
+    // Join with clients and profiles to get payment details
+    let overdueInvoices: any[] = []
     let invoicesError: any = null
 
     try {
-      const result = await supabase
+      const { data, error } = await supabase
         .from('invoices')
         .select(`
           id,
           invoice_number,
           amount,
-          amount_paid,
           due_date,
           status,
+          remaining_balance,
+          user_id,
           client_id,
-          clients(id, email, name)
+          clients (
+            id,
+            name,
+            email
+          ),
+          profiles (
+            bank_name,
+            bank_account_number,
+            bank_account_name,
+            duitnow_id,
+            payment_instructions
+          )
         `)
         .in('status', ['unpaid', 'paid_partial'])
-        .lt('due_date', new Date().toISOString())
+        .lte('due_date', new Date().toISOString())
 
-      invoices = result.data || []
-      invoicesError = result.error
+      overdueInvoices = data || []
+      invoicesError = error
     } catch (err) {
       invoicesError = err
       console.error('[Cron] Exception during invoice query:', err)
     }
 
     if (invoicesError) {
-      console.error('[Cron] Full error object:', JSON.stringify(invoicesError, null, 2))
-      console.error('[Cron] Error message:', invoicesError?.message)
-      console.error('[Cron] Error code:', invoicesError?.code)
-      console.error('[Cron] Error details:', invoicesError?.details)
-      
+      console.error('[Cron] Database query failed:', invoicesError?.message || String(invoicesError))
       return NextResponse.json(
         { 
           error: 'Database query failed',
           details: invoicesError?.message || String(invoicesError),
-          code: invoicesError?.code
         },
         { status: 500 }
       )
     }
 
-    console.log(`[Cron] Found ${invoices?.length || 0} overdue invoices`)
+    console.log(`[Cron] Found ${overdueInvoices?.length || 0} overdue invoices`)
 
     let remindersCount = 0
     const results = []
 
     // Process each invoice
-    for (const invoice of invoices || []) {
+    for (const invoice of overdueInvoices || []) {
       try {
         const dueDate = new Date(invoice.due_date)
         const today = new Date()
         const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
 
-        console.log(`[Cron] Invoice ${invoice.invoice_number}: ${daysOverdue} days overdue`)
+        console.log(`[Cron] Processing invoice ${invoice.invoice_number}: ${daysOverdue} days overdue`)
 
         // Only send reminders at 3, 7, and 14 day thresholds
         let reminderType: string | null = null
@@ -100,7 +108,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (!reminderType) {
-          console.log(`[Cron] Invoice ${invoice.invoice_number}: No reminder threshold matched`)
+          console.log(`[Cron] Invoice ${invoice.invoice_number}: Skipping - no threshold match (${daysOverdue} days)`)
           continue
         }
 
@@ -109,41 +117,52 @@ export async function POST(request: NextRequest) {
         let checkError: any = null
 
         try {
-          const result = await supabase
+          const { data, error } = await supabase
             .from('reminders_log')
             .select('id')
             .eq('invoice_id', invoice.id)
             .eq('reminder_type', reminderType)
             .single()
 
-          existingReminder = result.data
-          checkError = result.error
+          existingReminder = data
+          checkError = error
         } catch (err) {
           checkError = err
           console.error(`[Cron] Exception checking reminder for invoice ${invoice.invoice_number}:`, err)
         }
 
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        // PGRST116 = no rows found (expected)
+        if (checkError && checkError.code !== 'PGRST116') {
           console.error(`[Cron] Error checking existing reminder for ${invoice.invoice_number}:`, checkError)
           continue
         }
 
         if (existingReminder) {
-          console.log(`[Cron] Invoice ${invoice.invoice_number}: Reminder already sent for ${reminderType}`)
+          console.log(`[Cron] Invoice ${invoice.invoice_number}: Already sent ${reminderType} reminder`)
           continue
         }
 
-        // Get client email
-        const client = Array.isArray(invoice.clients) ? invoice.clients[0] : invoice.clients
-        if (!client?.email) {
-          console.error(`[Cron] Invoice ${invoice.invoice_number}: No client email found`)
+        // Get client email - handle nested clients object
+        const clientEmail = (invoice.clients as any)?.email
+        const clientName = (invoice.clients as any)?.name
+
+        if (!clientEmail) {
+          console.log(`[Cron] Skipping ${invoice.invoice_number} - no client email found`)
+          continue
+        }
+
+        // Get payment details from user's profile
+        const profile = (invoice.profiles as any)
+        if (!profile?.bank_account_number) {
+          console.log(`[Cron] Skipping ${invoice.invoice_number} - user has no payment details configured`)
           continue
         }
 
         // Generate email content based on reminder type
         const { subject, html } = generateReminderEmail(
           invoice,
-          client,
+          { name: clientName, email: clientEmail },
+          profile,
           reminderType,
           daysOverdue
         )
@@ -153,7 +172,7 @@ export async function POST(request: NextRequest) {
         try {
           emailResult = await resend.emails.send({
             from: 'Prism Invoicing <support@prismops.xyz>',
-            to: client.email,
+            to: clientEmail,
             subject,
             html,
           })
@@ -167,23 +186,22 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        console.log(`[Cron] Email sent to ${client.email} for invoice ${invoice.invoice_number}`)
+        console.log(`[Cron] Email sent to ${clientEmail} for invoice ${invoice.invoice_number} (${reminderType})`)
 
         // Log reminder in database
         let logError: any = null
         try {
-          const result = await supabase
+          const { error } = await supabase
             .from('reminders_log')
             .insert({
               invoice_id: invoice.id,
               reminder_type: reminderType,
               days_overdue: daysOverdue,
-              email_sent: true,
               email_sent_at: new Date().toISOString(),
               created_at: new Date().toISOString(),
             })
 
-          logError = result.error
+          logError = error
         } catch (err) {
           logError = err
           console.error(`[Cron] Exception logging reminder for ${invoice.invoice_number}:`, err)
@@ -195,10 +213,11 @@ export async function POST(request: NextRequest) {
           remindersCount++
           results.push({
             invoiceNumber: invoice.invoice_number,
-            clientEmail: client.email,
+            clientEmail,
             reminderType,
             daysOverdue,
           })
+          console.log(`[Cron] Reminder logged in database for ${invoice.invoice_number}`)
         }
       } catch (invoiceProcessErr) {
         console.error('[Cron] Unexpected error processing invoice:', invoiceProcessErr)
@@ -211,14 +230,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       reminders_sent: remindersCount,
-      invoices_processed: invoices?.length || 0,
+      invoices_processed: overdueInvoices?.length || 0,
       results,
       message: 'Smart reminders processing completed',
     })
   } catch (error) {
-    console.error('[Cron] Outer catch - Error:', error)
-    console.error('[Cron] Error message:', (error as any)?.message)
-    console.error('[Cron] Full error:', JSON.stringify(error, null, 2))
+    console.error('[Cron] Fatal error:', (error as any)?.message || String(error))
     
     return NextResponse.json(
       { 
@@ -232,15 +249,17 @@ export async function POST(request: NextRequest) {
 
 /**
  * Generate email HTML based on reminder type
+ * Uses dynamic payment details from user's profile
  */
 function generateReminderEmail(
   invoice: any,
-  client: any,
+  client: { name: string; email: string },
+  profile: any,
   reminderType: string,
   daysOverdue: number
 ) {
   const invoiceLink = `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoice.id}`
-  const amountDue = (invoice.amount - (invoice.amount_paid || 0)).toFixed(2)
+  const amountDue = (invoice.remaining_balance || (invoice.amount - (invoice.amount_paid || 0))).toFixed(2)
 
   let subject = ''
   let heading = ''
@@ -263,6 +282,23 @@ function generateReminderEmail(
     bodyText = `Your invoice is now ${daysOverdue} days overdue. Please arrange payment immediately.`
     tone = 'urgent'
   }
+
+  // Dynamic payment details from user's profile
+  const bankSection = profile?.bank_account_number ? `
+    <strong>Bank Transfer:</strong><br>
+    ${profile.bank_name || 'Bank'}: ${profile.bank_account_number}<br>
+    Account Name: ${profile.bank_account_name || 'N/A'}<br><br>
+  ` : ''
+
+  const duitnowSection = profile?.duitnow_id ? `
+    <strong>DuitNow (Real-time):</strong><br>
+    ID: ${profile.duitnow_id}<br><br>
+  ` : ''
+
+  const instructionsSection = profile?.payment_instructions ? `
+    <p><strong>Additional Instructions:</strong></p>
+    <p>${profile.payment_instructions}</p>
+  ` : ''
 
   const html = `
     <!DOCTYPE html>
@@ -331,16 +367,13 @@ function generateReminderEmail(
         <div class="banking">
           <div class="banking-title">💳 Payment Methods</div>
           <div class="banking-details">
-            <strong>Bank Transfer:</strong><br>
-            Maybank: 5641 9158 7752<br>
-            Account Name: Tria Ventures<br>
-            <br>
-            <strong>DuitNow (Real-time):</strong><br>
-            Phone/ID: [Your DuitNow ID]<br>
-            <br>
+            ${bankSection}
+            ${duitnowSection}
             Reference: Use invoice number ${invoice.invoice_number}
           </div>
         </div>
+
+        ${instructionsSection}
 
         <p>Thank you for your business.</p>
 
