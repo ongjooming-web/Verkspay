@@ -479,7 +479,12 @@ function BillingSection() {
   }
 
   const tier = profile?.subscription_tier || 'free'
-  const tierDisplay = tier.charAt(0).toUpperCase() + tier.slice(1)
+  const tierNames: { [key: string]: string } = {
+    'free': 'Free',
+    'pro': 'Starter',
+    'enterprise': 'Pro'
+  }
+  const tierDisplay = tierNames[tier] || 'Free'
   const invoiceLimit = tier === 'free' ? 5 : Infinity
   const linkLimit = tier === 'free' ? 3 : Infinity
 
@@ -494,9 +499,18 @@ function BillingSection() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-gray-400 text-sm mb-1">Current Plan</p>
-              <p className="text-2xl font-bold text-blue-400">{tierDisplay}</p>
+              <p className="text-3xl font-bold text-blue-400">{tierDisplay}</p>
+              {tier === 'free' && (
+                <p className="text-gray-400 text-xs mt-2">Perfect for trying out Prism</p>
+              )}
+              {tier === 'pro' && (
+                <p className="text-green-400 text-xs mt-2">✓ $19/month · Unlimited invoices · Smart reminders</p>
+              )}
+              {tier === 'enterprise' && (
+                <p className="text-green-400 text-xs mt-2">✓ $49/month · Everything + recurring invoices</p>
+              )}
               {tier !== 'free' && (
-                <p className="text-gray-400 text-sm mt-2">
+                <p className="text-gray-400 text-sm mt-3">
                   Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
                 </p>
               )}
@@ -512,7 +526,7 @@ function BillingSection() {
           </div>
         </div>
 
-        {/* Usage Stats */}
+        {/* Usage Stats - Free tier only */}
         {tier === 'free' && (
           <div className="space-y-3">
             <p className="text-gray-400 text-sm font-semibold">Usage This Month</p>
@@ -535,16 +549,15 @@ function BillingSection() {
             <>
               <Button
                 onClick={() => handleUpgrade('pro')}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 font-semibold"
               >
-                Upgrade to Pro - $49/mo
+                Upgrade to Starter - $19/mo
               </Button>
               <Button
                 onClick={() => handleUpgrade('enterprise')}
-                variant="outline"
-                className="flex-1 border-purple-400/50 text-purple-300 hover:bg-purple-500/10"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
               >
-                Enterprise - $199/mo
+                Upgrade to Pro - $49/mo
               </Button>
             </>
           )}
@@ -560,10 +573,12 @@ function BillingSection() {
         </div>
 
         {/* Info */}
-        <p className="text-gray-400 text-xs">
+        <p className="text-gray-400 text-xs leading-relaxed">
           {tier === 'free'
-            ? 'Free tier limited to 5 invoices and 3 payment links per month.'
-            : 'You have access to all Pro features including unlimited invoices and payment links.'}
+            ? '📌 Free tier: 5 invoices/month, 3 payment links/month. Most users upgrade within 2 weeks.'
+            : tier === 'pro'
+            ? '✓ Starter includes: Smart payment reminders, partial payments, unlimited invoices & links.'
+            : '✓ Pro includes: Everything in Starter + recurring invoices, API access (coming soon).'}
         </p>
       </CardBody>
     </Card>
