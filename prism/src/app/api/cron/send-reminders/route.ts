@@ -33,25 +33,44 @@ export async function POST(request: NextRequest) {
     console.log('[Cron] Starting smart reminders processing...')
 
     // Find all unpaid/partial invoices that are overdue
-    const { data: invoices, error: invoicesError } = await supabase
-      .from('invoices')
-      .select(`
-        id,
-        invoice_number,
-        amount,
-        amount_paid,
-        due_date,
-        status,
-        client_id,
-        clients:contacts(id, email, name)
-      `)
-      .in('status', ['unpaid', 'paid_partial'])
-      .lt('due_date', new Date().toISOString())
+    let invoices: any[] = []
+    let invoicesError: any = null
+
+    try {
+      const result = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          amount,
+          amount_paid,
+          due_date,
+          status,
+          client_id,
+          clients:contacts(id, email, name)
+        `)
+        .in('status', ['unpaid', 'paid_partial'])
+        .lt('due_date', new Date().toISOString())
+
+      invoices = result.data || []
+      invoicesError = result.error
+    } catch (err) {
+      invoicesError = err
+      console.error('[Cron] Exception during invoice query:', err)
+    }
 
     if (invoicesError) {
-      console.error('[Cron] Error fetching invoices:', invoicesError)
+      console.error('[Cron] Full error object:', JSON.stringify(invoicesError, null, 2))
+      console.error('[Cron] Error message:', invoicesError?.message)
+      console.error('[Cron] Error code:', invoicesError?.code)
+      console.error('[Cron] Error details:', invoicesError?.details)
+      
       return NextResponse.json(
-        { error: 'Database query failed' },
+        { 
+          error: 'Database query failed',
+          details: invoicesError?.message || String(invoicesError),
+          code: invoicesError?.code
+        },
         { status: 500 }
       )
     }
@@ -63,92 +82,127 @@ export async function POST(request: NextRequest) {
 
     // Process each invoice
     for (const invoice of invoices || []) {
-      const dueDate = new Date(invoice.due_date)
-      const today = new Date()
-      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      try {
+        const dueDate = new Date(invoice.due_date)
+        const today = new Date()
+        const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
 
-      console.log(`[Cron] Invoice ${invoice.invoice_number}: ${daysOverdue} days overdue`)
+        console.log(`[Cron] Invoice ${invoice.invoice_number}: ${daysOverdue} days overdue`)
 
-      // Only send reminders at 3, 7, and 14 day thresholds
-      let reminderType: string | null = null
-      if (daysOverdue >= 3 && daysOverdue < 7) {
-        reminderType = '3_day_overdue'
-      } else if (daysOverdue >= 7 && daysOverdue < 14) {
-        reminderType = '7_day_overdue'
-      } else if (daysOverdue >= 14) {
-        reminderType = '14_day_overdue'
-      }
+        // Only send reminders at 3, 7, and 14 day thresholds
+        let reminderType: string | null = null
+        if (daysOverdue >= 3 && daysOverdue < 7) {
+          reminderType = '3_day_overdue'
+        } else if (daysOverdue >= 7 && daysOverdue < 14) {
+          reminderType = '7_day_overdue'
+        } else if (daysOverdue >= 14) {
+          reminderType = '14_day_overdue'
+        }
 
-      if (!reminderType) {
-        console.log(`[Cron] Invoice ${invoice.invoice_number}: No reminder threshold matched`)
-        continue
-      }
+        if (!reminderType) {
+          console.log(`[Cron] Invoice ${invoice.invoice_number}: No reminder threshold matched`)
+          continue
+        }
 
-      // Check if reminder already sent for this threshold
-      const { data: existingReminder } = await supabase
-        .from('reminders_log')
-        .select('id')
-        .eq('invoice_id', invoice.id)
-        .eq('reminder_type', reminderType)
-        .single()
+        // Check if reminder already sent for this threshold
+        let existingReminder: any = null
+        let checkError: any = null
 
-      if (existingReminder) {
-        console.log(`[Cron] Invoice ${invoice.invoice_number}: Reminder already sent for ${reminderType}`)
-        continue
-      }
+        try {
+          const result = await supabase
+            .from('reminders_log')
+            .select('id')
+            .eq('invoice_id', invoice.id)
+            .eq('reminder_type', reminderType)
+            .single()
 
-      // Get client email
-      const client = Array.isArray(invoice.clients) ? invoice.clients[0] : invoice.clients
-      if (!client?.email) {
-        console.error(`[Cron] Invoice ${invoice.invoice_number}: No client email found`)
-        continue
-      }
+          existingReminder = result.data
+          checkError = result.error
+        } catch (err) {
+          checkError = err
+          console.error(`[Cron] Exception checking reminder for invoice ${invoice.invoice_number}:`, err)
+        }
 
-      // Generate email content based on reminder type
-      const { subject, html } = generateReminderEmail(
-        invoice,
-        client,
-        reminderType,
-        daysOverdue
-      )
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+          console.error(`[Cron] Error checking existing reminder for ${invoice.invoice_number}:`, checkError)
+          continue
+        }
 
-      // Send email via Resend
-      const emailResult = await resend.emails.send({
-        from: 'Prism Invoicing <support@prismops.xyz>',
-        to: client.email,
-        subject,
-        html,
-      })
+        if (existingReminder) {
+          console.log(`[Cron] Invoice ${invoice.invoice_number}: Reminder already sent for ${reminderType}`)
+          continue
+        }
 
-      if (emailResult.error) {
-        console.error(`[Cron] Failed to send email for ${invoice.invoice_number}:`, emailResult.error)
-        continue
-      }
+        // Get client email
+        const client = Array.isArray(invoice.clients) ? invoice.clients[0] : invoice.clients
+        if (!client?.email) {
+          console.error(`[Cron] Invoice ${invoice.invoice_number}: No client email found`)
+          continue
+        }
 
-      console.log(`[Cron] Email sent to ${client.email} for invoice ${invoice.invoice_number}`)
-
-      // Log reminder in database
-      const { error: logError } = await supabase
-        .from('reminders_log')
-        .insert({
-          invoice_id: invoice.id,
-          reminder_type: reminderType,
-          days_overdue: daysOverdue,
-          email_sent: true,
-          email_sent_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-        })
-
-      if (logError) {
-        console.error(`[Cron] Failed to log reminder for ${invoice.invoice_number}:`, logError)
-      } else {
-        remindersCount++
-        results.push({
-          invoiceNumber: invoice.invoice_number,
-          clientEmail: client.email,
+        // Generate email content based on reminder type
+        const { subject, html } = generateReminderEmail(
+          invoice,
+          client,
           reminderType,
-          daysOverdue,
-        })
+          daysOverdue
+        )
+
+        // Send email via Resend
+        let emailResult: any
+        try {
+          emailResult = await resend.emails.send({
+            from: 'Prism Invoicing <support@prismops.xyz>',
+            to: client.email,
+            subject,
+            html,
+          })
+        } catch (emailErr) {
+          console.error(`[Cron] Exception sending email for ${invoice.invoice_number}:`, emailErr)
+          continue
+        }
+
+        if (emailResult.error) {
+          console.error(`[Cron] Failed to send email for ${invoice.invoice_number}:`, emailResult.error)
+          continue
+        }
+
+        console.log(`[Cron] Email sent to ${client.email} for invoice ${invoice.invoice_number}`)
+
+        // Log reminder in database
+        let logError: any = null
+        try {
+          const result = await supabase
+            .from('reminders_log')
+            .insert({
+              invoice_id: invoice.id,
+              reminder_type: reminderType,
+              days_overdue: daysOverdue,
+              email_sent: true,
+              email_sent_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+            })
+
+          logError = result.error
+        } catch (err) {
+          logError = err
+          console.error(`[Cron] Exception logging reminder for ${invoice.invoice_number}:`, err)
+        }
+
+        if (logError) {
+          console.error(`[Cron] Failed to log reminder for ${invoice.invoice_number}:`, logError)
+        } else {
+          remindersCount++
+          results.push({
+            invoiceNumber: invoice.invoice_number,
+            clientEmail: client.email,
+            reminderType,
+            daysOverdue,
+          })
+        }
+      } catch (invoiceProcessErr) {
+        console.error('[Cron] Unexpected error processing invoice:', invoiceProcessErr)
+        continue
       }
     }
 
@@ -162,9 +216,15 @@ export async function POST(request: NextRequest) {
       message: 'Smart reminders processing completed',
     })
   } catch (error) {
-    console.error('[Cron] Error:', error)
+    console.error('[Cron] Outer catch - Error:', error)
+    console.error('[Cron] Error message:', (error as any)?.message)
+    console.error('[Cron] Full error:', JSON.stringify(error, null, 2))
+    
     return NextResponse.json(
-      { error: 'Cron job failed' },
+      { 
+        error: 'Cron job failed',
+        details: (error as any)?.message || String(error)
+      },
       { status: 500 }
     )
   }
