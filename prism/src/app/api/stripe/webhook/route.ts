@@ -35,9 +35,60 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.userId
         const plan = session.metadata?.plan
+        const invoiceId = session.metadata?.invoiceId
+        const paymentType = session.metadata?.type
 
+        // PARTIAL PAYMENT HANDLING
+        if (paymentType === 'partial_payment' && invoiceId && session.amount_total) {
+          const amountPaid = session.amount_total / 100 // Convert from cents to dollars
+
+          console.log(`[Webhook] Partial payment received for invoice ${invoiceId}: $${amountPaid}`)
+
+          // Fetch current invoice state
+          const { data: invoice, error: fetchError } = await supabase
+            .from('invoices')
+            .select('amount, amount_paid, status')
+            .eq('id', invoiceId)
+            .single()
+
+          if (fetchError || !invoice) {
+            console.error(`[Webhook] Invoice not found: ${invoiceId}`, fetchError)
+            break
+          }
+
+          const newAmountPaid = (invoice.amount_paid || 0) + amountPaid
+          const remainingBalance = invoice.amount - newAmountPaid
+          const newStatus = remainingBalance <= 0 ? 'paid' : 'paid_partial'
+
+          // Update invoice
+          await supabase
+            .from('invoices')
+            .update({
+              amount_paid: newAmountPaid,
+              remaining_balance: Math.max(0, remainingBalance),
+              status: newStatus,
+              paid_date: newStatus === 'paid' ? new Date().toISOString() : invoice.paid_date,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', invoiceId)
+
+          // Log payment record
+          await supabase
+            .from('payment_records')
+            .insert({
+              invoice_id: invoiceId,
+              amount: amountPaid,
+              payment_method: 'stripe',
+              payment_date: new Date().toISOString(),
+              notes: `Stripe Checkout Session ${session.id}`,
+              created_at: new Date().toISOString(),
+            })
+
+          console.log(`[Webhook] Invoice ${invoiceId} updated: amount_paid=$${newAmountPaid}, status=${newStatus}`)
+        }
+
+        // SUBSCRIPTION HANDLING
         if (userId && plan && session.customer) {
-          // Update user profile with Stripe info
           await supabase
             .from('profiles')
             .update({
