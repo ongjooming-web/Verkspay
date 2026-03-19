@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     const { amount, payment_method } = await request.json()
 
     console.log(`[mark-paid] Marking invoice ${invoiceId} as paid, amount: $${amount}`)
