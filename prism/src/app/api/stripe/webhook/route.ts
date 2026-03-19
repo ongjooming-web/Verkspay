@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       
       const { data: invoiceData, error: fetchError } = await supabase
         .from('invoices')
-        .select('id, amount, amount_paid, status')
+        .select('id, amount, amount_paid, status, paid_date')
         .eq('id', invoiceId)
         .single()
 
