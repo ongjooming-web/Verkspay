@@ -118,23 +118,33 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-center mb-4">Simple, transparent pricing</h2>
           <p className="text-center text-gray-400 mb-16">Choose the plan that fits your needs</p>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-6">
             {[
               {
                 name: 'Free',
                 price: '$0',
-                period: 'Forever',
+                period: '/mo',
                 desc: 'Perfect for trying Prism',
-                features: ['5 invoices/month', '3 payment links', 'Basic CRM', 'Manual tracking'],
+                features: ['5 invoices/month', '3 payment links', 'Basic CRM', 'Contract templates', 'Community support'],
+                cta: 'Get Started',
+                highlighted: false
+              },
+              {
+                name: 'Starter',
+                price: '$19',
+                period: '/mo',
+                desc: 'For freelancers just getting started',
+                features: ['Up to 20 invoices/month', '10 payment links/month', 'Stripe payments', 'Smart reminders', 'Basic CRM', 'Email support'],
                 cta: 'Get Started',
                 highlighted: false
               },
               {
                 name: 'Pro',
                 price: '$49',
-                period: '/month',
+                period: '/mo',
                 desc: 'For growing freelancers',
-                features: ['Unlimited invoices', 'Unlimited payment links', 'Smart reminders', 'Partial payments', 'Email support'],
+                badge: 'Most Popular',
+                features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe payments', 'Smart reminders', 'Partial payments', 'Advanced CRM', 'Proposals & contracts', 'Advanced reporting', 'Priority email support'],
                 cta: 'Start Free Trial',
                 highlighted: true,
                 comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.'
@@ -142,44 +152,61 @@ export default function LandingPage() {
               {
                 name: 'Enterprise',
                 price: '$199',
-                period: '/month',
+                period: '/mo',
                 desc: 'For teams & agencies',
-                features: ['Everything in Pro', 'Team management (5 users)', 'Multi-entity support', 'Advanced CRM', 'Custom branding', 'Priority support'],
-                cta: 'Contact Sales',
-                highlighted: false
+                features: ['Everything in Pro', 'Multi-entity / business units support', 'POS webhook integration', 'Advanced accounting module', 'Customer pricing tiers', 'Credit terms (Net 30/60/90)', 'Receivables aging reports', 'Team management (5 users)', 'API access & webhooks', 'Custom branding', 'Dedicated support'],
+                cta: 'Get Started',
+                highlighted: false,
+                note: 'Built for agencies, holding companies, and multi-entity businesses.'
               }
             ].map((plan, i) => (
               <div
                 key={i}
-                className={`rounded-lg border p-8 transition ${
+                className={`rounded-lg border p-6 transition relative flex flex-col h-full ${
                   plan.highlighted
-                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20 scale-105'
+                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 md:scale-105'
                     : 'border-white/10 bg-white/5 hover:border-white/20'
                 }`}
               >
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-gray-400 ml-2">{plan.period}</span>
-                </div>
-                <p className="text-gray-400 mb-6 text-sm">{plan.desc}</p>
-                <button className={`w-full py-2 rounded-lg font-medium mb-6 transition ${
-                  plan.highlighted
-                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                    : 'border border-white/20 hover:border-white/40'
-                }`}>
-                  {plan.cta}
-                </button>
-                {plan.comparison && (
-                  <p className="text-gray-400 text-sm mb-6 italic">{plan.comparison}</p>
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      {plan.badge}
+                    </span>
+                  </div>
                 )}
-                <ul className="space-y-3">
+                <div className={plan.badge ? 'pt-4' : ''}>
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <div className="mb-2">
+                    <span className="text-4xl font-bold">{plan.price}</span>
+                    <span className="text-gray-400 ml-2">{plan.period}</span>
+                  </div>
+                  <p className="text-gray-400 mb-6 text-sm">{plan.desc}</p>
+                </div>
+                
+                <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((feature, j) => (
-                    <li key={j} className="text-gray-300 flex items-center gap-2">
-                      <span className="text-blue-400">✓</span> {feature}
+                    <li key={j} className="text-gray-300 flex items-start gap-2 text-sm">
+                      <span className="text-blue-400 mt-1 flex-shrink-0">✓</span> {feature}
                     </li>
                   ))}
                 </ul>
+
+                {plan.comparison && (
+                  <p className="text-gray-400 text-xs italic mb-4 pb-4 border-t border-white/10 pt-4">{plan.comparison}</p>
+                )}
+
+                {plan.note && (
+                  <p className="text-gray-400 text-xs italic mb-4 pb-4 border-t border-white/10 pt-4">{plan.note}</p>
+                )}
+
+                <button className={`w-full py-2 rounded-lg font-medium transition ${
+                  plan.highlighted
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'border border-white/20 hover:border-white/40 text-white'
+                }`}>
+                  {plan.cta}
+                </button>
               </div>
             ))}
           </div>
