@@ -13,8 +13,12 @@ export async function POST(request: NextRequest) {
   try {
     // Verify CRON_SECRET
     const authHeader = request.headers.get('authorization')
-    console.log('[Cron] Incoming auth header:', authHeader)
+    console.log('[Cron] ===== AUTH DEBUG START =====')
+    console.log('[Cron] Received auth header:', authHeader)
     console.log('[Cron] Expected format: Bearer [SECRET]')
+    console.log('[Cron] CRON_SECRET exists:', !!process.env.CRON_SECRET)
+    console.log('[Cron] CRON_SECRET length:', process.env.CRON_SECRET?.length)
+    console.log('[Cron] CRON_SECRET value:', process.env.CRON_SECRET)
     console.log('[Cron] Environment CRON_SECRET:', process.env.CRON_SECRET ? '***SET***' : '***NOT SET***')
     
     if (!authHeader?.startsWith('Bearer ')) {
@@ -35,13 +39,21 @@ export async function POST(request: NextRequest) {
     if (token !== process.env.CRON_SECRET) {
       console.log('[Cron] Invalid CRON_SECRET')
       console.log('[Cron] Received token:', token)
+      console.log('[Cron] Received token length:', token.length)
       console.log('[Cron] Expected secret:', process.env.CRON_SECRET)
+      console.log('[Cron] Expected secret length:', process.env.CRON_SECRET?.length)
+      console.log('[Cron] Character-by-character comparison:')
+      for (let i = 0; i < Math.max(token.length, process.env.CRON_SECRET?.length || 0); i++) {
+        console.log(`[Cron]   [${i}] Received: '${token[i]}' vs Expected: '${process.env.CRON_SECRET?.[i]}'`)
+      }
+      console.log('[Cron] ===== AUTH DEBUG END =====')
       return NextResponse.json(
         { error: 'Unauthorized - invalid secret' },
         { status: 401 }
       )
     }
 
+    console.log('[Cron] ✅ Auth validation PASSED')
     console.log('[Cron] Starting smart reminders processing...')
 
     // Find all unpaid/partial invoices that are overdue
