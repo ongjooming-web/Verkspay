@@ -48,10 +48,25 @@ export default function PricingPage() {
 
   const plans = [
     {
+      name: 'Free',
+      price: '$0',
+      period: '/mo',
+      description: 'Perfect for trying Prism',
+      features: [
+        '5 invoices/month',
+        '3 payment links',
+        'Basic CRM',
+        'Contract templates',
+        'Community support'
+      ],
+      button: { text: 'Get Started', action: 'free' },
+      highlighted: false
+    },
+    {
       name: 'Starter',
       price: '$19',
-      period: '/month',
-      description: 'For freelancers getting started',
+      period: '/mo',
+      description: 'For freelancers just getting started',
       features: [
         'Up to 20 invoices/month',
         '10 payment links/month',
@@ -60,20 +75,21 @@ export default function PricingPage() {
         'Basic CRM',
         'Email support'
       ],
-      button: { text: 'Choose Starter', action: 'starter' },
+      button: { text: 'Get Started', action: 'starter' },
       highlighted: false
     },
     {
       name: 'Pro',
       price: '$49',
-      period: '/month',
-      description: 'Most popular — for growing freelancers',
+      period: '/mo',
+      description: 'For growing freelancers',
+      badge: 'Most Popular',
       features: [
         'Unlimited invoices',
         'Unlimited payment links',
         'Stripe payments',
-        'Smart reminders (3, 7, 14 days)',
-        'Partial payments tracking',
+        'Smart reminders',
+        'Partial payments',
         'Advanced CRM',
         'Proposals & contracts',
         'Advanced reporting',
@@ -86,8 +102,8 @@ export default function PricingPage() {
     {
       name: 'Enterprise',
       price: '$199',
-      period: '/month',
-      description: 'Built for agencies, holding companies & multi-entity businesses',
+      period: '/mo',
+      description: 'For teams & agencies',
       features: [
         'Everything in Pro',
         'Multi-entity / business units support',
@@ -102,7 +118,7 @@ export default function PricingPage() {
         'Dedicated support'
       ],
       note: 'Built for agencies, holding companies, and multi-entity businesses.',
-      button: { text: 'Contact Sales', action: 'enterprise' },
+      button: { text: 'Get Started', action: 'enterprise' },
       highlighted: false
     }
   ]
@@ -117,49 +133,63 @@ export default function PricingPage() {
             <p className="text-xl text-gray-400">Choose the plan that fits your needs</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="grid md:grid-cols-4 gap-6 mb-16">
             {plans.map((plan, i) => (
               <Card
                 key={i}
-                className={`flex flex-col ${
+                className={`flex flex-col relative ${
                   plan.highlighted
-                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20 md:scale-105'
-                    : ''
+                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 md:scale-105'
+                    : 'border-white/10 bg-white/5 hover:border-white/20'
                 }`}
               >
-                <CardHeader>
+                {plan.badge && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
+
+                <CardHeader className={plan.badge ? 'pt-8' : ''}>
                   <h3 className="text-2xl font-bold">{plan.name}</h3>
                   <div className="my-4">
                     <span className="text-5xl font-bold">{plan.price}</span>
                     <span className="text-gray-400 ml-2">{plan.period}</span>
                   </div>
-                  <p className="text-gray-400">{plan.description}</p>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
                 </CardHeader>
 
                 <CardBody className="flex-1 flex flex-col">
-                  <ul className="space-y-3 mb-8 flex-1">
+                  <ul className="space-y-3 mb-6 flex-1">
                     {plan.features.map((feature, j) => (
                       <li key={j} className="flex items-start gap-3">
-                        <span className="text-blue-400 mt-1">✓</span>
+                        <span className="text-blue-400 mt-1 flex-shrink-0">✓</span>
                         <span className="text-gray-300 text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
                   {plan.comparison && (
-                    <p className="text-gray-400 text-sm italic mb-6 pb-4 border-t border-white/10 pt-4">
+                    <p className="text-gray-400 text-xs italic mb-6 pb-4 border-t border-white/10 pt-4">
                       {plan.comparison}
                     </p>
                   )}
 
                   {plan.note && (
-                    <p className="text-gray-400 text-sm mb-6 pb-4 border-t border-white/10 pt-4">
+                    <p className="text-gray-400 text-xs italic mb-6 pb-4 border-t border-white/10 pt-4">
                       {plan.note}
                     </p>
                   )}
 
-                  {plan.button.action === 'enterprise' ? (
-                    <a href="mailto:support@prismops.xyz">
+                  {plan.button.action === 'free' ? (
+                    <Link href="/signup" className="w-full">
+                      <Button className="w-full border border-white/20 hover:border-white/40 text-white">
+                        {plan.button.text}
+                      </Button>
+                    </Link>
+                  ) : plan.button.action === 'enterprise' ? (
+                    <a href="mailto:support@prismops.xyz" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}
                       </Button>
@@ -175,7 +205,7 @@ export default function PricingPage() {
                       className={`w-full ${
                         plan.highlighted
                           ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-white text-black hover:opacity-90'
+                          : 'border border-white/20 hover:border-white/40 text-white'
                       }`}
                     >
                       {loading ? 'Loading...' : plan.button.text}
