@@ -1,9 +1,22 @@
 'use client'
 
-import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function LandingPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to login - this is an internal tool, not a public landing page
+    router.push('/login')
+  }, [router])
+
+  return null
+}
+
+/*
+// OLD LANDING PAGE - ARCHIVED
+export default function OldLandingPage() {
   // Cache bust: 2026-03-17 09:41
   const [email, setEmail] = useState('')
 

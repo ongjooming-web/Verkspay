@@ -209,6 +209,36 @@ export default function InvoiceDetail() {
     }
   }
 
+  const handleMarkAsPaid = async () => {
+    if (!invoice) return
+
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id
+
+    if (!userId) return
+
+    // Mark as paid with full amount received
+    const { error } = await supabase
+      .from('invoices')
+      .update({
+        status: 'paid',
+        amount_paid: invoice.amount,
+        remaining_balance: 0,
+        paid_date: new Date().toISOString(),
+        payment_method: 'manual',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', invoiceId)
+      .eq('user_id', userId)
+
+    if (!error) {
+      alert('✅ Invoice marked as paid')
+      fetchInvoiceDetails()
+    } else {
+      alert(`❌ Error: ${error.message}`)
+    }
+  }
+
   const handleDeleteInvoice = async () => {
     if (!confirm('Are you sure you want to delete this invoice?')) return
 
@@ -227,8 +257,6 @@ export default function InvoiceDetail() {
       router.push('/invoices')
     }
   }
-
-  // handleMarkAsPaid removed - now handled by PaymentCard component
 
   if (loading) {
     return (
@@ -297,17 +325,26 @@ export default function InvoiceDetail() {
             ) : (
               <div className="flex gap-2 flex-wrap justify-end">
                 {invoice.status !== 'paid' && (
-                  <Button 
-                    onClick={() => {
-                      const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
-                      navigator.clipboard.writeText(paymentUrl)
-                      alert('Payment link copied to clipboard!')
-                    }}
-                    className="bg-green-600/80 hover:bg-green-700/80"
-                    title="Copy shareable payment link"
-                  >
-                    🔗 Share Payment Link
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => {
+                        const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+                        navigator.clipboard.writeText(paymentUrl)
+                        alert('Payment link copied to clipboard!')
+                      }}
+                      className="bg-green-600/80 hover:bg-green-700/80"
+                      title="Copy shareable payment link"
+                    >
+                      🔗 Share Payment Link
+                    </Button>
+                    <Button 
+                      onClick={handleMarkAsPaid}
+                      className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 font-semibold"
+                      title="Mark invoice as fully paid"
+                    >
+                      ✓ Mark as Paid
+                    </Button>
+                  </>
                 )}
                 <Button 
                   onClick={() => setIsEditing(true)}

@@ -137,36 +137,7 @@ export default function Invoices() {
 
     if (!userId) return
 
-    // Check subscription limits
-    try {
-      // Get auth session for bearer token
-      const { data: session } = await supabase.auth.getSession()
-      const token = session?.session?.access_token
-
-      if (!token) {
-        alert('Session expired. Please refresh the page.')
-        return
-      }
-
-      const response = await fetch('/api/invoices/check-limits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ limitType: 'invoices' })
-      })
-
-      const result = await response.json()
-
-      if (!result.allowed) {
-        alert(`⛔ ${result.error}\n\nCurrent usage: ${result.count}/${result.limit} invoices this month`)
-        return
-      }
-    } catch (err) {
-      console.error('Error checking limits:', err)
-      // Continue anyway if check fails
-    }
+    // Subscription limits removed - all features unlocked for all users
 
     const invoiceNumber = `INV-${Date.now()}`
     const { data, error } = await supabase
