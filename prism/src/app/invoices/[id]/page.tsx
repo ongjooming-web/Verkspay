@@ -469,31 +469,7 @@ export default function InvoiceDetail() {
           </CardBody>
         </Card>
 
-        {/* USDC Payment Card */}
-        {invoice && invoice.status !== 'paid' && (
-          <PaymentCard
-            invoiceId={invoiceId}
-            invoiceAmount={invoice.amount}
-            invoiceNumber={invoice.invoice_number}
-            status={invoice.status}
-            onPaymentMarked={async () => {
-              // Refresh invoice details after payment is marked
-              console.log('[InvoiceDetail] onPaymentMarked callback triggered')
-              console.log('[InvoiceDetail] Current invoice status before refresh:', invoice.status)
-              
-              // Wait a moment to ensure DB is updated
-              await new Promise(resolve => setTimeout(resolve, 1000))
-              
-              console.log('[InvoiceDetail] Calling fetchInvoiceDetails...')
-              await fetchInvoiceDetails()
-              
-              console.log('[InvoiceDetail] Calling fetchPaymentRecords...')
-              await fetchPaymentRecords()
-              
-              console.log('[InvoiceDetail] Refresh complete, new status should be visible')
-            }}
-          />
-        )}
+        {/* USDC Payment Card - Removed (component not implemented yet) */}
 
         {/* Smart Payment Reminders Card */}
         {invoice && invoice.status !== 'paid' && new Date(invoice.due_date) < new Date() && (
