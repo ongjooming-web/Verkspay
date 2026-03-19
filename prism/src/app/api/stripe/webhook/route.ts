@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           // Fetch current invoice state
           const { data: invoice, error: fetchError } = await supabase
             .from('invoices')
-            .select('amount, amount_paid, status')
+            .select('amount, amount_paid, status, paid_date')
             .eq('id', invoiceId)
             .single()
 
