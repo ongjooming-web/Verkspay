@@ -13,19 +13,31 @@ export async function POST(request: NextRequest) {
   try {
     // Verify CRON_SECRET
     const authHeader = request.headers.get('authorization')
+    console.log('[Cron] Incoming auth header:', authHeader)
+    console.log('[Cron] Expected format: Bearer [SECRET]')
+    console.log('[Cron] Environment CRON_SECRET:', process.env.CRON_SECRET ? '***SET***' : '***NOT SET***')
+    
     if (!authHeader?.startsWith('Bearer ')) {
       console.log('[Cron] Missing or invalid authorization header')
+      console.log('[Cron] authHeader value:', authHeader)
+      console.log('[Cron] authHeader?.startsWith(Bearer ):', authHeader?.startsWith('Bearer '))
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - missing Bearer' },
         { status: 401 }
       )
     }
 
     const token = authHeader.substring(7)
+    console.log('[Cron] Extracted token length:', token.length)
+    console.log('[Cron] Expected secret length:', process.env.CRON_SECRET?.length)
+    console.log('[Cron] Token matches secret:', token === process.env.CRON_SECRET)
+    
     if (token !== process.env.CRON_SECRET) {
       console.log('[Cron] Invalid CRON_SECRET')
+      console.log('[Cron] Received token:', token)
+      console.log('[Cron] Expected secret:', process.env.CRON_SECRET)
       return NextResponse.json(
-        { error: 'Invalid secret' },
+        { error: 'Unauthorized - invalid secret' },
         { status: 401 }
       )
     }
