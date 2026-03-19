@@ -90,56 +90,43 @@ export async function POST(
       )
     }
 
-    // Create product and price for this partial payment
-    const product = await stripe.products.create({
-      name: `Partial Payment - Invoice ${invoice.invoice_number}`,
-      description: `Partial payment of $${amount.toFixed(2)} towards invoice ${invoice.invoice_number}`,
-      type: 'service',
-      metadata: {
-        invoiceId: invoiceId,
-        freelancerId: invoice.user_id,
-        freelancerStripeAccount: profile.stripe_account_id,
-        isPartialPayment: 'true'
-      }
-    })
-
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: Math.round(amount * 100),
-      currency: 'usd'
-    })
-
-    // Create payment link
-    const paymentLink = await stripe.paymentLinks.create({
+    // Create Checkout Session (not Payment Link - better webhook support)
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
       line_items: [
         {
-          price: price.id,
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Partial Payment - Invoice ${invoice.invoice_number}`,
+              description: `Partial payment of $${amount.toFixed(2)} towards invoice ${invoice.invoice_number}`
+            },
+            unit_amount: Math.round(amount * 100)
+          },
           quantity: 1
         }
       ],
+      customer_email: clientEmail,
+      billing_address_collection: 'auto',
+      // CRITICAL: Metadata must be passed to checkout session for webhook
       metadata: {
         invoiceId: invoiceId,
         freelancerId: invoice.user_id,
-        freelancerStripeAccount: profile.stripe_account_id,
         partialAmount: amount.toString(),
         isPartialPayment: 'true'
       },
-      customer_creation: 'always',
-      billing_address_collection: 'auto',
-      after_completion: {
-        type: 'redirect' as const,
-        redirect: {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true&partial=true`
-        }
-      }
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?success=true&partial=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pay/${invoiceId}?cancelled=true`
     })
 
-    console.log('[invoices/partial-payment-link] Payment link created:', paymentLink.id)
+    console.log('[invoices/partial-payment-link] Checkout session created:', session.id)
+    console.log('[invoices/partial-payment-link] Session metadata:', session.metadata)
 
     return NextResponse.json({
       success: true,
-      payment_url: paymentLink.url,
-      session_id: paymentLink.id,
+      payment_url: session.url,
+      session_id: session.id,
       amount: amount
     }, { status: 200 })
   } catch (error: any) {
