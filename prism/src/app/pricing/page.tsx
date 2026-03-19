@@ -10,7 +10,7 @@ import Link from 'next/link'
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
 
-  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+  const handleUpgrade = async (plan: 'starter' | 'pro' | 'enterprise') => {
     try {
       setLoading(true)
       const { data: session } = await supabase.auth.getSession()
@@ -48,55 +48,61 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: 'Free',
-      price: '$0',
-      period: 'Forever',
-      description: 'Perfect for trying Prism',
+      name: 'Starter',
+      price: '$19',
+      period: '/month',
+      description: 'For freelancers getting started',
       features: [
-        '5 invoices/month',
-        '3 payment links/month',
+        'Up to 20 invoices/month',
+        '10 payment links/month',
+        'Stripe payments',
+        'Smart reminders',
         'Basic CRM',
-        'Manual payment tracking',
-        'Community support'
+        'Email support'
       ],
-      button: { text: 'Get Started', action: 'free' },
+      button: { text: 'Choose Starter', action: 'starter' },
       highlighted: false
     },
     {
       name: 'Pro',
       price: '$49',
       period: '/month',
-      description: 'For growing freelancers & small businesses',
+      description: 'Most popular — for growing freelancers',
       features: [
         'Unlimited invoices',
         'Unlimited payment links',
-        'Smart payment reminders (Days 1, 3, 7)',
-        'Partial payment tracking',
+        'Stripe payments',
+        'Smart reminders (3, 7, 14 days)',
+        'Partial payments tracking',
         'Advanced CRM',
-        'Email support',
-        'Stripe payments built in'
+        'Proposals & contracts',
+        'Advanced reporting',
+        'Priority email support'
       ],
-      button: { text: 'Upgrade to Pro', action: 'pro' },
+      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.',
+      button: { text: 'Start Free Trial', action: 'pro' },
       highlighted: true
     },
     {
       name: 'Enterprise',
       price: '$199',
       period: '/month',
-      description: 'For teams & agencies',
+      description: 'Built for agencies, holding companies & multi-entity businesses',
       features: [
         'Everything in Pro',
-        'Team management (5 users)',
-        'Multi-entity / business units',
-        'Advanced CRM & purchase history',
+        'Multi-entity / business units support',
         'POS webhook integration',
-        'Pricing tiers per customer',
-        'Credit terms & receivables aging',
-        'Daily cash reconciliation',
+        'Advanced accounting module',
+        'Customer pricing tiers (Distributor/Wholesaler/HoReCa)',
+        'Credit terms (Net 30/60/90)',
+        'Receivables aging reports',
+        'Team management (5 users)',
+        'API access & webhooks',
         'Custom branding',
-        'Priority support'
+        'Dedicated support'
       ],
-      button: { text: 'Upgrade to Enterprise', action: 'enterprise' },
+      note: 'Built for agencies, holding companies, and multi-entity businesses.',
+      button: { text: 'Contact Sales', action: 'enterprise' },
       highlighted: false
     }
   ]
@@ -117,7 +123,7 @@ export default function PricingPage() {
                 key={i}
                 className={`flex flex-col ${
                   plan.highlighted
-                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20 scale-105'
+                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20 md:scale-105'
                     : ''
                 }`}
               >
@@ -135,28 +141,40 @@ export default function PricingPage() {
                     {plan.features.map((feature, j) => (
                       <li key={j} className="flex items-start gap-3">
                         <span className="text-blue-400 mt-1">✓</span>
-                        <span className="text-gray-300">{feature}</span>
+                        <span className="text-gray-300 text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {plan.button.action === 'free' ? (
-                    <Link href="/signup">
+                  {plan.comparison && (
+                    <p className="text-gray-400 text-sm italic mb-6 pb-4 border-t border-white/10 pt-4">
+                      {plan.comparison}
+                    </p>
+                  )}
+
+                  {plan.note && (
+                    <p className="text-gray-400 text-sm mb-6 pb-4 border-t border-white/10 pt-4">
+                      {plan.note}
+                    </p>
+                  )}
+
+                  {plan.button.action === 'enterprise' ? (
+                    <a href="mailto:support@prismops.xyz">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}
                       </Button>
-                    </Link>
+                    </a>
                   ) : (
                     <Button
                       onClick={() =>
                         handleUpgrade(
-                          plan.button.action as 'pro' | 'enterprise'
+                          plan.button.action as 'starter' | 'pro' | 'enterprise'
                         )
                       }
                       disabled={loading}
                       className={`w-full ${
                         plan.highlighted
-                          ? 'bg-blue-600 hover:bg-blue-700'
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
                           : 'bg-white text-black hover:opacity-90'
                       }`}
                     >
@@ -188,6 +206,10 @@ export default function PricingPage() {
                 {
                   q: 'Is there a contract?',
                   a: 'Nope. Pay month-to-month, cancel anytime. No lock-in.'
+                },
+                {
+                  q: 'Do you offer annual billing?',
+                  a: 'Contact us at support@prismops.xyz for annual pricing and custom quotes.'
                 }
               ].map((faq, i) => (
                 <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-6">
