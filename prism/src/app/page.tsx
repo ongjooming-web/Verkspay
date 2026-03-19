@@ -48,7 +48,7 @@ export default function LandingPage() {
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Chase invoices less.</span>
             </h1>
             <p className="text-xl text-gray-400 mb-8">
-              Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in.
+              Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
             </p>
             <div className="flex gap-4 justify-center">
               <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-medium hover:opacity-90 transition text-lg">
@@ -60,21 +60,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Social Proof */}
-          <div className="grid md:grid-cols-3 gap-8 my-20 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-400 mb-2">500+</div>
-              <p className="text-gray-400">Active freelancers</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-400 mb-2">$2M+</div>
-              <p className="text-gray-400">Invoiced on Prism</p>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-400 mb-2">1.2h avg</div>
-              <p className="text-gray-400">Time saved per month</p>
-            </div>
-          </div>
+
         </section>
 
         {/* Features Section */}
@@ -85,32 +71,32 @@ export default function LandingPage() {
               {
                 icon: '📨',
                 title: 'Smart Reminders',
-                desc: 'Automatic follow-ups on Days 1, 3, and 7. Never chase invoices manually again.'
+                desc: 'Automated follow-ups at 3, 7, 14 days overdue. Stop chasing manually.'
               },
               {
                 icon: '💳',
                 title: 'Partial Payments',
-                desc: 'Accept deposits, installments, or partial payments. Track exactly what clients owe.'
+                desc: 'Collect deposits upfront, track the remainder automatically.'
               },
               {
-                icon: '🏦',
-                title: 'Stripe Built In',
-                desc: 'One-click payment links. Get paid within 24 hours. Your money, your way.'
+                icon: '💰',
+                title: 'Stripe Payments',
+                desc: 'Send a payment link, get paid instantly.'
               },
               {
                 icon: '👥',
-                title: 'Client Portal',
-                desc: 'Clients view invoices, pay online, and get receipts automatically. No back-and-forth.'
+                title: 'Client CRM',
+                desc: 'Every client, invoice, and conversation in one place.'
+              },
+              {
+                icon: '📄',
+                title: 'Proposals & Contracts',
+                desc: 'Professional proposals signed and tracked.'
               },
               {
                 icon: '📊',
-                title: 'Real-time Dashboard',
-                desc: 'See total revenue, unpaid invoices, and cash flow at a glance.'
-              },
-              {
-                icon: '⏱️',
-                title: 'Time Tracking',
-                desc: 'Log hours, auto-generate invoices. Convert time into money.'
+                title: 'Dashboard',
+                desc: 'Real-time revenue, pipeline, and cash flow.'
               }
             ].map((feature, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-6 hover:border-blue-500/30 transition">
@@ -122,12 +108,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Crypto as Secondary */}
+        {/* Crypto Section - Moved Lower */}
         <section className="max-w-7xl mx-auto px-6 py-20">
-          <h3 className="text-2xl font-bold text-center mb-8">Crypto-friendly</h3>
-          <p className="text-center text-gray-400 max-w-2xl mx-auto">
-            Built by freelancers who work with Web3 teams. Get paid in USDC, ETH, or SOL. No banks, no borders, instant settlement.
-          </p>
+          <h3 className="text-2xl font-bold text-center mb-8">Also accept crypto — USDC on Base, Ethereum & Solana for instant global payments.</h3>
         </section>
 
         {/* Pricing Section */}
@@ -153,7 +136,8 @@ export default function LandingPage() {
                 desc: 'For growing freelancers',
                 features: ['Unlimited invoices', 'Unlimited payment links', 'Smart reminders', 'Partial payments', 'Email support'],
                 cta: 'Start Free Trial',
-                highlighted: true
+                highlighted: true,
+                comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.'
               },
               {
                 name: 'Enterprise',
@@ -186,6 +170,9 @@ export default function LandingPage() {
                 }`}>
                   {plan.cta}
                 </button>
+                {plan.comparison && (
+                  <p className="text-gray-400 text-sm mb-6 italic">{plan.comparison}</p>
+                )}
                 <ul className="space-y-3">
                   {plan.features.map((feature, j) => (
                     <li key={j} className="text-gray-300 flex items-center gap-2">
@@ -200,7 +187,7 @@ export default function LandingPage() {
 
         {/* CTA Section */}
         <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to get paid faster?</h2>
+          <h2 className="text-4xl font-bold mb-4">Join freelancers worldwide</h2>
           <p className="text-gray-400 mb-8">Start free. Upgrade when you're ready.</p>
           <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-medium hover:opacity-90 transition text-lg inline-block">
             Start Free Today
