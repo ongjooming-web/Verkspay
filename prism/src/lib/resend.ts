@@ -45,7 +45,6 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
 
     if (result.error) {
       console.error('[Resend] Failed to send email. Error:', {
-        statusCode: result.error?.statusCode,
         message: result.error?.message,
         name: result.error?.name
       })
