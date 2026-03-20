@@ -12,6 +12,7 @@ interface PartialPaymentModalProps {
   onClose: () => void
   onSuccess: () => void
   type: 'manual' | 'stripe'
+  currencyCode?: string
 }
 
 export function PartialPaymentModal({
@@ -20,7 +21,8 @@ export function PartialPaymentModal({
   remainingBalance,
   onClose,
   onSuccess,
-  type
+  type,
+  currencyCode
 }: PartialPaymentModalProps) {
   const [amount, setAmount] = useState(remainingBalance.toFixed(2))
   const [paymentMethod, setPaymentMethod] = useState('stripe')
@@ -112,7 +114,8 @@ export function PartialPaymentModal({
         },
         body: JSON.stringify({
           amount: paymentAmount,
-          clientEmail
+          clientEmail,
+          currency_code: currencyCode
         })
       })
 

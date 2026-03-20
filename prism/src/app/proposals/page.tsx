@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface Proposal {
   id: string
@@ -18,6 +19,7 @@ interface Proposal {
 }
 
 export default function Proposals() {
+  const { currencyCode } = useCurrency()
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [showForm, setShowForm] = useState(false)
   const [clients, setClients] = useState<any[]>([])
@@ -168,7 +170,7 @@ export default function Proposals() {
                   />
                   <input
                     type="number"
-                    placeholder="Amount (USD)"
+                    placeholder={`Amount (${currencyCode})`}
                     step="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}

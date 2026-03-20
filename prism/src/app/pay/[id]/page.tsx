@@ -153,7 +153,8 @@ export default function PaymentPage() {
         body: JSON.stringify({
           invoiceId,
           amount: data?.invoice.remaining_balance || data?.invoice.amount,
-          clientEmail
+          clientEmail,
+          currency_code: data?.invoice.currency_code
         })
       })
 

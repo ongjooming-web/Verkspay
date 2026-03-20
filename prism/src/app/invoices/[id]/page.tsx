@@ -653,6 +653,7 @@ export default function InvoiceDetail() {
             invoiceNumber={invoice?.invoice_number || ''}
             remainingBalance={invoice?.remaining_balance || invoice?.amount || 0}
             type="manual"
+            currencyCode={invoice?.currency_code}
             onClose={() => setShowManualPaymentModal(false)}
             onSuccess={() => {
               setShowManualPaymentModal(false)
@@ -668,6 +669,7 @@ export default function InvoiceDetail() {
             invoiceNumber={invoice?.invoice_number || ''}
             remainingBalance={invoice?.remaining_balance || invoice?.amount || 0}
             type="stripe"
+            currencyCode={invoice?.currency_code}
             onClose={() => setShowStripePaymentModal(false)}
             onSuccess={() => {
               setShowStripePaymentModal(false)

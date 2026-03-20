@@ -12,10 +12,10 @@ export async function POST(
 ) {
   try {
     const { id: invoiceId } = await context.params
-    const { amount, clientEmail } = await req.json()
+    const { amount, clientEmail, currency_code } = await req.json()
 
     console.log('[invoices/partial-payment-link] Creating partial payment link for invoice:', invoiceId)
-    console.log('[invoices/partial-payment-link] Amount:', amount, 'Email:', clientEmail)
+    console.log('[invoices/partial-payment-link] Amount:', amount, 'Email:', clientEmail, 'Currency:', currency_code)
 
     if (!invoiceId || !amount || !clientEmail) {
       return NextResponse.json(
@@ -90,6 +90,15 @@ export async function POST(
       )
     }
 
+    // Zero-decimal currencies
+    const ZERO_DECIMAL_CURRENCIES = ['IDR', 'JPY', 'KRW', 'VND', 'BIF', 'GNF', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF']
+    const finalCurrency = currency_code || invoice.currency_code || 'usd'
+    
+    // Calculate Stripe amount based on whether currency is zero-decimal
+    const stripeAmount = ZERO_DECIMAL_CURRENCIES.includes(finalCurrency.toUpperCase())
+      ? Math.round(amount)
+      : Math.round(amount * 100)
+
     // Create Checkout Session (not Payment Link - better webhook support)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -97,12 +106,12 @@ export async function POST(
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: finalCurrency.toLowerCase(),
             product_data: {
               name: `Partial Payment - Invoice ${invoice.invoice_number}`,
-              description: `Partial payment of $${amount.toFixed(2)} towards invoice ${invoice.invoice_number}`
+              description: `Partial payment of ${finalCurrency.toUpperCase()} ${amount.toFixed(2)} towards invoice ${invoice.invoice_number}`
             },
-            unit_amount: Math.round(amount * 100)
+            unit_amount: stripeAmount
           },
           quantity: 1
         }

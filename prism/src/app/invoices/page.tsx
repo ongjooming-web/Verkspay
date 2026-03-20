@@ -309,7 +309,7 @@ export default function Invoices() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Amount (USD) *</label>
+                    <label className="text-gray-400 text-sm mb-2 block">Amount ({currencyCode}) *</label>
                     <input
                       type="number"
                       placeholder="0.00"

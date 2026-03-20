@@ -9,10 +9,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { invoiceId, amount, clientEmail } = await req.json()
+    const { invoiceId, amount, clientEmail, currency_code } = await req.json()
 
     console.log('[stripe/payment-link] Creating payment link for invoice:', invoiceId)
-    console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail)
+    console.log('[stripe/payment-link] Amount:', amount, 'Email:', clientEmail, 'Currency:', currency_code)
 
     if (!invoiceId || !amount || !clientEmail) {
       return NextResponse.json(
@@ -45,6 +45,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Zero-decimal currencies
+    const ZERO_DECIMAL_CURRENCIES = ['IDR', 'JPY', 'KRW', 'VND', 'BIF', 'GNF', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF']
+    const finalCurrency = currency_code || invoice.currency_code || 'usd'
+    
+    // Calculate Stripe amount based on whether currency is zero-decimal
+    const stripeAmount = ZERO_DECIMAL_CURRENCIES.includes(finalCurrency.toUpperCase())
+      ? Math.round(amount)
+      : Math.round(amount * 100)
+
     // Create Checkout Session instead of Payment Link for better metadata handling
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -52,12 +61,12 @@ export async function POST(req: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: finalCurrency.toLowerCase(),
             product_data: {
               name: `Invoice ${invoice.invoice_number}`,
               description: invoice.description || 'Invoice payment',
             },
-            unit_amount: Math.round(amount * 100),
+            unit_amount: stripeAmount,
           },
           quantity: 1,
         },

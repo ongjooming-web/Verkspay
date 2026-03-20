@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { plan } = await request.json()
+    const { plan, currency_code } = await request.json()
 
     // Map plan names to Stripe price IDs
     const priceMap: Record<string, string> = {
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Create Stripe checkout session with currency
+    const sessionParams: any = {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [
@@ -65,7 +65,14 @@ export async function POST(request: NextRequest) {
         userId: data.user.id,
         plan,
       },
-    })
+    }
+
+    // Add currency if provided
+    if (currency_code) {
+      sessionParams.currency = currency_code.toLowerCase()
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams)
 
     return NextResponse.json({ url: session.url })
   } catch (error) {

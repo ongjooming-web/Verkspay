@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
 
         // PARTIAL PAYMENT HANDLING
         if (paymentType === 'partial_payment' && invoiceId && session.amount_total) {
-          const amountPaid = session.amount_total / 100 // Convert from cents to dollars
+          // Zero-decimal currencies don't need division
+          const ZERO_DECIMAL_CURRENCIES = ['IDR', 'JPY', 'KRW', 'VND', 'BIF', 'GNF', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF']
+          const currency = session.currency || 'usd'
+          const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase())
+          const amountPaid = isZeroDecimal ? session.amount_total : session.amount_total / 100
 
           console.log(`[Webhook] Partial payment received for invoice ${invoiceId}: $${amountPaid}`)
 
