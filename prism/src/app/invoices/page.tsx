@@ -266,13 +266,13 @@ export default function Invoices() {
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Paid Revenue</p>
-              <p className="text-3xl font-bold text-green-400">${totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-green-400">{formatCurrency(totalRevenue, currencyCode || 'MYR')}</p>
             </CardBody>
           </Card>
           <Card className="hover:scale-105 hover:border-blue-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Pending Amount</p>
-              <p className="text-3xl font-bold text-blue-400">${pendingAmount.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-blue-400">{formatCurrency(pendingAmount, currencyCode || 'MYR')}</p>
             </CardBody>
           </Card>
           <Card className="hover:scale-105 hover:border-red-400/50">
