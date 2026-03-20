@@ -6,6 +6,8 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { useCurrency } from '@/hooks/useCurrency'
+import { formatCurrency } from '@/lib/countries'
 
 interface Invoice {
   id: string
@@ -23,6 +25,7 @@ type FilterStatus = 'all' | 'unpaid' | 'paid' | 'paid_partial' | 'overdue'
 type SortBy = 'date' | 'amount' | 'due_date'
 
 export default function Invoices() {
+  const { currencyCode } = useCurrency()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [showForm, setShowForm] = useState(false)
   const [clients, setClients] = useState<any[]>([])
@@ -422,7 +425,7 @@ export default function Invoices() {
                           <span className="text-gray-400 text-sm">• {invoice.client_name}</span>
                         </div>
                         <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mt-1">
-                          ${invoice.amount.toFixed(2)}
+                          {formatCurrency(invoice.amount, invoice.currency_code || currencyCode || 'MYR')}
                         </p>
                         <p className="text-gray-400 text-sm mt-2">
                           Due: {new Date(invoice.due_date).toLocaleDateString()}
