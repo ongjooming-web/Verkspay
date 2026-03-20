@@ -74,7 +74,7 @@ export default function Invoices() {
     try {
       const { data } = await supabase
         .from('invoices')
-        .select('*')
+        .select('*, currency_code')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 

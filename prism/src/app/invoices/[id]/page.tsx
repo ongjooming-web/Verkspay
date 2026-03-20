@@ -72,7 +72,7 @@ export default function InvoiceDetail() {
 
     const { data, error } = await supabase
       .from('invoices')
-      .select('*')
+      .select('*, currency_code')
       .eq('id', invoiceId)
       .eq('user_id', userId)
       .single()
