@@ -53,6 +53,62 @@ export const SUPPORTED_COUNTRIES: Country[] = [
   { code: 'EG', name: 'Egypt', currency: 'EGP', symbol: 'E£', dateFormat: 'DD/MM/YYYY', timezone: 'Africa/Cairo' },
   { code: 'MA', name: 'Morocco', currency: 'MAD', symbol: 'د.م.', dateFormat: 'DD/MM/YYYY', timezone: 'Africa/Casablanca' },
   { code: 'TZ', name: 'Tanzania', currency: 'TZS', symbol: 'TSh', dateFormat: 'DD/MM/YYYY', timezone: 'Africa/Dar_es_Salaam' },
+
+  // Europe
+  { code: 'GB', name: 'United Kingdom', currency: 'GBP', symbol: '£', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/London' },
+  { code: 'DE', name: 'Germany', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Berlin' },
+  { code: 'FR', name: 'France', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Paris' },
+  { code: 'IT', name: 'Italy', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Rome' },
+  { code: 'ES', name: 'Spain', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Madrid' },
+  { code: 'NL', name: 'Netherlands', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Amsterdam' },
+  { code: 'SE', name: 'Sweden', currency: 'SEK', symbol: 'kr', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Stockholm' },
+  { code: 'NO', name: 'Norway', currency: 'NOK', symbol: 'kr', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Oslo' },
+  { code: 'DK', name: 'Denmark', currency: 'DKK', symbol: 'kr', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Copenhagen' },
+  { code: 'CH', name: 'Switzerland', currency: 'CHF', symbol: 'Fr', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Zurich' },
+  { code: 'PL', name: 'Poland', currency: 'PLN', symbol: 'zł', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Warsaw' },
+  { code: 'PT', name: 'Portugal', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Lisbon' },
+  { code: 'IE', name: 'Ireland', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Dublin' },
+  { code: 'FI', name: 'Finland', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Helsinki' },
+  { code: 'CZ', name: 'Czech Republic', currency: 'CZK', symbol: 'Kč', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Prague' },
+  { code: 'RO', name: 'Romania', currency: 'RON', symbol: 'lei', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Bucharest' },
+  { code: 'HU', name: 'Hungary', currency: 'HUF', symbol: 'Ft', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Budapest' },
+  { code: 'GR', name: 'Greece', currency: 'EUR', symbol: '€', dateFormat: 'DD/MM/YYYY', timezone: 'Europe/Athens' },
+
+  // Americas
+  { code: 'US', name: 'United States', currency: 'USD', symbol: '$', dateFormat: 'MM/DD/YYYY', timezone: 'America/New_York' },
+  { code: 'CA', name: 'Canada', currency: 'CAD', symbol: 'C$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Toronto' },
+  { code: 'MX', name: 'Mexico', currency: 'MXN', symbol: '$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Mexico_City' },
+  { code: 'BR', name: 'Brazil', currency: 'BRL', symbol: 'R$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Sao_Paulo' },
+  { code: 'AR', name: 'Argentina', currency: 'ARS', symbol: '$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Argentina/Buenos_Aires' },
+  { code: 'CL', name: 'Chile', currency: 'CLP', symbol: '$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Santiago' },
+  { code: 'CO', name: 'Colombia', currency: 'COP', symbol: '$', dateFormat: 'DD/MM/YYYY', timezone: 'America/Bogota' },
+  { code: 'PE', name: 'Peru', currency: 'PEN', symbol: 'S/', dateFormat: 'DD/MM/YYYY', timezone: 'America/Lima' },
+]
+
+/**
+ * Sanctioned countries — blocked from signup
+ * Based on OFAC, EU, and UN sanctions lists
+ */
+export const SANCTIONED_COUNTRIES = [
+  'RU', // Russia
+  'BY', // Belarus
+  'KP', // North Korea
+  'IR', // Iran
+  'SY', // Syria
+  'CU', // Cuba
+  'VE', // Venezuela
+  'MM', // Myanmar
+  'SD', // Sudan
+  'SS', // South Sudan
+  'LY', // Libya (partial)
+  'SO', // Somalia
+  'YE', // Yemen
+  'ZW', // Zimbabwe
+  'CD', // DR Congo
+  'CF', // Central African Republic
+  'ML', // Mali
+  'NI', // Nicaragua
+  'HT', // Haiti
 ]
 
 /**
@@ -92,4 +148,19 @@ export function getCountryCodes(): string[] {
  */
 export function getCountryNames(): string[] {
   return SUPPORTED_COUNTRIES.map(c => c.name)
+}
+
+/**
+ * Check if country is allowed (not sanctioned)
+ */
+export function isCountryAllowed(countryCode: string): boolean {
+  return !SANCTIONED_COUNTRIES.includes(countryCode) &&
+    SUPPORTED_COUNTRIES.some(c => c.code === countryCode)
+}
+
+/**
+ * Get country configuration by code
+ */
+export function getCountryConfig(countryCode: string): Country | undefined {
+  return SUPPORTED_COUNTRIES.find(c => c.code === countryCode)
 }
