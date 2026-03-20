@@ -74,10 +74,10 @@ export default function AccountSettings() {
 
     try {
       // Call delete account API
-      const response = await fetch('/api/auth/delete-account', {
-        method: 'POST',
+      const response = await fetch('/api/account/delete', {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, email: user.email })
+        body: JSON.stringify({ email: user.email })
       })
 
       const data = await response.json()
