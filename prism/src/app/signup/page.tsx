@@ -90,14 +90,14 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden flex justify-center items-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden flex flex-col justify-center items-center p-4 pb-32">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
       </div>
 
-      <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/10">
+      <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/20">
         <CardHeader className="text-center">
           <Link href="/" className="flex justify-center mb-4">
             <svg className="w-12 h-12 hover:opacity-80 transition-opacity cursor-pointer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -126,7 +126,7 @@ export default function Signup() {
           <p className="text-gray-400 text-sm mt-2">Create your account to get started</p>
         </CardHeader>
         <CardBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="glass border-red-500/50 bg-red-500/10 text-red-300 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -227,13 +227,13 @@ export default function Signup() {
       </Card>
 
       {/* Footer */}
-      <footer className="mt-12 text-center text-xs text-gray-500 space-y-2">
-        <div className="flex justify-center gap-6">
+      <footer className="absolute bottom-0 left-0 right-0 py-6 text-center text-xs text-gray-500">
+        <div className="flex justify-center gap-6 mb-2">
           <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
           <a href="mailto:support@prismops.xyz" className="hover:text-gray-400 transition">Contact</a>
         </div>
-        <p>© 2026 Prism</p>
+        <p className="text-gray-600">© 2026 Prism</p>
       </footer>
     </div>
   )
