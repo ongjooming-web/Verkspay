@@ -18,7 +18,7 @@ export async function GET(
     // Fetch invoice with all details including currency_code
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
-      .select('id, invoice_number, amount, remaining_balance, amount_paid, status, due_date, description, created_at, currency_code')
+      .select('id, user_id, invoice_number, amount, remaining_balance, amount_paid, status, due_date, description, created_at, currency_code')
       .eq('id', invoiceId)
       .single()
 
