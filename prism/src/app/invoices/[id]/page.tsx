@@ -8,6 +8,8 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { PartialPaymentModal } from '@/components/PartialPaymentModal'
 import Link from 'next/link'
+import { formatCurrency } from '@/lib/countries'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface Invoice {
   id: string
@@ -40,6 +42,7 @@ export default function InvoiceDetail() {
   const router = useRouter()
   const params = useParams()
   const invoiceId = params.id as string
+  const { currencyCode } = useCurrency()
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([])
@@ -434,7 +437,7 @@ export default function InvoiceDetail() {
                   <div>
                     <p className="text-gray-400 text-sm mb-2">Amount</p>
                     <p className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                      ${invoice.amount.toFixed(2)}
+                      {formatCurrency(invoice.amount, invoice.currency_code || currencyCode || 'MYR')}
                     </p>
                   </div>
                   <div>
@@ -576,15 +579,15 @@ export default function InvoiceDetail() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-gray-400 text-xs mb-1">Total Amount</p>
-                    <p className="text-xl font-bold text-white">${invoice.amount.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-white">{formatCurrency(invoice.amount, invoice.currency_code || currencyCode || 'MYR')}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs mb-1">Amount Paid</p>
-                    <p className="text-xl font-bold text-green-400">${(invoice.amount_paid || 0).toFixed(2)}</p>
+                    <p className="text-xl font-bold text-green-400">{formatCurrency(invoice.amount_paid || 0, invoice.currency_code || currencyCode || 'MYR')}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs mb-1">Remaining</p>
-                    <p className="text-xl font-bold text-red-400">${(invoice.remaining_balance || invoice.amount).toFixed(2)}</p>
+                    <p className="text-xl font-bold text-red-400">{formatCurrency(invoice.remaining_balance || invoice.amount, invoice.currency_code || currencyCode || 'MYR')}</p>
                   </div>
                 </div>
               </div>
@@ -622,7 +625,7 @@ export default function InvoiceDetail() {
                 >
                   <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div>
-                      <p className="text-white font-semibold">${payment.amount_paid.toFixed(2)} via {payment.payment_type.toUpperCase()}</p>
+                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice.currency_code || currencyCode || 'MYR')} via {payment.payment_type.toUpperCase()}</p>
                       <p className="text-gray-400 text-sm mt-1">{new Date(payment.payment_date).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
