@@ -168,6 +168,16 @@ export default function Signup() {
           </p>
         </CardBody>
       </Card>
+
+      {/* Footer */}
+      <footer className="mt-12 text-center text-xs text-gray-500 space-y-2">
+        <div className="flex justify-center gap-6">
+          <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
+          <a href="mailto:support@prismops.xyz" className="hover:text-gray-400 transition">Contact</a>
+        </div>
+        <p>© 2026 Prism</p>
+      </footer>
     </div>
   )
 }

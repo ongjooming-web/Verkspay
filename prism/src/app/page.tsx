@@ -222,9 +222,16 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-white/10 mt-20 py-8">
-          <div className="max-w-7xl mx-auto px-6 text-center text-gray-400 text-sm">
-            <p>© 2026 Prism. Built for freelancers and small teams.</p>
+        <footer className="border-t border-white/10 mt-20 py-12">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex justify-between items-center mb-8">
+              <p className="text-gray-400 text-sm">© 2026 Prism. Built for freelancers and small teams.</p>
+              <div className="flex gap-6 text-sm">
+                <Link href="/privacy" className="text-gray-400 hover:text-white transition">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-400 hover:text-white transition">Terms of Service</Link>
+                <a href="mailto:support@prismops.xyz" className="text-gray-400 hover:text-white transition">Contact</a>
+              </div>
+            </div>
           </div>
         </footer>
       </div>

@@ -511,6 +511,16 @@ export default function Dashboard() {
             </CardBody>
           </Card>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-16 pt-8 border-t border-white/10 text-center text-xs text-gray-500">
+          <div className="flex justify-center gap-6 mb-4">
+            <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
+            <a href="mailto:support@prismops.xyz" className="hover:text-gray-400 transition">Contact</a>
+          </div>
+          <p>© 2026 Prism</p>
+        </footer>
       </div>
     </div>
   )
