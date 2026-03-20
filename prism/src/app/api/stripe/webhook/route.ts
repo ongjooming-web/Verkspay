@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const sig = request.headers.get('stripe-signature')
     if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('[Webhook] Missing signature or secret')
       return NextResponse.json(
         { error: 'Missing webhook signature' },
         { status: 400 }
@@ -22,11 +23,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.text()
-    const event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    )
+    let event: Stripe.Event
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      )
+    } catch (err: any) {
+      console.error('[Webhook] Signature verification failed:', err.message)
+      console.error('[Webhook] This usually means:')
+      console.error('[Webhook] 1. STRIPE_WEBHOOK_SECRET in .env.local is wrong')
+      console.error('[Webhook] 2. You regenerated the secret in Stripe Dashboard but forgot to update .env.local')
+      console.error('[Webhook] 3. If using Stripe CLI, the secret from "stripe listen" should be used')
+      return NextResponse.json(
+        { error: `Webhook Error: ${err.message}` },
+        { status: 400 }
+      )
+    }
 
     console.log('Stripe webhook event:', event.type)
 
