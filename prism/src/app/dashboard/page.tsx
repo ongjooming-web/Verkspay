@@ -8,6 +8,8 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatCurrency } from '@/lib/countries'
+import { useUserProfile } from '@/hooks/useUserProfile'
 
 interface RecentActivity {
   id: string
@@ -26,6 +28,7 @@ interface Invoice {
 
 export default function Dashboard() {
   const router = useRouter()
+  const { profile, loading: profileLoading } = useUserProfile()
   const [user, setUser] = useState<any>(null)
   const [stats, setStats] = useState({
     revenue: 0,
@@ -176,7 +179,7 @@ export default function Dashboard() {
           activities.push({
             id: `inv-${inv.id}`,
             type: 'invoice',
-            description: `Invoice ${inv.status === 'paid' ? 'paid' : 'created'} - $${inv.amount.toFixed(2)}`,
+            description: `Invoice ${inv.status === 'paid' ? 'paid' : 'created'} - ${formatCurrency(inv.amount, profile?.currency_code || 'MYR')}`,
             timestamp: inv.created_at,
           })
         })
@@ -267,7 +270,7 @@ export default function Dashboard() {
             <CardBody className="flex justify-between items-center">
               <div>
                 <p className="text-red-300 font-semibold">⚠️ {stats.overdueCount} Overdue Invoice{stats.overdueCount !== 1 ? 's' : ''}</p>
-                <p className="text-red-400 text-sm">${stats.overdueAmount.toFixed(2)} past due</p>
+                <p className="text-red-400 text-sm">{formatCurrency(stats.overdueAmount, profile?.currency_code || 'MYR')} past due</p>
               </div>
               <Link href="/invoices">
                 <Button className="bg-red-600/80 hover:bg-red-700/80">View Invoices</Button>
@@ -282,7 +285,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
               <div className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                ${stats.paidRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {formatCurrency(stats.paidRevenue, profile?.currency_code || 'MYR')}
               </div>
               <div className="text-green-400 text-sm mt-3">Invoices received</div>
             </CardBody>
@@ -292,7 +295,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Pending Revenue</div>
               <div className="text-4xl font-bold text-blue-400">
-                ${stats.pendingRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {formatCurrency(stats.pendingRevenue, profile?.currency_code || 'MYR')}
               </div>
               <div className="text-blue-300 text-sm mt-3">Awaiting payment</div>
             </CardBody>
