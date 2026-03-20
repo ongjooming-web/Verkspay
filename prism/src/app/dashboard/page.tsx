@@ -186,7 +186,7 @@ export default function Dashboard() {
           activities.push({
             id: `inv-${inv.id}`,
             type: 'invoice',
-            description: `Invoice ${inv.status === 'paid' ? 'paid' : 'created'} - ${formatCurrency(inv.amount, profile?.currency_code || 'MYR')}`,
+            description: `Invoice ${inv.status === 'paid' ? 'paid' : 'created'} - ${formatCurrency(inv.amount, inv.currency_code || currencyCode)}`,
             timestamp: inv.created_at,
           })
         })
@@ -297,7 +297,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
               <div className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                {formatCurrency(stats.paidRevenue, currencyCode || profile?.currency_code || 'MYR')}
+                {formatCurrency(stats.paidRevenue, currencyCode)}
               </div>
               <div className="text-green-400 text-sm mt-3">Invoices received</div>
             </CardBody>
@@ -307,7 +307,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Pending Revenue</div>
               <div className="text-4xl font-bold text-blue-400">
-                {formatCurrency(stats.pendingRevenue, currencyCode || profile?.currency_code || 'MYR')}
+                {formatCurrency(stats.pendingRevenue, currencyCode)}
               </div>
               <div className="text-blue-300 text-sm mt-3">Awaiting payment</div>
             </CardBody>
@@ -353,7 +353,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => formatCurrency(value, currencyCode || 'MYR')}
+                      formatter={(value: any) => formatCurrency(value, currencyCode)}
                     />
                     <Line 
                       type="monotone" 
@@ -437,7 +437,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => formatCurrency(value, currencyCode || 'MYR')}
+                      formatter={(value: any) => formatCurrency(value, currencyCode)}
                     />
                     <Bar dataKey="value" fill="#667eea">
                       {invoicesByStatus.map((entry, index) => (
@@ -459,7 +459,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-400 text-sm mb-1">Average Invoice</p>
                 <p className="text-2xl font-bold text-blue-400">
-                  ${stats.invoiceCount > 0 ? (stats.revenue / stats.invoiceCount).toFixed(0) : 0}
+                  {formatCurrency(stats.invoiceCount > 0 ? (stats.revenue / stats.invoiceCount) : 0, currencyCode)}
                 </p>
               </div>
               <div className="border-t border-white/10 pt-4">
@@ -470,7 +470,7 @@ export default function Dashboard() {
               </div>
               <div className="border-t border-white/10 pt-4">
                 <p className="text-gray-400 text-sm mb-1">Overdue</p>
-                <p className="text-2xl font-bold text-red-400">${stats.overdueAmount.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-red-400">{formatCurrency(stats.overdueAmount, currencyCode)}</p>
               </div>
             </CardBody>
           </Card>
