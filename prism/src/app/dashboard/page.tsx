@@ -9,6 +9,7 @@ import { Button } from '@/components/Button'
 import Link from 'next/link'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/countries'
+import { groupByCurrency } from '@/lib/currency-helper'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useCurrency } from '@/hooks/useCurrency'
 
@@ -50,6 +51,8 @@ export default function Dashboard() {
   const [pipelineData, setPipelineData] = useState<any[]>([])
   const [invoicesByStatus, setInvoicesByStatus] = useState<any[]>([])
   const [overdueInvoices, setOverdueInvoices] = useState<Invoice[]>([])
+  const [paidByCurrency, setPaidByCurrency] = useState<Record<string, number>>({})
+  const [pendingByCurrency, setPendingByCurrency] = useState<Record<string, number>>({})
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -100,6 +103,12 @@ export default function Dashboard() {
         
         // Store overdue invoices for display with per-invoice currency
         setOverdueInvoices(overdue)
+
+        // Calculate per-currency breakdowns (no false conversions)
+        const paidInvoices = invoicesData?.filter(inv => inv.status === 'paid') || []
+        const pendingInvoices = invoicesData?.filter(inv => inv.status !== 'paid') || []
+        setPaidByCurrency(groupByCurrency(paidInvoices))
+        setPendingByCurrency(groupByCurrency(pendingInvoices))
 
         const clientCount = clientsData?.length || 0
         const invoiceCount = invoicesData?.length || 0
@@ -296,8 +305,16 @@ export default function Dashboard() {
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                {formatCurrency(stats.paidRevenue, currencyCode)}
+              <div className="space-y-2">
+                {Object.entries(paidByCurrency).length > 0 ? (
+                  Object.entries(paidByCurrency).map(([code, total]) => (
+                    <div key={code} className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                      {formatCurrency(total, code)}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-sm">No paid invoices</div>
+                )}
               </div>
               <div className="text-green-400 text-sm mt-3">Invoices received</div>
             </CardBody>
@@ -306,8 +323,16 @@ export default function Dashboard() {
           <Card className="hover:scale-105 hover:border-blue-400/50">
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Pending Revenue</div>
-              <div className="text-4xl font-bold text-blue-400">
-                {formatCurrency(stats.pendingRevenue, currencyCode)}
+              <div className="space-y-2">
+                {Object.entries(pendingByCurrency).length > 0 ? (
+                  Object.entries(pendingByCurrency).map(([code, total]) => (
+                    <div key={code} className="text-2xl font-bold text-blue-400">
+                      {formatCurrency(total, code)}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-sm">No pending invoices</div>
+                )}
               </div>
               <div className="text-blue-300 text-sm mt-3">Awaiting payment</div>
             </CardBody>

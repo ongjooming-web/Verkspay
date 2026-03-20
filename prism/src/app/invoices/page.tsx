@@ -8,6 +8,7 @@ import { Button } from '@/components/Button'
 import Link from 'next/link'
 import { useCurrency } from '@/hooks/useCurrency'
 import { formatCurrency } from '@/lib/countries'
+import { groupByCurrency } from '@/lib/currency-helper'
 
 interface Invoice {
   id: string
@@ -38,6 +39,8 @@ export default function Invoices() {
   })
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [paidByCurrency, setPaidByCurrency] = useState<Record<string, number>>({})
+  const [pendingByCurrency, setPendingByCurrency] = useState<Record<string, number>>({})
   
   // Auto-update overdue status based on due_date
   const updateOverdueStatus = async () => {
@@ -96,6 +99,12 @@ export default function Invoices() {
         )
         console.log('[InvoicesList] Updated invoice list with client names')
         setInvoices(invoicesWithClients)
+        
+        // Calculate per-currency breakdowns
+        const paidInvoices = invoicesWithClients.filter(inv => inv.status === 'paid')
+        const pendingInvoices = invoicesWithClients.filter(inv => inv.status !== 'paid')
+        setPaidByCurrency(groupByCurrency(paidInvoices))
+        setPendingByCurrency(groupByCurrency(pendingInvoices))
       }
     } catch (err: any) {
       console.error('[InvoicesList] Error fetching invoices:', err)
@@ -266,13 +275,29 @@ export default function Invoices() {
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Paid Revenue</p>
-              <p className="text-3xl font-bold text-green-400">{formatCurrency(totalRevenue, currencyCode || 'MYR')}</p>
+              <div className="space-y-2">
+                {Object.entries(paidByCurrency).length > 0 ? (
+                  Object.entries(paidByCurrency).map(([code, total]) => (
+                    <p key={code} className="text-2xl font-bold text-green-400">{formatCurrency(total, code)}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No paid invoices</p>
+                )}
+              </div>
             </CardBody>
           </Card>
           <Card className="hover:scale-105 hover:border-blue-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Pending Amount</p>
-              <p className="text-3xl font-bold text-blue-400">{formatCurrency(pendingAmount, currencyCode || 'MYR')}</p>
+              <div className="space-y-2">
+                {Object.entries(pendingByCurrency).length > 0 ? (
+                  Object.entries(pendingByCurrency).map(([code, total]) => (
+                    <p key={code} className="text-2xl font-bold text-blue-400">{formatCurrency(total, code)}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No pending invoices</p>
+                )}
+              </div>
             </CardBody>
           </Card>
           <Card className="hover:scale-105 hover:border-red-400/50">
