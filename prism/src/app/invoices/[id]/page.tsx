@@ -34,6 +34,7 @@ interface Invoice {
   clients?: {
     email: string
     name: string
+    phone?: string
   }
 }
 
