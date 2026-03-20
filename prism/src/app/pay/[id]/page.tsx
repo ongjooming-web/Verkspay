@@ -170,11 +170,14 @@ export default function PaymentPage() {
       }
 
       const result = await response.json()
-      console.log('[PaymentPage] Payment link created:', result.payment_url)
+      console.log('[PaymentPage] Payment link created:', result.url)
 
-      // Redirect to Stripe Payment Link
-      if (result.payment_url) {
-        window.location.href = result.payment_url
+      // Redirect to Stripe Checkout
+      if (result.url) {
+        window.location.href = result.url
+      } else {
+        setError('Payment checkout URL not received')
+        setIsProcessing(false)
       }
     } catch (err: any) {
       console.error('[PaymentPage] Error creating payment link:', err)
@@ -259,12 +262,12 @@ export default function PaymentPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-1">{invoice.invoice_number}</h2>
-                <p className="text-gray-400">From: <span className="text-blue-300 font-semibold">{freelancer.full_name}</span></p>
+                <h2 className="text-3xl font-bold text-white mb-1">INV-{String(invoice.invoice_number).slice(-4).padStart(4, '0')}</h2>
+                <p className="text-gray-400">From: <span className="text-blue-300 font-semibold">{freelancer.full_name || 'Freelancer'}</span></p>
               </div>
               <div className="text-right">
                 <p className="text-gray-400 text-sm">Amount Due</p>
-                <p className="text-3xl font-bold text-green-400">RM ${amountDue.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-400">RM {amountDue.toFixed(2)}</p>
               </div>
             </div>
           </CardHeader>
@@ -290,7 +293,7 @@ export default function PaymentPage() {
                   {invoice.line_items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-gray-300">{item.description || 'Item'}</span>
-                      <span className="text-white font-semibold">RM ${item.amount?.toFixed(2) || '0.00'}</span>
+                      <span className="text-white font-semibold">RM {item.amount?.toFixed(2) || '0.00'}</span>
                     </div>
                   ))}
                 </div>

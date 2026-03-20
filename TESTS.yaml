@@ -1,0 +1,408 @@
+tests:
+  TC001:
+    name: Login Flow
+    description: Navigate to app.prismops.xyz, log in with memory keys prism_email and prism_password, confirm dashboard loads.
+    steps:
+      - Navigate to https://app.prismops.xyz
+      - Enter email from memory.prism_email
+      - Enter password from memory.prism_password
+      - Click Sign In button
+      - Wait for dashboard to load
+    expected_result: Dashboard loads successfully, user is authenticated
+    non_destructive: true
+    abort_on_failure: true
+    
+  TC002:
+    name: Dashboard Load
+    description: Confirm URL is /dashboard or /invoices, check for nav, invoice list, and user identity elements.
+    steps:
+      - Verify current URL contains /dashboard or /invoices
+      - Check for Navigation component visible
+      - Check for invoice list/table present
+      - Check for user identity element (email, profile icon, or user menu)
+      - Check page title contains "Invoices"
+    expected_result: All elements present and visible
+    non_destructive: true
+    abort_on_failure: false
+
+  TC003:
+    name: Dashboard Stats Cards
+    description: Verify all three stats cards display with correct labels and values.
+    steps:
+      - Check for "Paid Revenue" card visible
+      - Check for "Pending Amount" card visible
+      - Check for "Overdue Invoices" card visible
+      - Verify each card displays a numeric value
+      - Verify cards are not showing errors
+    expected_result: All three stats cards visible with valid numeric values
+    non_destructive: true
+    abort_on_failure: false
+
+  TC004:
+    name: Filter by Status - All
+    description: Click "All" filter button and verify invoice list is not filtered.
+    steps:
+      - Click "All" filter button
+      - Wait 500ms for filter to apply
+      - Verify list is displayed
+      - Verify no status-specific filtering is applied
+    expected_result: "All" invoices displayed regardless of status
+    non_destructive: true
+    abort_on_failure: false
+
+  TC005:
+    name: Filter by Status - Unpaid
+    description: Click "Unpaid" filter and verify only unpaid invoices show.
+    steps:
+      - Click "Unpaid" filter button
+      - Wait 500ms for filter to apply
+      - Verify all visible invoices show status "Unpaid" or similar
+      - Verify no paid invoices are displayed
+    expected_result: Only unpaid invoices displayed
+    non_destructive: true
+    abort_on_failure: false
+
+  TC006:
+    name: Filter by Status - Paid
+    description: Click "Paid" filter and verify only paid invoices show.
+    steps:
+      - Click "Paid" filter button
+      - Wait 500ms for filter to apply
+      - Verify all visible invoices show status "Paid"
+      - Note: May show no results if no paid invoices exist
+    expected_result: Only paid invoices displayed (or empty if none exist)
+    non_destructive: true
+    abort_on_failure: false
+
+  TC007:
+    name: Filter by Status - Partially Paid
+    description: Click "Partially Paid" filter and verify only partial invoices show.
+    steps:
+      - Click "Partially Paid" filter button
+      - Wait 500ms for filter to apply
+      - Verify visible invoices show partial payment status
+      - Note: May show no results if no partial invoices exist
+    expected_result: Only partially paid invoices displayed (or empty if none exist)
+    non_destructive: true
+    abort_on_failure: false
+
+  TC008:
+    name: Sort by Latest First
+    description: Select "Latest First" sort option and verify invoices are ordered by creation date descending.
+    steps:
+      - Click sort dropdown
+      - Select "Latest First"
+      - Wait 500ms for sort to apply
+      - Verify first invoice in list is most recently created
+    expected_result: Invoices sorted by creation date (newest first)
+    non_destructive: true
+    abort_on_failure: false
+
+  TC009:
+    name: Sort by Amount
+    description: Select "Amount (High to Low)" sort option and verify invoices are sorted by amount descending.
+    steps:
+      - Click sort dropdown
+      - Select "Amount (High to Low)"
+      - Wait 500ms for sort to apply
+      - Verify invoices are ordered by amount from highest to lowest
+    expected_result: Invoices sorted by amount in descending order
+    non_destructive: true
+    abort_on_failure: false
+
+  TC010:
+    name: Sort by Due Date
+    description: Select "Due Date" sort option and verify invoices are sorted by due date ascending.
+    steps:
+      - Click sort dropdown
+      - Select "Due Date"
+      - Wait 500ms for sort to apply
+      - Verify invoices are ordered by due date (earliest first)
+    expected_result: Invoices sorted by due date in ascending order
+    non_destructive: true
+    abort_on_failure: false
+
+  TC011:
+    name: Search by Invoice Number
+    description: Use search to find invoice by invoice number.
+    steps:
+      - Click search input field
+      - Type partial invoice number (e.g., "INV-")
+      - Wait 500ms for search to apply
+      - Verify matching invoices display
+      - Clear search field
+    expected_result: Search filters invoices by invoice number
+    non_destructive: true
+    abort_on_failure: false
+
+  TC012:
+    name: Search by Client Name
+    description: Use search to find invoice by client name.
+    steps:
+      - Click search input field
+      - Type client name or part of it (e.g., "Test")
+      - Wait 500ms for search to apply
+      - Verify matching invoices display
+      - Clear search field
+    expected_result: Search filters invoices by client name
+    non_destructive: true
+    abort_on_failure: false
+
+  TC013:
+    name: Create Invoice Form Open
+    description: Click "+ Create Invoice" button and verify form appears.
+    steps:
+      - Click "+ Create Invoice" button
+      - Wait for form to animate in
+      - Verify form title "Create New Invoice" visible
+      - Verify all form fields present (Client, Amount, Due Date, Description)
+      - Verify Create button visible
+    expected_result: Invoice creation form displays with all fields
+    non_destructive: true
+    abort_on_failure: false
+
+  TC014:
+    name: Create Invoice - Full Flow
+    description: Create a complete test invoice with all fields filled.
+    steps:
+      - Click "+ Create Invoice" button
+      - Wait for form to load
+      - Select a client from dropdown (first available client)
+      - Enter amount (e.g., 2500)
+      - Enter due date (e.g., 2026-05-15)
+      - Enter description (e.g., "Test invoice TC014 - comprehensive dashboard test")
+      - Click "Create Invoice" button
+      - Wait for success message
+      - Verify form closes
+      - Navigate to /invoices to verify invoice appears in list
+    expected_result: Invoice created successfully and appears in dashboard list
+    non_destructive: true
+    abort_on_failure: false
+    store_result: "invoice_id_tc014"
+
+  TC015:
+    name: View Invoice Detail
+    description: Click on an invoice in the list to view its detail page.
+    steps:
+      - Click on first invoice in list
+      - Wait for invoice detail page to load
+      - Verify URL contains /invoices/[id]
+      - Verify invoice number displays
+      - Verify amount displays
+      - Verify client name displays
+      - Verify due date displays
+      - Verify status badge displays
+      - Click back or navigate back to dashboard
+    expected_result: Invoice detail page loads with all information
+    non_destructive: true
+    abort_on_failure: false
+
+  TC016:
+    name: Payment Page from Dashboard
+    description: From TC014 invoice, open its payment page and verify details.
+    steps:
+      - Get invoiceId from TC014 stored result
+      - Navigate to https://app.prismops.xyz/pay/[invoiceId]
+      - Wait for payment page to load
+      - Verify invoice number displays
+      - Verify correct amount displays
+      - Verify payment details section visible (bank info, DuitNow, etc.)
+      - Verify "View & Pay Invoice" button or similar CTA visible
+    expected_result: Payment page loads with invoice and payment details
+    non_destructive: true
+    abort_on_failure: false
+
+  TC017:
+    name: Payment Settings Page Load
+    description: Navigate to payment settings and verify page loads.
+    steps:
+      - Navigate to https://app.prismops.xyz/settings/payment
+      - Wait for page to load
+      - Verify page title "Payment Settings" visible
+      - Verify bank dropdown present
+      - Verify account number input present
+      - Verify account name input present
+      - Verify DuitNow ID input present (optional)
+      - Verify payment instructions textarea present (optional)
+      - Verify Save button present
+    expected_result: Payment settings page loads with all form fields
+    non_destructive: true
+    abort_on_failure: false
+
+  TC018:
+    name: Payment Settings - Save Details
+    description: Fill in payment settings and verify save works.
+    steps:
+      - Navigate to https://app.prismops.xyz/settings/payment
+      - Select "Maybank" from bank dropdown
+      - Enter account number (e.g., "5641915877")
+      - Enter account name (e.g., "Test Account")
+      - Enter DuitNow ID (e.g., "0161234567")
+      - Enter payment instructions (e.g., "Include invoice number in reference")
+      - Click Save button
+      - Wait for success message
+      - Verify form fields retain entered values
+    expected_result: Payment settings save successfully and persist
+    non_destructive: true
+    abort_on_failure: false
+
+  TC019:
+    name: Payment Settings - Form Persistence
+    description: Reload payment settings page and verify saved data persists.
+    steps:
+      - Complete TC018 (save payment settings)
+      - Reload the page (browser refresh)
+      - Wait for page to load
+      - Verify bank field still shows "Maybank"
+      - Verify account number field shows "5641915877"
+      - Verify account name field shows "Test Account"
+      - Verify DuitNow field shows "0161234567"
+      - Verify instructions field contains saved text
+    expected_result: All payment settings persist after page reload
+    non_destructive: true
+    abort_on_failure: false
+
+  TC020:
+    name: Payment Details Display on Payment Page
+    description: Verify payment page shows correct dynamic payment details from profile.
+    steps:
+      - Complete TC018 (save payment settings)
+      - Navigate to payment page from TC014 or TC016
+      - Verify bank section shows "Maybank"
+      - Verify account shows "5641915877"
+      - Verify account name shows "Test Account"
+      - Verify DuitNow shows "0161234567"
+      - Verify NOT hardcoded (settings match what was saved in TC018)
+    expected_result: Payment page displays correct user's dynamic payment details
+    non_destructive: true
+    abort_on_failure: false
+
+  TC021:
+    name: Stripe Connect Button
+    description: Navigate to settings and verify Stripe Connect button exists.
+    steps:
+      - Navigate to https://app.prismops.xyz/settings
+      - Look for Stripe Connect button or "Connect Stripe" text
+      - Verify button is visible and clickable
+      - Do NOT click the button (don't start onboarding)
+    expected_result: Stripe Connect button visible in settings
+    non_destructive: true
+    abort_on_failure: false
+
+  TC022:
+    name: Navigation Menu
+    description: Verify main navigation menu has expected items.
+    steps:
+      - Verify Navigation component visible on all pages
+      - Verify home/dashboard link present
+      - Verify invoices link present
+      - Verify settings link present
+      - Verify logout/user menu present
+      - Click between different pages using nav and verify routing works
+    expected_result: Navigation menu functional and routes work correctly
+    non_destructive: true
+    abort_on_failure: false
+
+  TC023:
+    name: Invoice Status Badges
+    description: Verify invoice status badges display correct colors/labels.
+    steps:
+      - View invoices in dashboard
+      - Identify invoices with different statuses
+      - Verify "Unpaid" invoices show blue status badge
+      - Verify "Paid" invoices show green status badge
+      - Verify "Partially Paid" invoices show amber/orange status badge
+      - Verify "Overdue" invoices show red status badge (if any exist)
+    expected_result: Status badges display correctly with appropriate styling
+    non_destructive: true
+    abort_on_failure: false
+
+  TC024:
+    name: Invoice Responsive Layout
+    description: Verify invoice list responsive on different viewport widths.
+    steps:
+      - View invoices on desktop (full width)
+      - Verify invoice cards display in list format
+      - Verify all columns visible and readable
+      - Resize browser to mobile width (~375px)
+      - Verify invoice cards still display and are readable
+      - Verify layout is not broken on mobile
+    expected_result: Invoice list responsive on all screen sizes
+    non_destructive: true
+    abort_on_failure: false
+
+  TC025:
+    name: Form Validation - Create Invoice
+    description: Attempt to create invoice without filling required fields.
+    steps:
+      - Click "+ Create Invoice"
+      - Try to submit without selecting client
+      - Verify error message or required field indicator
+      - Fill client, leave amount empty
+      - Try to submit
+      - Verify error message
+      - Fill amount, leave due date empty
+      - Try to submit
+      - Verify error message
+    expected_result: Form validation prevents submission of incomplete forms
+    non_destructive: true
+    abort_on_failure: false
+
+  TC026:
+    name: Partial Payment
+    description: Navigate to a payment page, enter a partial amount less than invoice total, submit. Confirm status updates to "Partially Paid" and remaining balance is correct.
+    steps:
+      - Navigate to a test invoice detail page
+      - Click "Send Payment Link" or payment action button
+      - On payment page, enter a partial amount (e.g., 50% of total)
+      - Submit payment form
+      - Wait for payment processing
+      - Verify redirect or confirmation message shown
+      - Navigate back to invoice detail
+      - Verify invoice status badge shows "Partially Paid"
+      - Verify remaining balance is displayed and correct
+    expected_result: Invoice status updates to "Partially Paid", remaining balance correct, no errors
+    non_destructive: true
+    abort_on_failure: false
+
+  TC027:
+    name: Email Reminder
+    description: Navigate to an invoice, trigger "Send Reminder" or email action. Confirm UI flow completes without error.
+    steps:
+      - Navigate to a test invoice detail page
+      - Look for "Send Reminder" button or email action menu
+      - Click the send reminder action
+      - Wait for confirmation message or modal
+      - Verify no error message is shown
+      - Verify confirmation/success message is displayed (e.g., "Reminder sent")
+      - Confirm action completes without navigation away from page
+    expected_result: Reminder action completes, confirmation shown, no errors
+    non_destructive: true
+    abort_on_failure: false
+
+test_rules:
+  non_destructive: "All tests must be non-destructive — no real payments, no real wallet connections, no completing Stripe flows"
+  login_failure: "If TC001 (login) fails, abort everything immediately and alert Telegram"
+  on_failure: "Log the reason for failure and continue to next test (unless abort_on_failure: true)"
+  reporting: "After all tests, send Telegram report with PASS/FAIL per test"
+  mode_switch: "After all tests complete, announce 'Back to Build mode ⚡'"
+
+memory_keys:
+  email: "prism_email"
+  password: "prism_password"
+
+app_url: "https://app.prismops.xyz"
+
+test_categories:
+  authentication: ["TC001"]
+  dashboard_core: ["TC002", "TC003", "TC022"]
+  stats: ["TC004"]
+  filtering: ["TC005", "TC006", "TC007", "TC011", "TC012"]
+  sorting: ["TC008", "TC009", "TC010"]
+  invoice_creation: ["TC013", "TC014", "TC025"]
+  invoice_viewing: ["TC015", "TC023"]
+  payment_flow: ["TC016", "TC020", "TC026"]
+  payment_settings: ["TC017", "TC018", "TC019"]
+  integration: ["TC021"]
+  ux: ["TC024"]
+  advanced: ["TC026", "TC027"]

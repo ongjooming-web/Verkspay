@@ -29,22 +29,37 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
       return false
     }
 
-    const result = await resend.emails.send({
+    console.log('[Resend] Sending email:', {
       from: options.from || 'payments@prismops.xyz',
+      to: options.to,
+      subject: options.subject,
+      htmlLength: options.html.length
+    })
+
+    const result = await resend.emails.send({
+      from: options.from || 'support@prismops.xyz',
       to: options.to,
       subject: options.subject,
       html: options.html
     })
 
     if (result.error) {
-      console.error('[Resend] Failed to send email:', result.error)
+      console.error('[Resend] Failed to send email. Error:', {
+        error: result.error,
+        code: result.error?.code,
+        message: result.error?.message
+      })
       return false
     }
 
     console.log('[Resend] Email sent successfully:', result.data?.id)
     return true
   } catch (err: any) {
-    console.error('[Resend] Error sending email:', err.message)
+    console.error('[Resend] Exception during email send:', {
+      message: err.message,
+      stack: err.stack,
+      name: err.name
+    })
     return false
   }
 }
