@@ -246,10 +246,10 @@ export default function Settings() {
                     setCurrencyCode(country.currency)
                   }
                 }}
-                className="glass w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white"
               >
                 {SUPPORTED_COUNTRIES.map(country => (
-                  <option key={country.code} value={country.code}>
+                  <option key={country.code} value={country.code} style={{ color: '#000' }}>
                     {country.name} ({country.code})
                   </option>
                 ))}
@@ -275,12 +275,12 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-              <Button
+              <button
                 onClick={handleSaveCurrency}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition cursor-pointer w-full"
               >
                 ✓ Save Currency Preference
-              </Button>
+              </button>
               <p className="text-gray-400 text-xs mt-2">All invoices and amounts will display in this currency</p>
             </div>
           </CardBody>
