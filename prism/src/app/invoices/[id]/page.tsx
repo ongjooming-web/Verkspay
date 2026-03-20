@@ -709,11 +709,11 @@ function _LegacyPaymentModal({ invoice, onClose, onConfirm }: any) {
               </div>
               <div className="glass rounded-lg p-4 border-blue-400/30">
                 <p className="text-gray-400 text-sm mb-2">Amount</p>
-                <p className="text-2xl font-bold text-white">${invoice.amount.toFixed(2)} USDC</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(invoice.amount, 'USD')} USDC</p>
               </div>
               <div className="glass rounded-lg p-4 border-orange-400/30">
                 <p className="text-gray-400 text-sm mb-2">Estimated Gas Fee</p>
-                <p className="text-white">${gasEstimate.toFixed(2)}</p>
+                <p className="text-white">{formatCurrency(gasEstimate, 'USD')}</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
@@ -730,15 +730,15 @@ function _LegacyPaymentModal({ invoice, onClose, onConfirm }: any) {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Amount:</span>
-                    <span className="text-white font-semibold">${invoice.amount.toFixed(2)} USDC</span>
+                    <span className="text-white font-semibold">{formatCurrency(invoice.amount, 'USD')} USDC</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Gas Fee:</span>
-                    <span className="text-white font-semibold">${gasEstimate.toFixed(2)}</span>
+                    <span className="text-white font-semibold">{formatCurrency(gasEstimate, 'USD')}</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 flex justify-between">
                     <span className="text-gray-300 font-semibold">Total:</span>
-                    <span className="text-blue-400 font-bold text-lg">${(invoice.amount + gasEstimate).toFixed(2)}</span>
+                    <span className="text-blue-400 font-bold text-lg">{formatCurrency(invoice.amount + gasEstimate, 'USD')}</span>
                   </div>
                 </div>
               </div>

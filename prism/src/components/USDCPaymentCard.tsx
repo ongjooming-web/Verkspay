@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardBody, CardHeader } from './Card'
+import { formatCurrency } from '@/lib/countries'
 
 interface PaymentCardProps {
   invoiceId: string
@@ -10,6 +11,7 @@ interface PaymentCardProps {
   invoiceNumber: string
   status?: string
   onPaymentMarked?: () => void
+  currencyCode?: string
 }
 
 export function PaymentCard({
@@ -17,7 +19,8 @@ export function PaymentCard({
   invoiceAmount,
   invoiceNumber,
   status = 'pending',
-  onPaymentMarked
+  onPaymentMarked,
+  currencyCode = 'USD'
 }: PaymentCardProps) {
   console.log('[PaymentCard] Initialized with invoiceId:', invoiceId, 'Type:', typeof invoiceId)
   
@@ -244,7 +247,7 @@ export function PaymentCard({
           <div>
             <p className="text-gray-400 text-sm mb-2">Amount</p>
             <p className="text-3xl font-bold text-blue-400">
-              ${invoiceAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
+              {formatCurrency(invoiceAmount, currencyCode)}
             </p>
           </div>
 
