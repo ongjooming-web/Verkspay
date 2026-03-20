@@ -75,6 +75,8 @@ export default function Settings() {
         return
       }
 
+      console.log('[Settings] Saving currency:', { userId: user.id, countryCode, currencyCode: selectedCountry.currency })
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -83,14 +85,17 @@ export default function Settings() {
         })
         .eq('id', user.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('[Settings] Supabase error:', error)
+        throw error
+      }
 
       setMessage('✓ Currency preference saved successfully!')
       setCurrencyCode(selectedCountry.currency)
       setTimeout(() => setMessage(''), 3000)
-    } catch (err) {
-      console.error('Error saving currency:', err)
-      setMessage('✗ Failed to save currency preference')
+    } catch (err: any) {
+      console.error('[Settings] Error saving currency:', err.message || err)
+      setMessage('✗ Failed to save currency preference: ' + (err.message || 'Unknown error'))
     }
   }
 
