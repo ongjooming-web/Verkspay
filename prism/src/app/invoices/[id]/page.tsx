@@ -613,7 +613,7 @@ export default function InvoiceDetail() {
         )}
 
         {/* Payment Records */}
-        {paymentRecords.length > 0 && (
+        {paymentRecords.length > 0 && invoice && (
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold text-white">📋 Payment History</h2>
@@ -626,7 +626,7 @@ export default function InvoiceDetail() {
                 >
                   <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div>
-                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice.currency_code || currencyCode || 'MYR')} via {payment.payment_type.toUpperCase()}</p>
+                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice?.currency_code || currencyCode || 'MYR')} via {payment.payment_type.toUpperCase()}</p>
                       <p className="text-gray-400 text-sm mt-1">{new Date(payment.payment_date).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
