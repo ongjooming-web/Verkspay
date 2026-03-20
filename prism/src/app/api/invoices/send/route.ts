@@ -13,7 +13,7 @@ const resend = new Resend(process.env.RESEND_API_KEY!)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { invoiceId } = body
+    const { invoiceId, method = 'email', emailTo, emailCc, senderName, subject, emailMessage } = body
 
     if (!invoiceId) {
       return NextResponse.json(
@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // If method is specified (from modal), use custom parameters
+    const customEmail = method === 'email' && emailTo ? emailTo : null
 
     // Get auth user
     const authHeader = request.headers.get('authorization')
@@ -87,9 +90,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const clientEmail = invoice.clients.email
+    const clientEmail = customEmail || invoice.clients.email
     const clientName = invoice.clients.name
     const businessName = profile.business_name || profile.full_name || 'Prism User'
+    const finalSenderName = senderName || businessName
 
     if (!clientEmail) {
       return NextResponse.json(
@@ -98,25 +102,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate email HTML
-    const emailHtml = getInvoiceEmailTemplate({
-      invoiceNumber: invoice.invoice_number,
-      issueDate: invoice.created_at,
-      dueDate: invoice.due_date,
-      description: invoice.description,
-      amount: invoice.amount,
-      currencyCode: invoice.currency_code || 'MYR',
-      paymentTerms: invoice.payment_terms,
-      businessName,
-      clientName,
-      invoiceId
-    })
+    // Determine which email template to use
+    let emailHtml: string
+    if (method === 'email' && emailMessage) {
+      // Use custom message from modal
+      emailHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; color: #374151;">
+            <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+              <div style="white-space: pre-wrap; line-height: 1.6; color: #111827;">${emailMessage}</div>
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
+                <p style="margin: 0;">Sent via <strong>Prism</strong> · prismops.xyz</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+    } else {
+      // Use default invoice template
+      emailHtml = getInvoiceEmailTemplate({
+        invoiceNumber: invoice.invoice_number,
+        issueDate: invoice.created_at,
+        dueDate: invoice.due_date,
+        description: invoice.description,
+        amount: invoice.amount,
+        currencyCode: invoice.currency_code || 'MYR',
+        paymentTerms: invoice.payment_terms,
+        businessName: finalSenderName,
+        clientName,
+        invoiceId
+      })
+    }
 
     // Send email via Resend
     const { data: emailResult, error: emailError } = await resend.emails.send({
       from: 'support@prismops.xyz',
       to: clientEmail,
-      subject: `Invoice ${invoice.invoice_number} from ${businessName}`,
+      cc: emailCc || undefined,
+      subject: subject || `Invoice ${invoice.invoice_number} from ${finalSenderName}`,
       html: emailHtml
     })
 

@@ -7,6 +7,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { PartialPaymentModal } from '@/components/PartialPaymentModal'
+import { SendInvoiceModal } from '@/components/SendInvoiceModal'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useCurrency } from '@/hooks/useCurrency'
@@ -60,13 +61,36 @@ export default function InvoiceDetail() {
   const [reminderMessage, setReminderMessage] = useState('')
   const [showManualPaymentModal, setShowManualPaymentModal] = useState(false)
   const [showStripePaymentModal, setShowStripePaymentModal] = useState(false)
+  const [showSendModal, setShowSendModal] = useState(false)
   const [sendingInvoice, setSendingInvoice] = useState(false)
   const [sendMessage, setSendMessage] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+  const [profile, setProfile] = useState<any>({})
 
   useEffect(() => {
     fetchInvoiceDetails()
     fetchPaymentRecords()
+    fetchUserProfile()
   }, [invoiceId])
+
+  const fetchUserProfile = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (userData?.user?.email) {
+      setUserEmail(userData.user.email)
+    }
+
+    if (userData?.user?.id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('business_name, full_name')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (profileData) {
+        setProfile(profileData)
+      }
+    }
+  }
 
   const fetchInvoiceDetails = async () => {
     console.log('[InvoiceDetail] Fetching invoice details for:', invoiceId)
@@ -269,48 +293,13 @@ export default function InvoiceDetail() {
     }
   }
 
-  const handleSendInvoice = async () => {
-    if (!invoice) return
+  const handleOpenSendModal = () => {
+    setShowSendModal(true)
+  }
 
-    setSendingInvoice(true)
+  const handleSentSuccess = () => {
+    fetchInvoiceDetails()
     setSendMessage('')
-
-    try {
-      const { data: session } = await supabase.auth.getSession()
-      const token = session?.session?.access_token
-
-      if (!token) {
-        setSendMessage('❌ Session expired. Please refresh and try again.')
-        setSendingInvoice(false)
-        return
-      }
-
-      const response = await fetch('/api/invoices/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ invoiceId: invoice.id })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setSendMessage(`❌ Error: ${data.error || 'Failed to send invoice'}`)
-      } else {
-        setSendMessage(`✓ Invoice sent to ${invoice.clients?.email}`)
-        // Refresh invoice to update sent_at
-        setTimeout(() => {
-          fetchInvoiceDetails()
-          setSendMessage('')
-        }, 2000)
-      }
-    } catch (err: any) {
-      setSendMessage(`❌ Error: ${err.message || 'Failed to send invoice'}`)
-    } finally {
-      setSendingInvoice(false)
-    }
   }
 
   if (loading) {
@@ -380,12 +369,11 @@ export default function InvoiceDetail() {
             ) : (
               <div className="flex gap-2 flex-wrap justify-end">
                 <Button 
-                  onClick={handleSendInvoice}
-                  disabled={sendingInvoice}
+                  onClick={handleOpenSendModal}
                   className="bg-purple-600 hover:bg-purple-700"
                   title={invoice.sent_at ? 'Resend invoice to client' : 'Send invoice to client'}
                 >
-                  {sendingInvoice ? '⏳ Sending...' : invoice.sent_at ? '🔁 Resend Invoice' : '📨 Send to Client'}
+                  {invoice.sent_at ? '🔁 Resend Invoice' : '📨 Send to Client'}
                 </Button>
                 {invoice.status !== 'paid' && (
                   <>
@@ -741,6 +729,31 @@ export default function InvoiceDetail() {
               fetchInvoiceDetails()
               fetchPaymentRecords()
             }}
+          />
+        )}
+
+        {showSendModal && invoice && (
+          <SendInvoiceModal
+            invoice={{
+              id: invoice.id,
+              invoice_number: invoice.invoice_number,
+              amount: invoice.amount,
+              currency_code: invoice.currency_code,
+              due_date: invoice.due_date,
+              payment_terms: invoice.payment_terms
+            }}
+            client={{
+              name: invoice.client_name || 'Client',
+              email: invoice.clients?.email || '',
+              phone: invoice.clients?.phone
+            }}
+            profile={{
+              business_name: profile.business_name,
+              full_name: profile.full_name
+            }}
+            userEmail={userEmail}
+            onClose={() => setShowSendModal(false)}
+            onSent={handleSentSuccess}
           />
         )}
       </div>
