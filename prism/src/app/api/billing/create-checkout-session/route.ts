@@ -11,6 +11,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+/**
+ * Zero-decimal currencies: Stripe expects amounts as whole units, not cents
+ * Example: 500 IDR is passed as 500, not 50000
+ */
+const ZERO_DECIMAL_CURRENCIES = ['IDR', 'JPY', 'KRW', 'VND', 'BIF', 'GNF', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF']
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')

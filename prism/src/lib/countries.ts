@@ -178,3 +178,22 @@ export function isCountryAllowed(countryCode: string): boolean {
 export function getCountryConfig(countryCode: string): Country | undefined {
   return SUPPORTED_COUNTRIES.find(c => c.code === countryCode)
 }
+
+/**
+ * Stripe Connect Express is supported in these countries
+ * https://stripe.com/global
+ */
+const STRIPE_SUPPORTED_COUNTRIES = [
+  'US', 'CA', 'GB', 'IE', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'DK', 'SE', 'NO', 'FI',
+  'PL', 'CZ', 'RO', 'PT', 'GR', 'HU', 'SK', 'SI',
+  'JP', 'KR', 'SG', 'HK', 'AU', 'NZ', 'TW',
+  'MX', 'BR', 'AR', 'CL',
+  'ZA', 'AE', 'IN',
+]
+
+/**
+ * Check if Stripe is supported in a country
+ */
+export function isStripeSupported(countryCode: string): boolean {
+  return STRIPE_SUPPORTED_COUNTRIES.includes(countryCode)
+}
