@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { formatCurrency } from '@/lib/countries'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -344,7 +345,7 @@ function generateReminderEmail(
           </div>
           <div class="details-row">
             <span class="details-label">Amount Due:</span>
-            <span class="details-value">RM ${amountDue}</span>
+            <span class="details-value">${formatCurrency(parseFloat(amountDue), invoice.currency_code || 'MYR')}</span>
           </div>
           <div class="details-row">
             <span class="details-label">Days Overdue:</span>

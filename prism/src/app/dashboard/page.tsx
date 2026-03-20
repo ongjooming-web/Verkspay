@@ -341,7 +341,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => `$${value.toFixed(0)}`}
+                      formatter={(value: any) => formatCurrency(value, profile?.currency_code || 'MYR')}
                     />
                     <Line 
                       type="monotone" 
@@ -425,7 +425,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => `$${value.toFixed(0)}`}
+                      formatter={(value: any) => formatCurrency(value, profile?.currency_code || 'MYR')}
                     />
                     <Bar dataKey="value" fill="#667eea">
                       {invoicesByStatus.map((entry, index) => (

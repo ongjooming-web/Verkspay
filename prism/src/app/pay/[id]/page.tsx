@@ -198,7 +198,7 @@ export default function PaymentPage() {
               <div className="text-6xl mb-4">✅</div>
               <h1 className="text-4xl font-bold text-green-400">Payment Successful!</h1>
               <p className="text-gray-300 text-lg">
-                Thank you, your payment of <span className="text-green-400 font-bold">RM ${(data.invoice.remaining_balance || data.invoice.amount).toFixed(2)}</span> has been received
+                Thank you, your payment of <span className="text-green-400 font-bold">{formatCurrency(data.invoice.remaining_balance || data.invoice.amount, data.invoice.currency_code || 'MYR')}</span> has been received
               </p>
               
               <div className="glass rounded-lg p-4 border-green-400/30 bg-green-500/10 mt-6">
