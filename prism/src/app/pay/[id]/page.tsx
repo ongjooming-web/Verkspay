@@ -270,7 +270,7 @@ export default function PaymentPage() {
               </div>
               <div className="text-right">
                 <p className="text-gray-400 text-sm">Amount Due</p>
-                <p className="text-3xl font-bold text-green-400">{formatCurrency(amountDue, invoice.currency_code)}</p>
+                <p className="text-3xl font-bold text-green-400">{formatCurrency(amountDue, invoice.currency_code || 'MYR')}</p>
               </div>
             </div>
           </CardHeader>
