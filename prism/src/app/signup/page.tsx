@@ -11,6 +11,7 @@ export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
@@ -35,6 +36,12 @@ export default function Signup() {
         return
       }
 
+      if (!termsAccepted) {
+        setError('You must accept the Terms of Service and Privacy Policy')
+        setLoading(false)
+        return
+      }
+
       console.log('Attempting signup with:', { email })
 
       const { data, error } = await supabase.auth.signUp({
@@ -48,8 +55,28 @@ export default function Signup() {
         console.error('Signup error:', error)
         setError(error.message || 'Failed to create account')
         setLoading(false)
-      } else {
+      } else if (data.user) {
         console.log('Signup successful:', data)
+        
+        // Save terms acceptance to profile
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              terms_accepted_at: new Date().toISOString(),
+              terms_version: '1.0'
+            })
+            .eq('id', data.user.id)
+          
+          if (profileError) {
+            console.warn('Failed to save terms acceptance:', profileError)
+          } else {
+            console.log('Terms acceptance saved successfully')
+          }
+        } catch (profileErr) {
+          console.warn('Error saving terms acceptance:', profileErr)
+        }
+        
         setSuccess('Account created! Redirecting to login...')
         setTimeout(() => {
           window.location.href = '/login'
@@ -150,9 +177,39 @@ export default function Signup() {
                 placeholder="••••••••"
               />
             </div>
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-gray-400 text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+              />
+              <label htmlFor="terms" className="text-sm text-gray-300">
+                I agree to the{' '}
+                <a 
+                  href="/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  Terms of Service
+                </a>
+                {' '}and{' '}
+                <a 
+                  href="/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsAccepted}
               variant="primary"
               className="w-full"
             >
