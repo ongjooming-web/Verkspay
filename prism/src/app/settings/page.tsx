@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
@@ -152,9 +153,14 @@ export default function Settings() {
       <Navigation />
 
       <div className="max-w-4xl mx-auto px-6 pb-12">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-10">
-          ⚙️ Settings
-        </h1>
+        <div className="flex justify-between items-center mb-10">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent">
+            ⚙️ Settings
+          </h1>
+          <Link href="/settings/account" className="text-blue-400 hover:text-blue-300 text-sm font-medium transition">
+            Account & Privacy →
+          </Link>
+        </div>
 
         {message && (
           <div className={`mb-6 glass px-4 py-3 rounded-lg ${message.startsWith('✓') ? 'border-green-500/50 bg-green-500/10 text-green-300' : 'border-red-500/50 bg-red-500/10 text-red-300'}`}>
