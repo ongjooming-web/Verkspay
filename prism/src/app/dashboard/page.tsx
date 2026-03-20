@@ -25,6 +25,7 @@ interface Invoice {
   status: string
   created_at: string
   due_date: string
+  currency_code?: string
 }
 
 export default function Dashboard() {
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState<any[]>([])
   const [pipelineData, setPipelineData] = useState<any[]>([])
   const [invoicesByStatus, setInvoicesByStatus] = useState<any[]>([])
+  const [overdueInvoices, setOverdueInvoices] = useState<Invoice[]>([])
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -71,7 +73,7 @@ export default function Dashboard() {
         // Fetch invoices with detailed data
         const { data: invoicesData } = await supabase
           .from('invoices')
-          .select('amount, status, created_at, id, due_date')
+          .select('amount, status, created_at, id, due_date, currency_code')
           .eq('user_id', userId)
 
         // Fetch proposals count
@@ -95,6 +97,9 @@ export default function Dashboard() {
         ) || []
         const overdueAmount = overdue.reduce((sum, inv) => sum + (inv.amount || 0), 0)
         const overdueCount = overdue.length
+        
+        // Store overdue invoices for display with per-invoice currency
+        setOverdueInvoices(overdue)
 
         const clientCount = clientsData?.length || 0
         const invoiceCount = invoicesData?.length || 0
@@ -269,13 +274,18 @@ export default function Dashboard() {
         {/* Alert: Overdue Invoices */}
         {stats.overdueCount > 0 && (
           <Card className="mb-8 border-red-500/50 bg-red-500/10">
-            <CardBody className="flex justify-between items-center">
-              <div>
-                <p className="text-red-300 font-semibold">⚠️ {stats.overdueCount} Overdue Invoice{stats.overdueCount !== 1 ? 's' : ''}</p>
-                <p className="text-red-400 text-sm">{formatCurrency(stats.overdueAmount, profile?.currency_code || 'MYR')} past due</p>
+            <CardBody>
+              <p className="text-red-300 font-semibold mb-4">⚠️ {stats.overdueCount} Overdue Invoice{stats.overdueCount !== 1 ? 's' : ''}</p>
+              <div className="space-y-2 mb-4">
+                {overdueInvoices.map((inv) => (
+                  <div key={inv.id} className="flex justify-between items-center">
+                    <span className="text-red-300 text-sm">INV-{inv.id?.slice(0, 6)?.toUpperCase()}</span>
+                    <span className="text-red-400 font-semibold">{formatCurrency(inv.amount, inv.currency_code || 'MYR')}</span>
+                  </div>
+                ))}
               </div>
               <Link href="/invoices">
-                <Button className="bg-red-600/80 hover:bg-red-700/80">View Invoices</Button>
+                <Button className="bg-red-600/80 hover:bg-red-700/80 w-full">View Invoices</Button>
               </Link>
             </CardBody>
           </Card>
