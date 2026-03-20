@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/countries'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface RecentActivity {
   id: string
@@ -29,6 +30,7 @@ interface Invoice {
 export default function Dashboard() {
   const router = useRouter()
   const { profile, loading: profileLoading } = useUserProfile()
+  const { currencyCode } = useCurrency()
   const [user, setUser] = useState<any>(null)
   const [stats, setStats] = useState({
     revenue: 0,
@@ -341,7 +343,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => formatCurrency(value, profile?.currency_code || 'MYR')}
+                      formatter={(value: any) => formatCurrency(value, currencyCode || 'MYR')}
                     />
                     <Line 
                       type="monotone" 
@@ -425,7 +427,7 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: '#fff'
                       }}
-                      formatter={(value: any) => formatCurrency(value, profile?.currency_code || 'MYR')}
+                      formatter={(value: any) => formatCurrency(value, currencyCode || 'MYR')}
                     />
                     <Bar dataKey="value" fill="#667eea">
                       {invoicesByStatus.map((entry, index) => (
