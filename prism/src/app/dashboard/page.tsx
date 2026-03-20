@@ -297,7 +297,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
               <div className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                {formatCurrency(stats.paidRevenue, profile?.currency_code || 'MYR')}
+                {formatCurrency(stats.paidRevenue, currencyCode || profile?.currency_code || 'MYR')}
               </div>
               <div className="text-green-400 text-sm mt-3">Invoices received</div>
             </CardBody>
@@ -307,7 +307,7 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Pending Revenue</div>
               <div className="text-4xl font-bold text-blue-400">
-                {formatCurrency(stats.pendingRevenue, profile?.currency_code || 'MYR')}
+                {formatCurrency(stats.pendingRevenue, currencyCode || profile?.currency_code || 'MYR')}
               </div>
               <div className="text-blue-300 text-sm mt-3">Awaiting payment</div>
             </CardBody>
