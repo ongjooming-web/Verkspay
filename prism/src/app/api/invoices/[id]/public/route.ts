@@ -1,26 +1,25 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export const dynamic = 'force-dynamic'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params
-    console.log('[invoices/public] Fetching public invoice:', id)
+    const { id: invoiceId } = await context.params
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    )
+    console.log('[invoices/public] Fetching invoice:', invoiceId)
 
-    // Fetch invoice with user profile info
+    // Fetch invoice with all details including currency_code
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
-      .select('*')
-      .eq('id', id)
+      .select('id, invoice_number, amount, remaining_balance, amount_paid, status, due_date, description, created_at, currency_code')
+      .eq('id', invoiceId)
       .single()
 
     if (invoiceError || !invoice) {
@@ -31,61 +30,60 @@ export async function GET(
       )
     }
 
-    // Don't allow viewing paid invoices via public link
-    if (invoice.status === 'paid') {
-      console.warn('[invoices/public] Invoice already paid')
-      return NextResponse.json(
-        { error: 'This invoice has already been paid' },
-        { status: 400 }
-      )
-    }
-
-    // Fetch freelancer profile
-    const { data: profile, error: profileError } = await supabase
+    // Fetch freelancer profile and payment details
+    const { data: freelancer, error: freelancerError } = await supabase
       .from('profiles')
-      .select('full_name, payment_method, stripe_account_id, stripe_onboarding_complete')
+      .select('full_name, payment_method, stripe_account_id, stripe_onboarding_complete, country_code, currency_code')
       .eq('id', invoice.user_id)
       .single()
 
-    if (profileError || !profile) {
-      console.error('[invoices/public] Profile not found:', profileError)
+    if (freelancerError || !freelancer) {
+      console.error('[invoices/public] Freelancer not found:', freelancerError)
       return NextResponse.json(
-        { error: 'Freelancer profile not found' },
+        { error: 'Freelancer not found' },
         { status: 404 }
       )
     }
 
-    // Fetch line items if they exist
-    const { data: lineItems } = await supabase
-      .from('line_items')
+    // Fetch payment details (bank account, DuitNow, etc.) if available
+    const { data: paymentDetails } = await supabase
+      .from('payment_details')
       .select('*')
-      .eq('invoice_id', id)
+      .eq('user_id', invoice.user_id)
+      .single()
 
-    console.log('[invoices/public] Found invoice:', id, 'Status:', invoice.status)
+    console.log('[invoices/public] Invoice data:', {
+      invoice_number: invoice.invoice_number,
+      amount: invoice.amount,
+      currency_code: invoice.currency_code,
+      freelancer: freelancer.full_name
+    })
 
     return NextResponse.json({
-      success: true,
       invoice: {
         id: invoice.id,
         invoice_number: invoice.invoice_number,
         amount: invoice.amount,
+        remaining_balance: invoice.remaining_balance || invoice.amount,
+        amount_paid: invoice.amount_paid || 0,
+        status: invoice.status,
         due_date: invoice.due_date,
         description: invoice.description,
-        status: invoice.status,
         created_at: invoice.created_at,
-        line_items: lineItems || []
+        currency_code: invoice.currency_code || 'MYR' // Fallback to MYR
       },
       freelancer: {
-        full_name: profile.full_name,
-        payment_method: profile.payment_method,
-        stripe_account_id: profile.stripe_account_id,
-        stripe_onboarding_complete: profile.stripe_onboarding_complete
-      }
-    }, { status: 200 })
+        full_name: freelancer.full_name,
+        payment_method: freelancer.payment_method,
+        stripe_account_id: freelancer.stripe_account_id,
+        stripe_onboarding_complete: freelancer.stripe_onboarding_complete
+      },
+      paymentDetails: paymentDetails || null
+    })
   } catch (error: any) {
-    console.error('[invoices/public] Unexpected error:', error)
+    console.error('[invoices/public] Error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Failed to fetch invoice' },
       { status: 500 }
     )
   }
