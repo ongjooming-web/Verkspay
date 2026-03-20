@@ -19,6 +19,7 @@ interface Invoice {
   due_date: string
   created_at: string
   payment_method?: string
+  currency_code?: string
 }
 
 type FilterStatus = 'all' | 'unpaid' | 'paid' | 'paid_partial' | 'overdue'
