@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
 import { supabase } from '@/lib/supabase'
+import { formatCurrency } from '@/lib/countries'
 
 interface PartialPaymentModalProps {
   invoiceId: string
@@ -42,7 +43,7 @@ export function PartialPaymentModal({
     }
 
     if (parsedAmount > remainingBalance) {
-      setError(`Amount cannot exceed remaining balance: $${remainingBalance.toFixed(2)}`)
+      setError(`Amount cannot exceed remaining balance: ${formatCurrency(remainingBalance, currencyCode || 'MYR')}`)
       return
     }
 
@@ -200,27 +201,24 @@ export function PartialPaymentModal({
             {type === 'manual' ? '💰 Record Manual Payment' : '💳 Create Partial Payment Link'}
           </h3>
           <p className="text-gray-400 text-sm mt-2">
-            Invoice {invoiceNumber} • Remaining: ${remainingBalance.toFixed(2)}
+            Invoice {invoiceNumber} • Remaining: {formatCurrency(remainingBalance, currencyCode || 'MYR')}
           </p>
         </CardHeader>
         <CardBody className="space-y-4">
           {/* Amount */}
           <div>
             <label className="text-gray-400 text-sm mb-2 block">Payment Amount *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-3 text-gray-400">$</span>
-              <input
-                type="number"
-                step="0.01"
-                max={remainingBalance}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="glass w-full pl-7 pr-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                placeholder="0.00"
-                disabled={loading}
-              />
-            </div>
-            <p className="text-gray-500 text-xs mt-1">Max: ${remainingBalance.toFixed(2)}</p>
+            <input
+              type="number"
+              step="0.01"
+              max={remainingBalance}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+              placeholder="0.00"
+              disabled={loading}
+            />
+            <p className="text-gray-500 text-xs mt-1">Max: {formatCurrency(remainingBalance, currencyCode || 'MYR')}</p>
           </div>
 
           {/* Payment Method (Manual only) */}

@@ -6,6 +6,8 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { formatCurrency } from '@/lib/countries'
+import { groupByCurrency } from '@/lib/currency-helper'
 
 interface Client {
   id: string
@@ -17,6 +19,7 @@ interface Client {
   invoiceCount?: number
   proposalCount?: number
   totalRevenue?: number
+  currency_code?: string
 }
 
 export default function Clients() {
@@ -229,7 +232,7 @@ export default function Clients() {
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Total Revenue</p>
               <p className="text-4xl font-bold text-green-400">
-                ${clients.reduce((sum, c) => sum + (c.totalRevenue || 0), 0).toFixed(2)}
+                {formatCurrency(clients.reduce((sum, c) => sum + (c.totalRevenue || 0), 0), 'MYR')}
               </p>
             </CardBody>
           </Card>
@@ -287,7 +290,7 @@ export default function Clients() {
                           </div>
                           <div>
                             <p className="text-gray-400 text-xs">Revenue</p>
-                            <p className="text-green-300 font-bold text-sm">${(client.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            <p className="text-green-300 font-bold text-sm">{formatCurrency(client.totalRevenue || 0, client.currency_code || 'MYR')}</p>
                           </div>
                         </div>
                         <Button

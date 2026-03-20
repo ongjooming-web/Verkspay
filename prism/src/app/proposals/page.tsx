@@ -6,6 +6,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { useCurrency } from '@/hooks/useCurrency'
+import { formatCurrency } from '@/lib/countries'
 
 interface Proposal {
   id: string
@@ -16,6 +17,7 @@ interface Proposal {
   amount: number
   status: string
   created_at: string
+  currency_code?: string
 }
 
 export default function Proposals() {
@@ -233,7 +235,7 @@ export default function Proposals() {
                   <CardBody className="space-y-4">
                     <div>
                       <p className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        ${proposal.amount.toFixed(2)}
+                        {formatCurrency(proposal.amount, proposal.currency_code || 'MYR')}
                       </p>
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-white/10">
