@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Invoice sent to ${clientEmail}`,
-      emailId: emailResult.id
+      emailId: emailResult?.id || 'unknown'
     })
   } catch (error: any) {
     console.error('[invoices/send] Unexpected error:', error)
