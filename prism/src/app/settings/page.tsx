@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { SUPPORTED_COUNTRIES, formatCurrency } from '@/lib/countries'
 
 interface UserProfile {
   wallet_address?: string
@@ -22,6 +23,8 @@ export default function Settings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [countryCode, setCountryCode] = useState('MY')
+  const [currencyCode, setCurrencyCode] = useState('MYR')
   const [formData, setFormData] = useState({
     wallet_address: '',
     preferred_network: 'base',
@@ -37,13 +40,15 @@ export default function Settings() {
         
         // Try to fetch user profile
         const { data: profileData } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .select('*')
-          .eq('user_id', data.user.id)
+          .eq('id', data.user.id)
           .single()
 
         if (profileData) {
           setProfile(profileData)
+          setCountryCode(profileData.country_code || 'MY')
+          setCurrencyCode(profileData.currency_code || 'MYR')
           setFormData({
             wallet_address: profileData.wallet_address || '',
             preferred_network: profileData.preferred_network || 'base',
@@ -57,6 +62,37 @@ export default function Settings() {
 
     fetchUser()
   }, [])
+
+  const handleSaveCurrency = async () => {
+    if (!user) return
+    
+    try {
+      setMessage('Saving currency preference...')
+      
+      const selectedCountry = SUPPORTED_COUNTRIES.find(c => c.code === countryCode)
+      if (!selectedCountry) {
+        setMessage('✗ Invalid country selected')
+        return
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          country_code: countryCode,
+          currency_code: selectedCountry.currency,
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      setMessage('✓ Currency preference saved successfully!')
+      setCurrencyCode(selectedCountry.currency)
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error saving currency:', err)
+      setMessage('✗ Failed to save currency preference')
+    }
+  }
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,6 +224,64 @@ export default function Settings() {
                 <p className="text-white font-mono text-xs break-all">{user?.id || 'N/A'}</p>
               </div>
               <p className="text-gray-400 text-xs mt-2">Unique identifier for your account</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Localization Settings */}
+        <Card className="mb-6 border-blue-500/30">
+          <CardHeader>
+            <h2 className="text-2xl font-bold text-white">Localization</h2>
+            <p className="text-gray-400 text-sm mt-1">Set your currency and location preferences</p>
+          </CardHeader>
+          <CardBody className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
+              <select
+                value={countryCode}
+                onChange={(e) => {
+                  const country = SUPPORTED_COUNTRIES.find(c => c.code === e.target.value)
+                  if (country) {
+                    setCountryCode(country.code)
+                    setCurrencyCode(country.currency)
+                  }
+                }}
+                className="glass w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              >
+                {SUPPORTED_COUNTRIES.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name} ({country.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-gray-400 text-xs mt-2">Select your primary location</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
+              <div className="glass px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-semibold">{currencyCode}</p>
+                    <p className="text-gray-400 text-sm">
+                      {SUPPORTED_COUNTRIES.find(c => c.code === countryCode)?.name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-gray-400 text-xs mb-1">Preview:</p>
+                    <p className="text-2xl font-bold text-blue-400">
+                      {formatCurrency(1000, currencyCode)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={handleSaveCurrency}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+              >
+                ✓ Save Currency Preference
+              </Button>
+              <p className="text-gray-400 text-xs mt-2">All invoices and amounts will display in this currency</p>
             </div>
           </CardBody>
         </Card>
