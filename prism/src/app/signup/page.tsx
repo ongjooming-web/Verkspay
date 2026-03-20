@@ -77,9 +77,9 @@ export default function Signup() {
           console.warn('Error saving terms acceptance:', profileErr)
         }
         
-        setSuccess('Account created! Redirecting to login...')
+        setSuccess('Account created! Redirecting to onboarding...')
         setTimeout(() => {
-          window.location.href = '/login'
+          window.location.href = '/onboarding'
         }, 1500)
       }
     } catch (err) {

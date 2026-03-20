@@ -127,13 +127,27 @@ export function getCurrencySymbol(countryCode: string): string {
 }
 
 /**
- * Format currency amount based on country
+ * Format currency amount based on currency code (Intl.NumberFormat)
  */
-export function formatCurrency(amount: number, countryCode: string): string {
-  const country = getCountry(countryCode)
-  if (!country) return `$${amount.toFixed(2)}`
-  
-  return `${country.symbol}${amount.toFixed(2)}`
+export function formatCurrency(amount: number, currencyCode: string): string {
+  return new Intl.NumberFormat('en', {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+/**
+ * Format date based on country code
+ */
+export function formatDate(date: string, countryCode: string): string {
+  const locale = countryCode === 'US' ? 'en-US' : 'en-GB'
+  return new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(new Date(date))
 }
 
 /**
