@@ -58,10 +58,7 @@ export async function POST(request: NextRequest) {
         created_at,
         due_date,
         payment_terms,
-        clients (
-          name,
-          email
-        )
+        client_id
       `)
       .eq('id', invoiceId)
       .eq('user_id', userId)
@@ -71,6 +68,21 @@ export async function POST(request: NextRequest) {
       console.error('[invoices/send] Invoice not found:', invoiceError)
       return NextResponse.json(
         { error: 'Invoice not found' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch client details
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('name, email, phone')
+      .eq('id', invoice.client_id)
+      .single()
+
+    if (clientError || !client) {
+      console.error('[invoices/send] Client not found:', clientError)
+      return NextResponse.json(
+        { error: 'Client not found' },
         { status: 404 }
       )
     }
@@ -90,8 +102,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const clientEmail = customEmail || invoice.clients.email
-    const clientName = invoice.clients.name
+    const clientEmail = customEmail || client.email
+    const clientName = client.name
     const businessName = profile.business_name || profile.full_name || 'Prism User'
     const finalSenderName = senderName || businessName
 
