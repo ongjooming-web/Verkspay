@@ -7,6 +7,9 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { formatCurrency } from '@/lib/countries'
+import { groupByCurrency } from '@/lib/currency-helper'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface Client {
   id: string
@@ -31,6 +34,7 @@ interface Invoice {
   status: string
   due_date: string
   created_at: string
+  currency_code?: string
 }
 
 interface Proposal {
@@ -40,6 +44,7 @@ interface Proposal {
   amount: number
   status: string
   created_at: string
+  currency_code?: string
 }
 
 interface Note {
@@ -451,7 +456,15 @@ export default function ClientDetail() {
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <p className="text-gray-400 text-sm mb-2">Total Revenue</p>
-              <p className="text-3xl font-bold text-green-400">${totalRevenue.toFixed(2)}</p>
+              <div className="space-y-2">
+                {Object.entries(groupByCurrency(invoices.filter(inv => inv.status === 'paid'))).length > 0 ? (
+                  Object.entries(groupByCurrency(invoices.filter(inv => inv.status === 'paid'))).map(([code, total]) => (
+                    <p key={code} className="text-2xl font-bold text-green-400">{formatCurrency(total, code)}</p>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No revenue</p>
+                )}
+              </div>
             </CardBody>
           </Card>
           <Card className="hover:scale-105 hover:border-blue-400/50">
@@ -554,7 +567,7 @@ export default function ClientDetail() {
                         <p className="text-gray-400 text-sm">{new Date(invoice.due_date).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-white font-bold text-lg">${invoice.amount.toFixed(2)}</p>
+                        <p className="text-white font-bold text-lg">{formatCurrency(invoice.amount, invoice.currency_code || 'MYR')}</p>
                         <span className={`text-xs px-2 py-1 rounded-full border ${
                           invoice.status === 'paid' 
                             ? 'bg-green-500/20 border-green-400/30 text-green-300'
@@ -587,7 +600,7 @@ export default function ClientDetail() {
                       <p className="text-gray-400 text-sm">{new Date(proposal.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-bold">${proposal.amount.toFixed(2)}</p>
+                      <p className="text-white font-bold">{formatCurrency(proposal.amount, proposal.currency_code || 'MYR')}</p>
                       <span className={`text-xs px-2 py-1 rounded-full border ${
                         proposal.status === 'accepted'
                           ? 'bg-green-500/20 border-green-400/30 text-green-300'

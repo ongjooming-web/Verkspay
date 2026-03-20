@@ -2,6 +2,7 @@
  * Email templates for payment reminders
  * Uses Resend for reliable delivery
  */
+import { formatCurrency } from './countries'
 
 export interface ReminderEmailData {
   clientEmail: string
@@ -10,6 +11,7 @@ export interface ReminderEmailData {
   dueDate: string
   freelancerName: string
   invoiceId: string
+  currency_code?: string
 }
 
 /**
@@ -34,7 +36,7 @@ export function getDayOneTemplate(data: ReminderEmailData) {
             <strong>Invoice Number:</strong> ${data.invoiceNumber}
           </p>
           <p style="margin: 4px 0; color: #666;">
-            <strong>Amount:</strong> $${data.amount.toFixed(2)}
+            <strong>Amount:</strong> ${formatCurrency(data.amount, data.currency_code || 'MYR')}
           </p>
           <p style="margin: 4px 0; color: #666;">
             <strong>Due Date:</strong> ${new Date(data.dueDate).toLocaleDateString()}
@@ -78,7 +80,7 @@ export function getDayThreeTemplate(data: ReminderEmailData) {
             <strong>Invoice Number:</strong> ${data.invoiceNumber}
           </p>
           <p style="margin: 4px 0; color: #666;">
-            <strong>Amount:</strong> $${data.amount.toFixed(2)}
+            <strong>Amount:</strong> ${formatCurrency(data.amount, data.currency_code || 'MYR')}
           </p>
           <p style="margin: 4px 0; color: #666;">
             <strong>Due Date:</strong> ${new Date(data.dueDate).toLocaleDateString()}
@@ -125,7 +127,7 @@ export function getDaySevenTemplate(data: ReminderEmailData) {
             <strong>Invoice Number:</strong> ${data.invoiceNumber}
           </p>
           <p style="margin: 4px 0; color: #666;">
-            <strong>Amount:</strong> $${data.amount.toFixed(2)}
+            <strong>Amount:</strong> ${formatCurrency(data.amount, data.currency_code || 'MYR')}
           </p>
           <p style="margin: 4px 0; color: #666;">
             <strong>Due Date:</strong> ${new Date(data.dueDate).toLocaleDateString()}
