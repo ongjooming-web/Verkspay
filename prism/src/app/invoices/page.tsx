@@ -36,7 +36,10 @@ export default function Invoices() {
     amount: '',
     due_date: '',
     description: '',
+    payment_terms: 'Net 30',
+    custom_payment_terms: '',
   })
+  const [showCustomPaymentTerms, setShowCustomPaymentTerms] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [paidByCurrency, setPaidByCurrency] = useState<Record<string, number>>({})
@@ -162,6 +165,10 @@ export default function Invoices() {
     // Subscription limits removed - all features unlocked for all users
 
     const invoiceNumber = `INV-${Date.now()}`
+    const paymentTerms = formData.payment_terms === 'Custom' 
+      ? formData.custom_payment_terms 
+      : formData.payment_terms
+
     const { data, error } = await supabase
       .from('invoices')
       .insert([
@@ -174,6 +181,7 @@ export default function Invoices() {
           status: 'unpaid',
           description: formData.description,
           currency_code: currencyCode,
+          payment_terms: paymentTerms,
         },
       ])
       .select()
@@ -355,7 +363,37 @@ export default function Invoices() {
                       className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
                     />
                   </div>
+                  <div>
+                    <label className="text-gray-400 text-sm mb-2 block">Payment Terms</label>
+                    <select
+                      value={formData.payment_terms}
+                      onChange={(e) => {
+                        setFormData({ ...formData, payment_terms: e.target.value })
+                        setShowCustomPaymentTerms(e.target.value === 'Custom')
+                      }}
+                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
+                    >
+                      <option value="Due on Receipt" className="bg-slate-900">Due on Receipt</option>
+                      <option value="Net 15" className="bg-slate-900">Net 15</option>
+                      <option value="Net 30" className="bg-slate-900">Net 30</option>
+                      <option value="Net 60" className="bg-slate-900">Net 60</option>
+                      <option value="Net 90" className="bg-slate-900">Net 90</option>
+                      <option value="Custom" className="bg-slate-900">Custom</option>
+                    </select>
+                  </div>
                 </div>
+                {showCustomPaymentTerms && (
+                  <div>
+                    <label className="text-gray-400 text-sm mb-2 block">Custom Payment Terms</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Net 45 or 50% upfront, 50% on completion"
+                      value={formData.custom_payment_terms}
+                      onChange={(e) => setFormData({ ...formData, custom_payment_terms: e.target.value })}
+                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-gray-400 text-sm mb-2 block">Description</label>
                   <textarea
@@ -458,11 +496,11 @@ export default function Invoices() {
                         </p>
                       </div>
                       <div className="flex items-center gap-4 w-full md:w-auto flex-wrap md:flex-nowrap">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(invoice.status)}`}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                            {invoice.status === 'sent' ? '📨 Sent' : invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                           </span>
-                          {invoice.status !== 'paid' && (
+                          {invoice.status !== 'paid' && invoice.status !== 'sent' && (
                             <span className="px-3 py-2 rounded-full text-sm font-medium border border-green-400/50 bg-green-500/10 text-green-300">
                               💳 Ready to Pay
                             </span>

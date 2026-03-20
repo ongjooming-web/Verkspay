@@ -28,6 +28,12 @@ interface Invoice {
   amount_paid?: number
   remaining_balance?: number
   currency_code?: string
+  payment_terms?: string
+  sent_at?: string
+  clients?: {
+    email: string
+    name: string
+  }
 }
 
 interface PaymentRecord {
@@ -54,6 +60,8 @@ export default function InvoiceDetail() {
   const [reminderMessage, setReminderMessage] = useState('')
   const [showManualPaymentModal, setShowManualPaymentModal] = useState(false)
   const [showStripePaymentModal, setShowStripePaymentModal] = useState(false)
+  const [sendingInvoice, setSendingInvoice] = useState(false)
+  const [sendMessage, setSendMessage] = useState('')
 
   useEffect(() => {
     fetchInvoiceDetails()
@@ -261,6 +269,50 @@ export default function InvoiceDetail() {
     }
   }
 
+  const handleSendInvoice = async () => {
+    if (!invoice) return
+
+    setSendingInvoice(true)
+    setSendMessage('')
+
+    try {
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+
+      if (!token) {
+        setSendMessage('❌ Session expired. Please refresh and try again.')
+        setSendingInvoice(false)
+        return
+      }
+
+      const response = await fetch('/api/invoices/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ invoiceId: invoice.id })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setSendMessage(`❌ Error: ${data.error || 'Failed to send invoice'}`)
+      } else {
+        setSendMessage(`✓ Invoice sent to ${invoice.clients?.email}`)
+        // Refresh invoice to update sent_at
+        setTimeout(() => {
+          fetchInvoiceDetails()
+          setSendMessage('')
+        }, 2000)
+      }
+    } catch (err: any) {
+      setSendMessage(`❌ Error: ${err.message || 'Failed to send invoice'}`)
+    } finally {
+      setSendingInvoice(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen relative z-10">
@@ -327,6 +379,14 @@ export default function InvoiceDetail() {
               </div>
             ) : (
               <div className="flex gap-2 flex-wrap justify-end">
+                <Button 
+                  onClick={handleSendInvoice}
+                  disabled={sendingInvoice}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  title={invoice.sent_at ? 'Resend invoice to client' : 'Send invoice to client'}
+                >
+                  {sendingInvoice ? '⏳ Sending...' : invoice.sent_at ? '🔁 Resend Invoice' : '📨 Send to Client'}
+                </Button>
                 {invoice.status !== 'paid' && (
                   <>
                     <Button 
@@ -361,6 +421,11 @@ export default function InvoiceDetail() {
                 >
                   🗑 Delete
                 </Button>
+              </div>
+            )}
+            {sendMessage && (
+              <div className={`mt-4 p-3 rounded-lg text-sm ${sendMessage.includes('✓') ? 'bg-green-500/10 border border-green-400/30 text-green-300' : 'bg-red-500/10 border border-red-400/30 text-red-300'}`}>
+                {sendMessage}
               </div>
             )}
           </div>
