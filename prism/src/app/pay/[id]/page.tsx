@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { formatCurrency } from '@/lib/countries'
 
 interface PaymentPageData {
   invoice: {
@@ -18,6 +19,7 @@ interface PaymentPageData {
     status: string
     created_at: string
     line_items: any[]
+    currency_code: string
   }
   freelancer: {
     full_name: string
@@ -267,7 +269,7 @@ export default function PaymentPage() {
               </div>
               <div className="text-right">
                 <p className="text-gray-400 text-sm">Amount Due</p>
-                <p className="text-3xl font-bold text-green-400">RM {amountDue.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-400">{formatCurrency(amountDue, invoice.currency_code)}</p>
               </div>
             </div>
           </CardHeader>
@@ -293,7 +295,7 @@ export default function PaymentPage() {
                   {invoice.line_items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-gray-300">{item.description || 'Item'}</span>
-                      <span className="text-white font-semibold">RM {item.amount?.toFixed(2) || '0.00'}</span>
+                      <span className="text-white font-semibold">{formatCurrency(item.amount || 0, invoice.currency_code)}</span>
                     </div>
                   ))}
                 </div>
