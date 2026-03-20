@@ -137,6 +137,15 @@ export default function Invoices() {
 
     if (!userId) return
 
+    // Fetch user's current currency setting
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('currency_code')
+      .eq('id', userId)
+      .single()
+
+    const currencyCode = profileData?.currency_code || 'MYR'
+
     // Subscription limits removed - all features unlocked for all users
 
     const invoiceNumber = `INV-${Date.now()}`
@@ -151,6 +160,7 @@ export default function Invoices() {
           due_date: formData.due_date,
           status: 'unpaid',
           description: formData.description,
+          currency_code: currencyCode,
         },
       ])
       .select()
