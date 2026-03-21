@@ -14,6 +14,7 @@ interface UserProfile {
   preferred_network?: string
   business_name?: string
   phone?: string
+  stripe_onboarding_complete?: boolean
 }
 
 export default function Settings() {
