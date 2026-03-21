@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
 
     // Determine which email template to use
     let emailHtml: string
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoiceId}`
+    
     if (method === 'email' && emailMessage) {
       // Use custom message from modal
       emailHtml = `
@@ -129,6 +131,11 @@ export async function POST(request: NextRequest) {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; color: #374151;">
             <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
               <div style="white-space: pre-wrap; line-height: 1.6; color: #111827;">${emailMessage}</div>
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${paymentUrl}" style="background:#1a1a1a;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:6px;font-size:15px;font-weight:600;display:inline-block;">
+                  Pay Now →
+                </a>
+              </div>
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
                 <p style="margin: 0;">Sent via <strong>Prism</strong> · prismops.xyz</p>
               </div>
@@ -171,8 +178,13 @@ export async function POST(request: NextRequest) {
 
     console.log('[invoices/send] Email sent successfully:', emailResult)
 
-    // Update invoice status to 'sent' and set sent_at
-    const { error: updateError } = await supabase
+    // Update invoice status to 'sent' and set sent_at (using service role to bypass RLS)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { error: updateError, data: updateData } = await supabaseAdmin
       .from('invoices')
       .update({
         status: 'sent',
@@ -180,17 +192,26 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', invoiceId)
-      .eq('user_id', userId)
+      .select()
 
     if (updateError) {
-      console.error('[invoices/send] Update error:', updateError)
+      console.error('[invoices/send] Status update failed:', updateError)
+      console.error('[invoices/send] Update error details:', {
+        invoiceId,
+        userId,
+        errorCode: updateError.code,
+        errorMessage: updateError.message
+      })
       return NextResponse.json(
-        { error: 'Email sent but failed to update invoice status' },
+        { 
+          error: 'Email sent but failed to update invoice status',
+          details: updateError.message 
+        },
         { status: 500 }
       )
     }
 
-    console.log('[invoices/send] Invoice status updated to sent')
+    console.log('[invoices/send] Invoice status updated to sent:', updateData)
 
     return NextResponse.json({
       success: true,
