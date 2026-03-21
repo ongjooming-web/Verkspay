@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { PartialPaymentModal } from '@/components/PartialPaymentModal'
 import { SendInvoiceModal } from '@/components/SendInvoiceModal'
+import { InvoiceActionMenu } from '@/components/InvoiceActionMenu'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useCurrency } from '@/hooks/useCurrency'
@@ -453,58 +454,20 @@ export default function InvoiceDetail() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row gap-2 md:justify-end md:flex-wrap">
-                <Button 
-                  onClick={handleDownloadPDF}
-                  className="bg-indigo-600 hover:bg-indigo-700 w-full md:w-auto"
-                  title="Download invoice as PDF"
-                >
-                  📥 Download PDF
-                </Button>
-                <Button 
-                  onClick={handleOpenSendModal}
-                  className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto"
-                  title={invoice.sent_at ? 'Resend invoice to client' : 'Send invoice to client'}
-                >
-                  {invoice.sent_at ? '🔁 Resend Invoice' : '📨 Send to Client'}
-                </Button>
-                {invoice.status !== 'paid' && (
-                  <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                    <Button 
-                      onClick={() => {
-                        const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
-                        navigator.clipboard.writeText(paymentUrl)
-                        alert('Payment link copied to clipboard!')
-                      }}
-                      className="bg-green-600/80 hover:bg-green-700/80 w-full md:w-auto"
-                      title="Copy shareable payment link"
-                    >
-                      🔗 Share Payment Link
-                    </Button>
-                    <Button 
-                      onClick={handleMarkAsPaid}
-                      className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 font-semibold w-full md:w-auto"
-                      title="Mark invoice as fully paid"
-                    >
-                      ✓ Mark as Paid
-                    </Button>
-                  </div>
-                )}
-                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                  <Button 
-                    onClick={() => setIsEditing(true)}
-                    className="bg-blue-600/80 hover:bg-blue-700/80 w-full md:w-auto"
-                  >
-                    ✎ Edit
-                  </Button>
-                  <Button 
-                    onClick={handleDeleteInvoice}
-                    className="bg-red-600/80 hover:bg-red-700/80 w-full md:w-auto"
-                  >
-                    🗑 Delete
-                  </Button>
-                </div>
-              </div>
+              <InvoiceActionMenu
+                invoice={invoice}
+                onDownloadPDF={handleDownloadPDF}
+                onSendToClient={handleOpenSendModal}
+                onSharePaymentLink={() => {
+                  const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+                  navigator.clipboard.writeText(paymentUrl)
+                  alert('Payment link copied to clipboard!')
+                }}
+                onMarkAsPaid={handleMarkAsPaid}
+                onEdit={() => setIsEditing(true)}
+                onDelete={handleDeleteInvoice}
+                isEditing={isEditing}
+              />
             )}
             {sendMessage && (
               <div className={`mt-4 p-3 rounded-lg text-sm ${sendMessage.includes('✓') ? 'bg-green-500/10 border border-green-400/30 text-green-300' : 'bg-red-500/10 border border-red-400/30 text-red-300'}`}>
