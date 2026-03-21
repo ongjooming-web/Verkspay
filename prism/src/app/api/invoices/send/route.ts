@@ -117,9 +117,11 @@ export async function POST(request: NextRequest) {
 
     // Determine which email template to use
     let emailHtml: string
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'
+    const invoicePdfUrl = `${appUrl}/api/invoices/${invoiceId}/pdf`
     
     if (method === 'email' && emailMessage) {
-      // Use custom message from modal (invoice-only, no payment button)
+      // Use custom message from modal (with download button)
       emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -130,6 +132,11 @@ export async function POST(request: NextRequest) {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; color: #374151;">
             <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
               <div style="white-space: pre-wrap; line-height: 1.6; color: #111827;">${emailMessage}</div>
+              <div style="margin: 32px 0; text-align: center;">
+                <a href="${invoicePdfUrl}" style="display: inline-block; padding: 12px 32px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                  📥 Download Invoice
+                </a>
+              </div>
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
                 <p style="margin: 0;">Sent via <strong>Prism</strong> · prismops.xyz</p>
               </div>

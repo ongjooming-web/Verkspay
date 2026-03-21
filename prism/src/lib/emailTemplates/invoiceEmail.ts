@@ -86,7 +86,12 @@ export function getInvoiceEmailTemplate(data: InvoiceEmailData): string {
             </div>
           ` : ''}
 
-
+          <!-- Download Invoice Button -->
+          <div style="margin-bottom: 40px; text-align: center;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/api/invoices/${data.invoiceId}/pdf" style="display: inline-block; padding: 12px 32px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+              📥 Download Invoice
+            </a>
+          </div>
 
           <!-- Footer -->
           <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center; color: #6b7280; font-size: 12px;">

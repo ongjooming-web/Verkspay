@@ -54,7 +54,7 @@ export function SendInvoiceModal({
     `Hi ${client.name},\n\nPlease find your invoice ${invoice.invoice_number} for ${formatCurrency(
       invoice.amount,
       invoice.currency_code || 'MYR'
-    )} due on ${new Date(invoice.due_date).toLocaleDateString()}.\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nThank you,\n${profile.business_name || profile.full_name || 'Prism User'}`
+    )} due on ${new Date(invoice.due_date).toLocaleDateString()}.\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nClick the download button below to view or save your invoice.\n\nThank you,\n${profile.business_name || profile.full_name || 'Prism User'}`
   )
 
   // WhatsApp form state
