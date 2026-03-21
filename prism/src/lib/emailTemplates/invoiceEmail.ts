@@ -86,12 +86,7 @@ export function getInvoiceEmailTemplate(data: InvoiceEmailData): string {
             </div>
           ` : ''}
 
-          <!-- CTA Button -->
-          <div style="margin-bottom: 40px; text-align: center;">
-            <a href="${paymentUrl}" style="display: inline-block; padding: 12px 32px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-              View Invoice →
-            </a>
-          </div>
+
 
           <!-- Footer -->
           <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center; color: #6b7280; font-size: 12px;">

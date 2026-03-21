@@ -66,11 +66,12 @@ export async function GET(
 
     if (clientError || !client) return errorResponse(404, 'Client not found')
 
-    // Fetch business profile
+    // Fetch business profile (use invoice.user_id to get seller's profile)
+    const sellerId = invoice.user_id
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', sellerId)
       .single()
 
     if (profileError || !profile) return errorResponse(404, 'Profile not found')
