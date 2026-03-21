@@ -1,25 +1,30 @@
 import { formatCurrency } from '@/lib/countries'
 
 export interface InvoiceTemplateData {
+  // Business Information (5 fields from Settings)
   business_name: string
   business_email?: string
   business_phone?: string
   business_address?: string
-  business_logo_url?: string
   business_reg_number?: string
+  business_logo_url?: string
   tax_number?: string
+  // Invoice Details
   invoice_number: string
   created_at: string
   due_date: string
   payment_terms?: string
   description?: string
   currency_code: string
+  // Amounts
   subtotal: number
   tax_rate?: number
   tax_amount?: number
   total: number
+  // Client Details
   client_name: string
   client_email?: string
+  // Payment
   payment_url: string
 }
 
@@ -86,11 +91,11 @@ export function generateInvoiceHTML(data: InvoiceTemplateData): string {
           : `<div class="business-name">${data.business_name}</div>`
         }
         <div class="business-details">
-          ${data.business_address ? `${data.business_address}<br>` : ''}
-          ${data.business_email ? `${data.business_email}<br>` : ''}
-          ${data.business_phone ? `${data.business_phone}<br>` : ''}
-          ${data.business_reg_number ? `SSM: ${data.business_reg_number}<br>` : ''}
-          ${data.tax_number ? `SST Reg: ${data.tax_number}` : ''}
+          ${data.business_address ? `<strong>Address:</strong> ${data.business_address}<br>` : ''}
+          ${data.business_email ? `<strong>Email:</strong> ${data.business_email}<br>` : ''}
+          ${data.business_phone ? `<strong>Phone:</strong> ${data.business_phone}<br>` : ''}
+          ${data.business_reg_number ? `<strong>SSM No:</strong> ${data.business_reg_number}<br>` : ''}
+          ${data.tax_number ? `<strong>SST Reg:</strong> ${data.tax_number}` : ''}
         </div>
       </div>
       <div class="invoice-title">

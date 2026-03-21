@@ -29,7 +29,10 @@ export default function Settings() {
     wallet_address: '',
     preferred_network: 'base',
     business_name: '',
-    phone: '',
+    business_email: '',
+    business_phone: '',
+    business_address: '',
+    business_reg_number: '',
   })
 
   useEffect(() => {
@@ -53,7 +56,10 @@ export default function Settings() {
             wallet_address: profileData.wallet_address || '',
             preferred_network: profileData.preferred_network || 'base',
             business_name: profileData.business_name || '',
-            phone: profileData.phone || '',
+            business_email: profileData.business_email || '',
+            business_phone: profileData.business_phone || '',
+            business_address: profileData.business_address || '',
+            business_reg_number: profileData.business_reg_number || '',
           })
         }
       }
@@ -107,48 +113,34 @@ export default function Settings() {
     setMessage('')
 
     try {
-      // Check if profile exists
-      const { data: existing } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      // Upsert to profiles table with all 5 business fields
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          country_code: countryCode,
+          wallet_address: formData.wallet_address,
+          preferred_network: formData.preferred_network,
+          business_name: formData.business_name,
+          business_email: formData.business_email,
+          business_phone: formData.business_phone,
+          business_address: formData.business_address,
+          business_reg_number: formData.business_reg_number,
+          updated_at: new Date().toISOString(),
+        }, { 
+          onConflict: 'id'
+        })
 
-      if (existing) {
-        // Update existing
-        const { error } = await supabase
-          .from('user_profiles')
-          .update({
-            wallet_address: formData.wallet_address,
-            preferred_network: formData.preferred_network,
-            business_name: formData.business_name,
-            phone: formData.phone,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-
-        if (error) throw error
-      } else {
-        // Create new
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert([
-            {
-              user_id: user.id,
-              wallet_address: formData.wallet_address,
-              preferred_network: formData.preferred_network,
-              business_name: formData.business_name,
-              phone: formData.phone,
-            },
-          ])
-
-        if (error) throw error
+      if (error) {
+        console.error('[Settings] Upsert error:', error)
+        throw error
       }
 
-      setMessage('✓ Settings saved successfully!')
+      setMessage('✓ Business information saved successfully!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
-      console.error('Error saving profile:', err)
+      console.error('[Settings] Error saving profile:', err)
       setMessage('✗ Failed to save settings')
     } finally {
       setSaving(false)
@@ -300,7 +292,7 @@ export default function Settings() {
           <CardBody>
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Business Name</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">1) Business Name *</label>
                 <input
                   type="text"
                   value={formData.business_name}
@@ -310,12 +302,42 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">2) Business Registration No</label>
+                <input
+                  type="text"
+                  value={formData.business_reg_number}
+                  onChange={(e) => setFormData({ ...formData, business_reg_number: e.target.value })}
+                  placeholder="SSM number (e.g., 123456-X)"
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">3) Business Address</label>
+                <textarea
+                  value={formData.business_address}
+                  onChange={(e) => setFormData({ ...formData, business_address: e.target.value })}
+                  placeholder="Street address, city, postal code"
+                  rows={3}
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">4) Business Email Address</label>
+                <input
+                  type="email"
+                  value={formData.business_email}
+                  onChange={(e) => setFormData({ ...formData, business_email: e.target.value })}
+                  placeholder="contact@yourbusiness.com"
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">5) Phone Number</label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(optional)"
+                  value={formData.business_phone}
+                  onChange={(e) => setFormData({ ...formData, business_phone: e.target.value })}
+                  placeholder="+60 12-3456789"
                   className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
                 />
               </div>
