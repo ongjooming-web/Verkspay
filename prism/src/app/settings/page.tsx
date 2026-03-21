@@ -176,10 +176,20 @@ export default function Settings() {
       setSaving(true)
       setMessage('Connecting to Stripe...')
 
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage('✗ Session expired. Please refresh and try again.')
+        setSaving(false)
+        return
+      }
+
       const response = await fetch('/api/stripe/connect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({}),
       })
 
       const data = await response.json()

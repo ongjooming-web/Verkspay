@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       account: account.id,
       type: 'account_onboarding',
       refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/refresh?account=${account.id}`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?account_id=${account.id}`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/connect/return?userId=${userId}`,
     })
 
     console.log('[Stripe] Created onboarding link')
