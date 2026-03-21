@@ -153,10 +153,6 @@ export function generateInvoiceHTML(data: InvoiceTemplateData): string {
         </tr>
       </tbody>
     </table>
-    <div class="payment-section">
-      <p>Click below to view and pay this invoice securely online.</p>
-      <a href="${data.payment_url}" class="pay-button">Pay Now →</a>
-    </div>
     <div class="footer">
       <div class="footer-left">
         Thank you for your business.

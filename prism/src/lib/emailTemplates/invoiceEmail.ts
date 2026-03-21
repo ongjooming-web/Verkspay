@@ -89,7 +89,7 @@ export function getInvoiceEmailTemplate(data: InvoiceEmailData): string {
           <!-- CTA Button -->
           <div style="margin-bottom: 40px; text-align: center;">
             <a href="${paymentUrl}" style="display: inline-block; padding: 12px 32px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
-              Pay Now
+              View Invoice →
             </a>
           </div>
 
