@@ -368,48 +368,50 @@ export default function InvoiceDetail() {
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2 flex-wrap justify-end">
+              <div className="flex flex-col md:flex-row gap-2 md:justify-end md:flex-wrap">
                 <Button 
                   onClick={handleOpenSendModal}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto"
                   title={invoice.sent_at ? 'Resend invoice to client' : 'Send invoice to client'}
                 >
                   {invoice.sent_at ? '🔁 Resend Invoice' : '📨 Send to Client'}
                 </Button>
                 {invoice.status !== 'paid' && (
-                  <>
+                  <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                     <Button 
                       onClick={() => {
                         const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
                         navigator.clipboard.writeText(paymentUrl)
                         alert('Payment link copied to clipboard!')
                       }}
-                      className="bg-green-600/80 hover:bg-green-700/80"
+                      className="bg-green-600/80 hover:bg-green-700/80 w-full md:w-auto"
                       title="Copy shareable payment link"
                     >
                       🔗 Share Payment Link
                     </Button>
                     <Button 
                       onClick={handleMarkAsPaid}
-                      className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 font-semibold"
+                      className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 font-semibold w-full md:w-auto"
                       title="Mark invoice as fully paid"
                     >
                       ✓ Mark as Paid
                     </Button>
-                  </>
+                  </div>
                 )}
-                <Button 
-                  onClick={() => setIsEditing(true)}
-                  className="bg-blue-600/80 hover:bg-blue-700/80"
-                >
-                  ✎ Edit
-                </Button>
-                <Button 
-                  onClick={handleDeleteInvoice}
-                  className="bg-red-600/80 hover:bg-red-700/80"
-                >
-                  🗑 Delete
-                </Button>
+                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                  <Button 
+                    onClick={() => setIsEditing(true)}
+                    className="bg-blue-600/80 hover:bg-blue-700/80 w-full md:w-auto"
+                  >
+                    ✎ Edit
+                  </Button>
+                  <Button 
+                    onClick={handleDeleteInvoice}
+                    className="bg-red-600/80 hover:bg-red-700/80 w-full md:w-auto"
+                  >
+                    🗑 Delete
+                  </Button>
+                </div>
               </div>
             )}
             {sendMessage && (
@@ -631,7 +633,7 @@ export default function InvoiceDetail() {
             <CardBody className="space-y-4">
               {/* Payment Summary */}
               <div className="glass rounded-lg p-4 border-purple-400/30">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-gray-400 text-xs mb-1">Total Amount</p>
                     <p className="text-xl font-bold text-white">{formatCurrency(invoice.amount, invoice.currency_code || currencyCode || 'MYR')}</p>
@@ -648,7 +650,7 @@ export default function InvoiceDetail() {
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button
                   onClick={() => setShowManualPaymentModal(true)}
                   className="bg-purple-600 hover:bg-purple-700"
