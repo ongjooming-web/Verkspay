@@ -425,13 +425,13 @@ export default function InvoiceDetail() {
         {/* Main Invoice Card */}
         <Card className="mb-8">
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-2">{invoice.invoice_number}</h1>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{invoice.invoice_number}</h1>
                 <p className="text-gray-400">Client: <span className="text-blue-300 font-semibold">{invoice.client_name}</span></p>
               </div>
-              <span className={`px-6 py-2 rounded-full text-lg font-medium border ${getStatusColor(invoice.status)}`}>
-                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+              <span className={`px-6 py-2 rounded-full text-lg font-medium border whitespace-nowrap ${getStatusColor(invoice.status)}`}>
+                {invoice.status === 'sent' ? '📨 Sent' : invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
               </span>
             </div>
           </CardHeader>
