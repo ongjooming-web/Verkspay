@@ -231,7 +231,17 @@ export default function Invoices() {
 
   // Filter invoices
   let filtered = invoices.filter(inv => {
-    const matchesStatus = filterStatus === 'all' || inv.status === filterStatus
+    let matchesStatus = false
+    const isOverdue = inv.status !== 'paid' && new Date(inv.due_date) < new Date()
+    
+    if (filterStatus === 'all') {
+      matchesStatus = true
+    } else if (filterStatus === 'overdue') {
+      matchesStatus = isOverdue
+    } else {
+      matchesStatus = inv.status === filterStatus
+    }
+    
     const matchesSearch = inv.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (inv.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     return matchesStatus && matchesSearch
@@ -259,7 +269,9 @@ export default function Invoices() {
     .filter(inv => inv.status === 'unpaid' || inv.status === 'paid_partial' || inv.status === 'overdue')
     .reduce((sum, inv) => sum + inv.amount, 0)
 
-  const overdueCount = invoices.filter(inv => inv.status === 'overdue').length
+  const overdueCount = invoices.filter(inv => 
+    inv.status !== 'paid' && new Date(inv.due_date) < new Date()
+  ).length
 
   return (
     <div className="min-h-screen relative z-10">
