@@ -27,27 +27,34 @@ export async function GET(
 
     if (!invoiceId) return errorResponse(400, 'invoiceId is required')
 
-    // Get auth header
+    // Check if auth header is provided - if yes, verify ownership; if no, allow public access
+    let userId: string | null = null
     const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) return errorResponse(401, 'Missing authorization header')
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      const { data: userData, error: authError } = await supabase.auth.getUser(token)
+      if (!authError && userData?.user) {
+        userId = userData.user.id
+        console.log('[invoices/pdf] Auth OK for user:', userId)
+      }
+    } else {
+      console.log('[invoices/pdf] No auth provided - allowing public access')
+    }
 
-    const token = authHeader.slice(7)
-    const { data: userData, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !userData?.user) return errorResponse(401, 'Unauthorized')
-
-    const userId = userData.user.id
-    console.log('[invoices/pdf] Auth OK for user:', userId)
-
-    // Fetch invoice
+    // Fetch invoice (public access - no user_id filter)
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .select('*')
       .eq('id', invoiceId)
-      .eq('user_id', userId)
       .single()
 
     if (invoiceError || !invoice) return errorResponse(404, 'Invoice not found')
+    
+    // If auth provided, verify ownership
+    if (userId && invoice.user_id !== userId) {
+      return errorResponse(403, 'You do not have permission to view this invoice')
+    }
     console.log('[invoices/pdf] Invoice found:', invoice.invoice_number)
 
     // Fetch client

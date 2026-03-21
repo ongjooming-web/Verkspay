@@ -133,6 +133,34 @@ export default function PaymentPage() {
     }
   }
 
+  const handleDownloadInvoice = async () => {
+    try {
+      console.log('[PaymentPage] Downloading invoice PDF:', invoiceId)
+      
+      // No auth needed for public payment page - invoice is public
+      const response = await fetch(`/api/invoices/${invoiceId}/pdf`)
+
+      if (!response.ok) {
+        setError('Failed to download invoice')
+        return
+      }
+
+      const htmlContent = await response.text()
+      
+      // Open in new window for printing
+      const printWindow = window.open('', '', 'height=600,width=800')
+      if (printWindow) {
+        printWindow.document.write(htmlContent)
+        printWindow.document.close()
+        printWindow.print()
+        console.log('[PaymentPage] Invoice PDF opened for printing')
+      }
+    } catch (error) {
+      console.error('[PaymentPage] Error downloading invoice:', error)
+      setError('Failed to download invoice')
+    }
+  }
+
   const handlePayNow = async () => {
     if (!clientEmail || !clientEmail.includes('@')) {
       setError('Please enter a valid email address')
@@ -353,9 +381,19 @@ export default function PaymentPage() {
               </div>
             )}
 
+            {/* Download Invoice & Pay Button */}
+            <div className="border-t border-white/10 pt-6 space-y-4">
+              {/* Download Invoice Button */}
+              <Button
+                onClick={handleDownloadInvoice}
+                className="w-full px-4 py-3 bg-indigo-600/80 hover:bg-indigo-700/80 text-white font-semibold transition rounded-lg"
+              >
+                📥 Download Invoice
+              </Button>
+
             {/* Email Input & Pay Button */}
             {freelancer.payment_method === 'bank' && freelancer.stripe_onboarding_complete ? (
-              <div className="border-t border-white/10 pt-6 space-y-4">
+              <div className="space-y-4">
                 {!showEmailInput ? (
                   <Button
                     onClick={() => setShowEmailInput(true)}
@@ -406,6 +444,7 @@ export default function PaymentPage() {
                 <p className="text-yellow-300 text-sm">⚠️ Payment is not available for this invoice. Please contact the sender.</p>
               </div>
             )}
+            </div>
           </CardBody>
         </Card>
 
