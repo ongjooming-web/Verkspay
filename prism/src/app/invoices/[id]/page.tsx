@@ -301,8 +301,8 @@ export default function InvoiceDetail() {
 
     try {
       // Get current session token
-      const { data: session } = await supabase.auth.getSession()
-      const token = session?.session?.access_token
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
 
       if (!token) {
         alert('❌ Session expired. Please refresh and try again.')

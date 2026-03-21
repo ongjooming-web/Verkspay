@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Button } from './Button'
 import { Card, CardBody, CardHeader } from './Card'
 import { formatCurrency } from '@/lib/countries'
@@ -77,8 +78,8 @@ export function SendInvoiceModal({
     setMessage('')
 
     try {
-      const { data: session } = await (window as any).supabase.auth.getSession()
-      const token = session?.session?.access_token
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
 
       if (!token) {
         setMessage('❌ Session expired')
