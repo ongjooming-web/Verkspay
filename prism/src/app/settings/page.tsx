@@ -168,6 +168,35 @@ export default function Settings() {
     }
   }
 
+  const handleConnectStripe = async () => {
+    if (!user) return
+
+    try {
+      setSaving(true)
+      setMessage('Connecting to Stripe...')
+
+      const response = await fetch('/api/stripe/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        // Redirect to Stripe Connect onboarding
+        window.location.href = data.url
+      } else {
+        setMessage('✗ Failed to initiate Stripe connection')
+        setSaving(false)
+      }
+    } catch (err) {
+      console.error('Error connecting Stripe:', err)
+      setMessage('✗ Connection error')
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen relative z-10">
@@ -350,7 +379,37 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Payment Methods - Removed in Phase 1 pivot */}
+        {/* Stripe Connect Setup */}
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-2xl font-bold text-white">💳 Stripe Connect</h2>
+            <p className="text-gray-400 text-sm mt-1">Accept payments and receive payouts</p>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div className="glass rounded-lg p-4 border-blue-400/30">
+              <p className="text-gray-300 text-sm mb-4">
+                Connect your Stripe account to accept payments from clients. Once connected, you can generate payment links for your invoices and receive automatic payouts.
+              </p>
+              {profile?.stripe_onboarding_complete ? (
+                <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3 mb-4">
+                  <p className="text-green-300 font-semibold">✓ Stripe Connected</p>
+                  <p className="text-gray-400 text-sm mt-1">Your account is ready to accept payments</p>
+                </div>
+              ) : (
+                <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3 mb-4">
+                  <p className="text-amber-300 font-semibold">⚠ Not Connected</p>
+                  <p className="text-gray-400 text-sm mt-1">Set up Stripe to start accepting payments</p>
+                </div>
+              )}
+              <Button 
+                onClick={handleConnectStripe}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {profile?.stripe_onboarding_complete ? '🔄 Manage Stripe Account' : '🔗 Connect Stripe'}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
 
         {/* Webhook Configuration (Step 2 Foundation) */}
         <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
