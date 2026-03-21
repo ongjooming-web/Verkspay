@@ -333,15 +333,45 @@ export default function InvoiceDetail() {
       }
 
       const htmlContent = await response.text()
-      console.log('[InvoiceDetail] PDF HTML received, opening in new window...')
+      console.log('[InvoiceDetail] PDF HTML received')
 
-      // Open in new window to trigger print dialog
-      const printWindow = window.open('', '', 'height=600,width=800')
-      if (printWindow) {
-        printWindow.document.write(htmlContent)
-        printWindow.document.close()
-        printWindow.print()
-        console.log('[InvoiceDetail] Print dialog opened')
+      // Detect mobile vs desktop
+      const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent)
+      
+      if (isMobile) {
+        // Mobile: Create blob and download
+        console.log('[InvoiceDetail] Mobile device detected - using blob download')
+        const blob = new Blob([htmlContent], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `invoice-${invoice.invoice_number}.html`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        console.log('[InvoiceDetail] Download triggered on mobile')
+      } else {
+        // Desktop: Open in new window for printing
+        console.log('[InvoiceDetail] Desktop device - opening print dialog')
+        const printWindow = window.open('', '', 'height=600,width=800')
+        if (printWindow) {
+          printWindow.document.write(htmlContent)
+          printWindow.document.close()
+          printWindow.print()
+          console.log('[InvoiceDetail] Print dialog opened')
+        } else {
+          console.warn('[InvoiceDetail] window.open() returned null, fallback to blob download')
+          const blob = new Blob([htmlContent], { type: 'text/html' })
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `invoice-${invoice.invoice_number}.html`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+        }
       }
     } catch (error) {
       console.error('[InvoiceDetail] PDF download error:', error)
