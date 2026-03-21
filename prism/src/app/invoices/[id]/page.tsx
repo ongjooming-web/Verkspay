@@ -294,6 +294,61 @@ export default function InvoiceDetail() {
     }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!invoice) return
+
+    console.log('[InvoiceDetail] Starting PDF download for:', invoice.invoice_number)
+
+    try {
+      // Get current session token
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+
+      if (!token) {
+        alert('❌ Session expired. Please refresh and try again.')
+        return
+      }
+
+      console.log('[InvoiceDetail] Got token, fetching PDF...')
+
+      const response = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      console.log('[InvoiceDetail] PDF response status:', response.status)
+
+      if (response.status === 404) {
+        alert('❌ PDF route not found')
+        return
+      }
+
+      if (!response.ok) {
+        const errText = await response.text()
+        console.error('[InvoiceDetail] PDF fetch failed:', response.status, errText)
+        alert(`❌ Error ${response.status}: ${errText.substring(0, 200)}`)
+        return
+      }
+
+      const htmlContent = await response.text()
+      console.log('[InvoiceDetail] PDF HTML received, opening in new window...')
+
+      // Open in new window to trigger print dialog
+      const printWindow = window.open('', '', 'height=600,width=800')
+      if (printWindow) {
+        printWindow.document.write(htmlContent)
+        printWindow.document.close()
+        printWindow.print()
+        console.log('[InvoiceDetail] Print dialog opened')
+      }
+    } catch (error) {
+      console.error('[InvoiceDetail] PDF download error:', error)
+      alert(`❌ Failed to download PDF: ${error}`)
+    }
+  }
+
   const handleOpenSendModal = () => {
     setShowSendModal(true)
   }
@@ -369,6 +424,13 @@ export default function InvoiceDetail() {
               </div>
             ) : (
               <div className="flex flex-col md:flex-row gap-2 md:justify-end md:flex-wrap">
+                <Button 
+                  onClick={handleDownloadPDF}
+                  className="bg-indigo-600 hover:bg-indigo-700 w-full md:w-auto"
+                  title="Download invoice as PDF"
+                >
+                  📥 Download PDF
+                </Button>
                 <Button 
                   onClick={handleOpenSendModal}
                   className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto"
