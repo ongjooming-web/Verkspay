@@ -1,9 +1,9 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
-import { NextRequest, NextResponse } from 'next/server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20'
+  apiVersion: '2024-06-20',
 })
 
 const supabase = createClient(
@@ -11,72 +11,80 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Get the account ID from the URL params (Stripe sends it back)
-    const accountId = req.nextUrl.searchParams.get('account_id')
-    
-    if (!accountId) {
-      console.error('[Connect Return] No account_id in query params')
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+
+    if (!userId) {
+      console.error('[Stripe Connect Return] Missing userId in callback')
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=error&message=No+account+found`
+        new URL('/settings/payment?error=missing_user', request.url)
       )
     }
 
-    console.log('[Connect Return] Processing return for account:', accountId)
-
-    // Find user by stripe_account_id
-    const { data: user, error: userError } = await supabase
+    // 1. Fetch the user's stripe_account_id from profiles
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('stripe_account_id', accountId)
+      .select('stripe_account_id')
+      .eq('id', userId)
       .single()
 
-    if (userError || !user) {
-      console.error('[Connect Return] User not found for account:', accountId, userError)
+    if (profileError || !profile?.stripe_account_id) {
+      console.error('[Stripe Connect Return] No stripe_account_id found for user:', userId)
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=error&message=Account+not+found`
+        new URL('/settings/payment?error=no_stripe_account', request.url)
       )
     }
 
-    // Retrieve account details to check onboarding status
-    const account = await stripe.accounts.retrieve(accountId)
-    
-    console.log('[Connect Return] Account details retrieved')
-    console.log('[Connect Return] Charges enabled:', account.charges_enabled)
-    console.log('[Connect Return] Payouts enabled:', account.payouts_enabled)
+    // 2. Verify onboarding status directly with Stripe API
+    const account = await stripe.accounts.retrieve(profile.stripe_account_id)
 
-    // Check if onboarding is complete (both charges and payouts enabled)
-    const onboardingComplete = account.charges_enabled && account.payouts_enabled
+    const isOnboardingComplete =
+      account.details_submitted &&
+      account.charges_enabled &&
+      account.payouts_enabled
 
-    // Update user profile with onboarding status
+    console.log(`[Stripe Connect Return] Account ${profile.stripe_account_id}:`, {
+      details_submitted: account.details_submitted,
+      charges_enabled: account.charges_enabled,
+      payouts_enabled: account.payouts_enabled,
+      isOnboardingComplete,
+    })
+
+    // 3. Update stripe_onboarding_complete in profiles table
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        stripe_onboarding_complete: onboardingComplete,
+        stripe_onboarding_complete: isOnboardingComplete,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     if (updateError) {
-      console.error('[Connect Return] Update failed:', updateError)
+      console.error('[Stripe Connect Return] Failed to update profile:', updateError)
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=error&message=Failed+to+save+onboarding+status`
+        new URL('/settings/payment?error=update_failed', request.url)
       )
     }
 
-    console.log(`[Connect Return] User ${user.id} onboarding status set to: ${onboardingComplete}`)
+    console.log(`[Stripe Connect Return] stripe_onboarding_complete set to ${isOnboardingComplete} for user ${userId}`)
 
-    // Redirect back to settings with success status
-    const redirectUrl = onboardingComplete
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=success&account=${accountId}`
-      : `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=incomplete&message=Onboarding+not+yet+complete`
-
-    return NextResponse.redirect(redirectUrl)
+    // 4. Redirect based on actual onboarding status
+    if (isOnboardingComplete) {
+      return NextResponse.redirect(
+        new URL('/settings/payment?stripe=connected', request.url)
+      )
+    } else {
+      // Onboarding started but not finished — send back to complete it
+      return NextResponse.redirect(
+        new URL('/settings/payment?stripe=incomplete', request.url)
+      )
+    }
   } catch (error) {
-    console.error('[Connect Return] Error:', error)
+    console.error('[Stripe Connect Return] Fatal error:', (error as any)?.message)
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/settings?stripe=error&message=Server+error`
+      new URL('/settings/payment?error=server_error', request.url)
     )
   }
 }
