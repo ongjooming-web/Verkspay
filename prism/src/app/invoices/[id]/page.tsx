@@ -12,6 +12,7 @@ import { InvoiceActionMenu } from '@/components/InvoiceActionMenu'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useCurrency } from '@/hooks/useCurrency'
+import { LineItem } from '@/types/invoice'
 
 interface Invoice {
   id: string
@@ -28,6 +29,7 @@ interface Invoice {
   reminder_sent_count?: number
   last_reminder_sent_at?: string
   amount_paid?: number
+  line_items?: LineItem[] | null
   remaining_balance?: number
   currency_code?: string
   payment_terms?: string
@@ -566,11 +568,45 @@ export default function InvoiceDetail() {
                   </div>
                 </div>
 
-                {invoice.description && (
+                {/* Line Items Table */}
+                {invoice.line_items && invoice.line_items.length > 0 ? (
                   <div className="border-t border-white/10 pt-6">
-                    <p className="text-gray-400 text-sm mb-2">Description</p>
-                    <p className="text-white whitespace-pre-wrap">{invoice.description}</p>
+                    <p className="text-gray-400 text-sm mb-4">Line Items</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-white/10">
+                            <th className="text-left py-2 px-2 text-gray-400">Description</th>
+                            <th className="text-right py-2 px-2 text-gray-400">Qty</th>
+                            <th className="text-right py-2 px-2 text-gray-400">Rate</th>
+                            <th className="text-right py-2 px-2 text-gray-400">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invoice.line_items.map((item, idx) => (
+                            <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                              <td className="py-3 px-2 text-white">{item.description}</td>
+                              <td className="py-3 px-2 text-right text-white">{item.quantity}</td>
+                              <td className="py-3 px-2 text-right text-white">{formatCurrency(item.rate, invoice.currency_code || currencyCode || 'MYR')}</td>
+                              <td className="py-3 px-2 text-right text-white font-semibold">{formatCurrency(item.amount, invoice.currency_code || currencyCode || 'MYR')}</td>
+                            </tr>
+                          ))}
+                          <tr className="border-t border-white/10 font-bold">
+                            <td colSpan={3} className="py-3 px-2 text-right text-gray-400">TOTAL:</td>
+                            <td className="py-3 px-2 text-right text-white">{formatCurrency(invoice.amount, invoice.currency_code || currencyCode || 'MYR')}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
+                ) : (
+                  /* Fallback: Old single description display */
+                  invoice.description && (
+                    <div className="border-t border-white/10 pt-6">
+                      <p className="text-gray-400 text-sm mb-2">Description</p>
+                      <p className="text-white whitespace-pre-wrap">{invoice.description}</p>
+                    </div>
+                  )
                 )}
 
                 {invoice.paid_date && (

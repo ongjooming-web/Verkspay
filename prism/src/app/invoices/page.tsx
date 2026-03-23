@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useCurrency } from '@/hooks/useCurrency'
 import { formatCurrency } from '@/lib/countries'
 import { groupByCurrency } from '@/lib/currency-helper'
+import { LineItem } from '@/types/invoice'
 
 interface Invoice {
   id: string
@@ -21,6 +22,7 @@ interface Invoice {
   created_at: string
   payment_method?: string
   currency_code?: string
+  line_items?: LineItem[] | null
 }
 
 type FilterStatus = 'all' | 'unpaid' | 'paid' | 'paid_partial' | 'overdue'
@@ -31,10 +33,11 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [showForm, setShowForm] = useState(false)
   const [clients, setClients] = useState<any[]>([])
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    { description: '', quantity: 1, rate: 0, amount: 0 }
+  ])
   const [formData, setFormData] = useState({
     client_id: '',
-    amount: '',
-    due_date: '',
     description: '',
     payment_terms: 'Net 30',
     custom_payment_terms: '',
@@ -169,6 +172,9 @@ export default function Invoices() {
       ? formData.custom_payment_terms 
       : formData.payment_terms
 
+    // Calculate total from line items
+    const totalAmount = lineItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+
     const { data, error } = await supabase
       .from('invoices')
       .insert([
@@ -176,12 +182,13 @@ export default function Invoices() {
           user_id: userId,
           invoice_number: invoiceNumber,
           client_id: formData.client_id,
-          amount: parseFloat(formData.amount),
+          amount: totalAmount,
           due_date: formData.due_date,
           status: 'unpaid',
           description: formData.description,
           currency_code: currencyCode,
           payment_terms: paymentTerms,
+          line_items: lineItems,
         },
       ])
       .select()
@@ -195,7 +202,8 @@ export default function Invoices() {
     if (data && data.length > 0) {
       console.log('[InvoicesList] Invoice created successfully:', data[0])
       setInvoices([{ ...data[0], client_name: clients.find(c => c.id === formData.client_id)?.name || 'Unknown' }, ...invoices])
-      setFormData({ client_id: '', amount: '', due_date: '', description: '', payment_terms: 'Net 30', custom_payment_terms: '' })
+      setFormData({ client_id: '', description: '', payment_terms: 'Net 30', custom_payment_terms: '' })
+      setLineItems([{ description: '', quantity: 1, rate: 0, amount: 0 }])
       setShowCustomPaymentTerms(false)
       setShowForm(false)
       alert('✅ Invoice created successfully!')
@@ -355,18 +363,6 @@ export default function Invoices() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Amount ({currencyCode}) *</label>
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                  </div>
-                  <div>
                     <label className="text-gray-400 text-sm mb-2 block">Due Date *</label>
                     <input
                       type="date"
@@ -407,10 +403,95 @@ export default function Invoices() {
                     />
                   </div>
                 )}
+                {/* Line Items Section */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-gray-400 text-sm">Line Items *</label>
+                    <button
+                      type="button"
+                      onClick={() => setLineItems([...lineItems, { description: '', quantity: 1, rate: 0, amount: 0 }])}
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                    >
+                      + Add Line Item
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {lineItems.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={item.description}
+                          onChange={(e) => {
+                            const newItems = [...lineItems]
+                            newItems[idx].description = e.target.value
+                            setLineItems(newItems)
+                          }}
+                          className="col-span-5 glass px-3 py-2 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newItems = [...lineItems]
+                            const qty = parseFloat(e.target.value) || 0
+                            newItems[idx].quantity = qty
+                            newItems[idx].amount = qty * (newItems[idx].rate || 0)
+                            setLineItems(newItems)
+                          }}
+                          min="0"
+                          step="1"
+                          className="col-span-2 glass px-3 py-2 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Rate"
+                          value={item.rate}
+                          onChange={(e) => {
+                            const newItems = [...lineItems]
+                            const rate = parseFloat(e.target.value) || 0
+                            newItems[idx].rate = rate
+                            newItems[idx].amount = (newItems[idx].quantity || 0) * rate
+                            setLineItems(newItems)
+                          }}
+                          min="0"
+                          step="0.01"
+                          className="col-span-2 glass px-3 py-2 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Amount"
+                          value={item.amount}
+                          readOnly
+                          className="col-span-2 glass px-3 py-2 rounded-lg text-gray-400 text-sm bg-slate-800 opacity-70"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}
+                          className="col-span-1 text-red-400 hover:text-red-300 text-lg font-bold"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-slate-700">
+                    <div className="text-right">
+                      <span className="text-gray-400 text-sm">Total: </span>
+                      <span className="text-white font-bold text-lg">
+                        {formatCurrency(lineItems.reduce((sum, item) => sum + (item.amount || 0), 0), currencyCode)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-gray-400 text-sm mb-2 block">Description</label>
+                  <label className="text-gray-400 text-sm mb-2 block">Invoice Notes (Optional)</label>
                   <textarea
-                    placeholder="Invoice details..."
+                    placeholder="Additional notes..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
