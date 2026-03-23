@@ -38,6 +38,7 @@ export default function Invoices() {
   ])
   const [formData, setFormData] = useState({
     client_id: '',
+    due_date: '',
     description: '',
     payment_terms: 'Net 30',
     custom_payment_terms: '',
