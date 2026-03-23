@@ -146,8 +146,8 @@ export default function Invoices() {
     e.preventDefault()
 
     // Validate form
-    if (!formData.client_id || !formData.amount || !formData.due_date) {
-      alert('Please fill in all required fields: Client, Amount, Due Date')
+    if (!formData.client_id || !formData.due_date || lineItems.length === 0 || lineItems.every(item => !item.description || item.amount === 0)) {
+      alert('Please fill in all required fields: Client, Due Date, and at least one line item')
       return
     }
 
