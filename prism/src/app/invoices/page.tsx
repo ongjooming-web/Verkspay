@@ -203,7 +203,7 @@ export default function Invoices() {
     if (data && data.length > 0) {
       console.log('[InvoicesList] Invoice created successfully:', data[0])
       setInvoices([{ ...data[0], client_name: clients.find(c => c.id === formData.client_id)?.name || 'Unknown' }, ...invoices])
-      setFormData({ client_id: '', description: '', payment_terms: 'Net 30', custom_payment_terms: '' })
+      setFormData({ client_id: '', due_date: '', description: '', payment_terms: 'Net 30', custom_payment_terms: '' })
       setLineItems([{ description: '', quantity: 1, rate: 0, amount: 0 }])
       setShowCustomPaymentTerms(false)
       setShowForm(false)
