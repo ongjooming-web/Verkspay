@@ -773,7 +773,7 @@ export default function InvoiceDetail() {
                 >
                   <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div>
-                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice?.currency_code || currencyCode || 'MYR')} via {payment.payment_type.toUpperCase()}</p>
+                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice?.currency_code || currencyCode || 'MYR')} via {(payment.payment_type || 'Unknown').toUpperCase()}</p>
                       <p className="text-gray-400 text-sm mt-1">{new Date(payment.payment_date).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
@@ -781,7 +781,7 @@ export default function InvoiceDetail() {
                         ? 'bg-green-500/20 border-green-400/30 text-green-300'
                         : 'bg-blue-500/20 border-blue-400/30 text-blue-300'
                     }`}>
-                      {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                      {(payment.status || 'unknown').charAt(0).toUpperCase() + (payment.status || 'unknown').slice(1)}
                     </span>
                   </div>
                   {payment.tx_hash && (
