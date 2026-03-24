@@ -9,6 +9,7 @@ import Link from 'next/link'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
 
   const handleUpgrade = async (plan: 'starter' | 'pro' | 'enterprise') => {
     try {
@@ -49,7 +50,9 @@ export default function PricingPage() {
   const plans = [
     {
       name: 'Starter',
-      price: '$19',
+      monthlyPrice: '$19',
+      annualPrice: '$15',
+      annualTotal: '$180',
       period: '/mo',
       description: 'For freelancers just getting started',
       features: [
@@ -68,7 +71,9 @@ export default function PricingPage() {
     },
     {
       name: 'Pro',
-      price: '$49',
+      monthlyPrice: '$49',
+      annualPrice: '$39',
+      annualTotal: '$468',
       period: '/mo',
       description: 'For growing freelancers',
       badge: 'Most Popular',
@@ -92,7 +97,9 @@ export default function PricingPage() {
     },
     {
       name: 'Enterprise',
-      price: '$199',
+      monthlyPrice: '$199',
+      annualPrice: '$159',
+      annualTotal: '$1,908',
       period: '/mo',
       description: 'For teams & agencies',
       features: [
@@ -114,6 +121,20 @@ export default function PricingPage() {
     }
   ]
 
+  const getDisplayPrice = (plan: typeof plans[0]) => {
+    if (billingPeriod === 'monthly') {
+      return plan.monthlyPrice
+    }
+    return plan.annualPrice
+  }
+
+  const getDisplayTotal = (plan: typeof plans[0]) => {
+    if (billingPeriod === 'monthly') {
+      return null
+    }
+    return plan.annualTotal
+  }
+
   return (
     <>
       <Navigation />
@@ -122,6 +143,35 @@ export default function PricingPage() {
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold mb-4">Simple, transparent pricing</h1>
             <p className="text-xl text-gray-400">15-day free trial. Choose your plan.</p>
+          </div>
+
+          {/* Billing Toggle */}
+          <div className="flex justify-center items-center gap-4 mb-16">
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`px-6 py-2 rounded-lg font-medium transition ${
+                billingPeriod === 'monthly'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod('annual')}
+              className={`px-6 py-2 rounded-lg font-medium transition relative ${
+                billingPeriod === 'annual'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+              }`}
+            >
+              Annual
+              {billingPeriod === 'annual' && (
+                <span className="absolute -top-3 -right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap">
+                  Save 20%
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-16">
@@ -145,8 +195,16 @@ export default function PricingPage() {
                 <CardHeader className={plan.badge ? 'pt-8' : ''}>
                   <h3 className="text-2xl font-bold">{plan.name}</h3>
                   <div className="my-4">
-                    <span className="text-5xl font-bold">{plan.price}</span>
-                    <span className="text-gray-400 ml-2">{plan.period}</span>
+                    <div className="flex items-baseline gap-2">
+                      {billingPeriod === 'annual' && (
+                        <span className="text-gray-500 line-through text-lg">{plan.monthlyPrice}</span>
+                      )}
+                      <span className="text-5xl font-bold">{getDisplayPrice(plan)}</span>
+                      <span className="text-gray-400 ml-2">{plan.period}</span>
+                    </div>
+                    {billingPeriod === 'annual' && (
+                      <p className="text-gray-400 text-xs mt-2">Billed annually at {getDisplayTotal(plan)}/year</p>
+                    )}
                   </div>
                   <p className="text-gray-400 text-sm">{plan.description}</p>
                 </CardHeader>
@@ -224,7 +282,7 @@ export default function PricingPage() {
                 },
                 {
                   q: 'Do you offer annual billing?',
-                  a: 'Contact us at support@prismops.xyz for annual pricing and custom quotes.'
+                  a: 'Yes! Choose annual billing above and save 20% compared to monthly. Switch anytime.'
                 }
               ].map((faq, i) => (
                 <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-6">
