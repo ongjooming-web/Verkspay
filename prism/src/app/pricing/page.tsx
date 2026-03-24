@@ -48,26 +48,6 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: 'Trial',
-      price: 'Free',
-      period: '15 days',
-      description: 'Full Pro access. Credit card required.',
-      badge: '15-Day Free Trial',
-      features: [
-        'Unlimited invoices',
-        'Unlimited payment links',
-        'Stripe payments',
-        'Smart reminders (10/month)',
-        'Partial payments',
-        'Advanced CRM',
-        'Proposals & contracts',
-        'Basic AI Insights (10/month)',
-        'Email support'
-      ],
-      button: { text: 'Start Free Trial', action: 'trial' },
-      highlighted: true
-    },
-    {
       name: 'Starter',
       price: '$19',
       period: '/mo',
@@ -135,7 +115,7 @@ export default function PricingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-16">
-            {plans.filter(plan => plan.name !== 'Trial').map((plan, i) => (
+            {plans.map((plan, i) => (
               <Card
                 key={i}
                 className={`flex flex-col relative ${
