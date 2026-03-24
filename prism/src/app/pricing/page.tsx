@@ -53,16 +53,17 @@ export default function PricingPage() {
       period: '/mo',
       description: 'For freelancers just getting started',
       features: [
-        'Unlimited invoices',
-        'Unlimited payment links',
+        'Up to 20 invoices/month',
+        '10 payment links/month',
         'Stripe payments',
         'Smart reminders',
-        'Partial payments',
-        'Advanced CRM',
-        'AI Insights (10/month)',
+        'Smart Invoice Creation (auto-fill from history)',
+        '5 AI Insights/month',
+        'Client management',
+        'Flexible payment terms (Net 30/60/90, Due on Receipt)',
         'Email support'
       ],
-      button: { text: 'Get Started', action: 'starter' },
+      button: { text: 'Start Free Trial', action: 'starter' },
       highlighted: false
     },
     {
@@ -72,16 +73,21 @@ export default function PricingPage() {
       description: 'For growing freelancers',
       badge: 'Most Popular',
       features: [
-        'Everything in Starter',
-        'AI Insights (30/month)',
-        'Proposals & contracts',
+        'Unlimited invoices',
+        'Unlimited payment links',
+        'Stripe payments',
+        'Smart reminders',
+        'Partial payments',
+        'AI-powered Invoice Creation',
+        '30 AI Insights/month',
+        'AI Business Recommendations',
+        'Client management',
         'Advanced reporting',
-        'Payment reminders',
-        'Client portal',
+        'Flexible payment terms (Net 30/60/90, Due on Receipt)',
         'Priority email support'
       ],
       comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.',
-      button: { text: 'Get Started', action: 'pro' },
+      button: { text: 'Start Free Trial', action: 'pro' },
       highlighted: false
     },
     {
@@ -91,15 +97,19 @@ export default function PricingPage() {
       description: 'For teams & agencies',
       features: [
         'Everything in Pro',
-        'AI Insights (unlimited)',
+        'Unlimited AI Insights',
         'Multi-entity / business units support',
+        'POS webhook integration',
+        'Advanced accounting module',
+        'Customer pricing tiers (Distributor/Wholesaler/HoReCa)',
+        'Receivables aging reports',
         'Team management (5 users)',
         'API access & webhooks',
         'Custom branding',
         'Dedicated support'
       ],
       note: 'Built for agencies, holding companies, and multi-entity businesses.',
-      button: { text: 'Contact Sales', action: 'enterprise' },
+      button: { text: 'Contact Us', action: 'enterprise' },
       highlighted: false
     }
   ]

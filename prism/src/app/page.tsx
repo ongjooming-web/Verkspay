@@ -90,9 +90,9 @@ export default function LandingPage() {
                 desc: 'Every client, invoice, and conversation in one place.'
               },
               {
-                icon: '📄',
-                title: 'Proposals & Contracts',
-                desc: 'Professional proposals signed and tracked.'
+                icon: '🤖',
+                title: 'AI Insights',
+                desc: 'AI-powered analysis of your revenue, clients, and payment patterns. Get actionable recommendations instantly.'
               },
               {
                 icon: '📊',
@@ -109,11 +109,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Crypto Section - Moved Lower */}
-        <section className="max-w-7xl mx-auto px-6 py-20">
-          <h3 className="text-2xl font-bold text-center mb-8">Also accept crypto — USDC on Base, Ethereum & Solana for instant global payments.</h3>
-        </section>
-
         {/* Pricing Section */}
         <section id="pricing" className="max-w-7xl mx-auto px-6 py-20">
           <h2 className="text-4xl font-bold text-center mb-4">Simple, transparent pricing</h2>
@@ -126,8 +121,8 @@ export default function LandingPage() {
                 price: '$19',
                 period: '/mo',
                 desc: 'For freelancers just getting started',
-                features: ['Up to 20 invoices/month', '10 payment links/month', 'Stripe payments', 'Smart reminders', 'Basic CRM', 'Email support'],
-                cta: 'Get Started',
+                features: ['Up to 20 invoices/month', '10 payment links/month', 'Stripe payments', 'Smart reminders', 'Smart Invoice Creation (auto-fill from history)', '5 AI Insights/month', 'Client management', 'Flexible payment terms (Net 30/60/90, Due on Receipt)', 'Email support'],
+                cta: 'Start Free Trial',
                 highlighted: false
               },
               {
@@ -136,7 +131,7 @@ export default function LandingPage() {
                 period: '/mo',
                 desc: 'For growing freelancers',
                 badge: 'Most Popular',
-                features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe payments', 'Smart reminders', 'Partial payments', 'Advanced CRM', 'Proposals & contracts', 'Advanced reporting', 'Priority email support'],
+                features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe payments', 'Smart reminders', 'Partial payments', 'AI-powered Invoice Creation', '30 AI Insights/month', 'AI Business Recommendations', 'Client management', 'Advanced reporting', 'Flexible payment terms (Net 30/60/90, Due on Receipt)', 'Priority email support'],
                 cta: 'Start Free Trial',
                 highlighted: true,
                 comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.'
@@ -146,8 +141,8 @@ export default function LandingPage() {
                 price: '$199',
                 period: '/mo',
                 desc: 'For teams & agencies',
-                features: ['Everything in Pro', 'Multi-entity / business units support', 'POS webhook integration', 'Advanced accounting module', 'Customer pricing tiers', 'Credit terms (Net 30/60/90)', 'Receivables aging reports', 'Team management (5 users)', 'API access & webhooks', 'Custom branding', 'Dedicated support'],
-                cta: 'Get Started',
+                features: ['Everything in Pro', 'Unlimited AI Insights', 'Multi-entity / business units support', 'POS webhook integration', 'Advanced accounting module', 'Customer pricing tiers (Distributor/Wholesaler/HoReCa)', 'Receivables aging reports', 'Team management (5 users)', 'API access & webhooks', 'Custom branding', 'Dedicated support'],
+                cta: 'Contact Us',
                 highlighted: false,
                 note: 'Built for agencies, holding companies, and multi-entity businesses.'
               }
