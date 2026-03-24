@@ -51,7 +51,7 @@ export default function LandingPage() {
               Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
             </p>
             <p className="text-lg text-blue-400 font-semibold mb-8">
-              ✨ 15-day free trial. No credit card required.
+              ✨ 15-day free trial. Credit card required.
             </p>
             <div className="flex gap-4 justify-center">
               <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-medium hover:opacity-90 transition text-lg">

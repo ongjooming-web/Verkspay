@@ -51,7 +51,7 @@ export default function PricingPage() {
       name: 'Trial',
       price: 'Free',
       period: '15 days',
-      description: 'Full Pro access. No credit card required.',
+      description: 'Full Pro access. Credit card required.',
       badge: '15-Day Free Trial',
       features: [
         'Unlimited invoices',
@@ -131,7 +131,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold mb-4">Simple, transparent pricing</h1>
-            <p className="text-xl text-gray-400">Start free for 15 days. No credit card required.</p>
+            <p className="text-xl text-gray-400">Start free for 15 days. Credit card required.</p>
             <p className="text-sm text-gray-500 mt-2">After your trial, choose a plan that fits your needs</p>
           </div>
 
