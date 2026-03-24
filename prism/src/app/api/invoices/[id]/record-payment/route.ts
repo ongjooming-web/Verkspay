@@ -61,17 +61,20 @@ export async function POST(
     }
 
     // Create payment record
+    // Parse paymentDate to YYYY-MM-DD format if provided, otherwise use today
+    const finalPaymentDate = paymentDate 
+      ? paymentDate.split('T')[0] // Extract just the date part if it's a full timestamp
+      : new Date().toISOString().split('T')[0]
+
     const { data: paymentRecord, error: paymentError } = await supabase
       .from('payment_records')
       .insert([
         {
           invoice_id: invoiceId,
-          amount_paid: amount,
-          payment_date: paymentDate || new Date().toISOString(),
-          payment_type: paymentMethod || 'manual',
-          status: 'completed',
-          notes: notes || null,
-          created_at: new Date().toISOString()
+          amount: amount,
+          payment_date: finalPaymentDate,
+          payment_method: paymentMethod || 'manual',
+          notes: notes || null
         }
       ])
       .select()
@@ -114,7 +117,7 @@ export async function POST(
           status: newStatus
         }
       },
-      { status: 200 }
+      { status: 201 }
     )
   } catch (error: any) {
     console.error('[record-payment] Error:', error)
