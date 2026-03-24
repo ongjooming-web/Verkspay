@@ -163,13 +163,7 @@ export default function PricingPage() {
                     </p>
                   )}
 
-                  {plan.button.action === 'free' ? (
-                    <Link href="/signup" className="w-full">
-                      <Button className="w-full border border-white/20 hover:border-white/40 text-white">
-                        {plan.button.text}
-                      </Button>
-                    </Link>
-                  ) : plan.button.action === 'enterprise' ? (
+                  {plan.button.action === 'enterprise' ? (
                     <a href="mailto:support@prismops.xyz" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}
