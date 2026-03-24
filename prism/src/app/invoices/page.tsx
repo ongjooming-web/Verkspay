@@ -149,7 +149,19 @@ export default function Invoices() {
 
     setSuggestionsLoading(true)
     try {
-      const response = await fetch(`/api/invoices/suggestions?clientId=${clientId}`)
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        console.warn('[InvoicesList] No auth session available for suggestions')
+        setSuggestionsLoading(false)
+        return
+      }
+
+      const response = await fetch(`/api/invoices/suggestions?clientId=${clientId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
       const suggestions = await response.json()
 
       // If no history (invoice_count === 0), don't auto-populate

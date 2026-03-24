@@ -3,20 +3,15 @@ import { requireAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: invoiceId } = await context.params
-    const { amount, paymentMethod, paymentDate, notes } = await req.json()
+    const { id: invoiceId } = await params
 
-    console.log('[invoices/record-payment] Recording payment for invoice:', invoiceId)
-    console.log('[invoices/record-payment] Amount:', amount, 'Method:', paymentMethod)
-
-    // Verify auth
-    const { user, error: authError } = await requireAuth(req)
+    // Verify authentication
+    const { user, error: authError } = await requireAuth(request)
     if (authError) {
-      console.error('[invoices/record-payment] Auth error:', authError)
       return NextResponse.json(
         { error: authError.message },
         { status: authError.status }
@@ -26,7 +21,18 @@ export async function POST(
     const userId = user.id
     const supabase = getSupabaseServer()
 
-    // Fetch invoice
+    // Parse request body
+    const body = await request.json()
+    const { amount, paymentMethod, paymentDate, notes } = body
+
+    if (!amount || amount <= 0) {
+      return NextResponse.json(
+        { error: 'Payment amount must be greater than 0' },
+        { status: 400 }
+      )
+    }
+
+    // Fetch the invoice to verify ownership and get current amounts
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .select('*')
@@ -35,86 +41,86 @@ export async function POST(
       .single()
 
     if (invoiceError || !invoice) {
-      console.error('[invoices/record-payment] Invoice not found:', invoiceError)
       return NextResponse.json(
         { error: 'Invoice not found' },
         { status: 404 }
       )
     }
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Amount must be greater than 0' },
-        { status: 400 }
-      )
-    }
-
-    // Calculate new totals
-    const newAmountPaid = (invoice.amount_paid || 0) + amount
-    const newRemainingBalance = invoice.amount - newAmountPaid
+    // Calculate new amounts
+    const currentAmountPaid = invoice.amount_paid || 0
+    const newAmountPaid = currentAmountPaid + amount
+    const newRemainingBalance = Math.max(0, invoice.amount - newAmountPaid)
 
     // Determine new status
-    let newStatus = 'unpaid'
+    let newStatus = invoice.status
     if (newAmountPaid >= invoice.amount) {
       newStatus = 'paid'
     } else if (newAmountPaid > 0) {
       newStatus = 'paid_partial'
     }
 
-    console.log('[invoices/record-payment] New amount_paid:', newAmountPaid, 'Status:', newStatus)
+    // Create payment record
+    // Parse paymentDate to YYYY-MM-DD format if provided, otherwise use today
+    const finalPaymentDate = paymentDate 
+      ? paymentDate.split('T')[0] // Extract just the date part if it's a full timestamp
+      : new Date().toISOString().split('T')[0]
 
-    // Record payment in payment_records table
     const { data: paymentRecord, error: paymentError } = await supabase
       .from('payment_records')
       .insert([
         {
           invoice_id: invoiceId,
           amount: amount,
-          payment_method: paymentMethod,
-          payment_date: paymentDate,
+          payment_date: finalPaymentDate,
+          payment_method: paymentMethod || 'manual',
           notes: notes || null
         }
       ])
       .select()
 
     if (paymentError) {
-      console.error('[invoices/record-payment] Failed to record payment:', paymentError)
+      console.error('[record-payment] Error creating payment record:', paymentError)
       return NextResponse.json(
         { error: 'Failed to record payment' },
         { status: 500 }
       )
     }
 
-    // Update invoice with new amounts and status
-    const { data: updatedInvoice, error: updateError } = await supabase
+    // Update invoice with new payment amounts and status
+    const { error: updateError } = await supabase
       .from('invoices')
       .update({
         amount_paid: newAmountPaid,
-        remaining_balance: Math.max(0, newRemainingBalance),
+        remaining_balance: newRemainingBalance,
         status: newStatus,
         updated_at: new Date().toISOString()
       })
       .eq('id', invoiceId)
-      .select()
+      .eq('user_id', userId)
 
     if (updateError) {
-      console.error('[invoices/record-payment] Failed to update invoice:', updateError)
+      console.error('[record-payment] Error updating invoice:', updateError)
       return NextResponse.json(
         { error: 'Failed to update invoice' },
         { status: 500 }
       )
     }
 
-    console.log('[invoices/record-payment] ✓ Payment recorded successfully')
-
-    return NextResponse.json({
-      success: true,
-      invoice: updatedInvoice[0],
-      paymentRecord: paymentRecord[0],
-      message: `Payment of $${amount.toFixed(2)} recorded successfully`
-    }, { status: 200 })
+    return NextResponse.json(
+      {
+        message: 'Payment recorded successfully',
+        payment: paymentRecord?.[0],
+        invoice: {
+          amount_paid: newAmountPaid,
+          remaining_balance: newRemainingBalance,
+          status: newStatus
+        }
+      },
+      { status: 201 }
+    )
   } catch (error: any) {
-    console.error('[invoices/record-payment] Error:', error)
+    console.error('[record-payment] Error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

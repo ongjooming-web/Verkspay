@@ -48,31 +48,18 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: 'Free',
-      price: '$0',
-      period: '/mo',
-      description: 'Perfect for trying Prism',
-      features: [
-        '5 invoices/month',
-        '3 payment links',
-        'Basic CRM',
-        'Contract templates',
-        'Community support'
-      ],
-      button: { text: 'Get Started', action: 'free' },
-      highlighted: false
-    },
-    {
       name: 'Starter',
       price: '$19',
       period: '/mo',
       description: 'For freelancers just getting started',
       features: [
-        'Up to 20 invoices/month',
-        '10 payment links/month',
+        'Unlimited invoices',
+        'Unlimited payment links',
         'Stripe payments',
         'Smart reminders',
-        'Basic CRM',
+        'Partial payments',
+        'Advanced CRM',
+        'AI Insights (10/month)',
         'Email support'
       ],
       button: { text: 'Get Started', action: 'starter' },
@@ -85,19 +72,17 @@ export default function PricingPage() {
       description: 'For growing freelancers',
       badge: 'Most Popular',
       features: [
-        'Unlimited invoices',
-        'Unlimited payment links',
-        'Stripe payments',
-        'Smart reminders',
-        'Partial payments',
-        'Advanced CRM',
+        'Everything in Starter',
+        'AI Insights (30/month)',
         'Proposals & contracts',
         'Advanced reporting',
+        'Payment reminders',
+        'Client portal',
         'Priority email support'
       ],
       comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.',
-      button: { text: 'Start Free Trial', action: 'pro' },
-      highlighted: true
+      button: { text: 'Get Started', action: 'pro' },
+      highlighted: false
     },
     {
       name: 'Enterprise',
@@ -106,19 +91,15 @@ export default function PricingPage() {
       description: 'For teams & agencies',
       features: [
         'Everything in Pro',
+        'AI Insights (unlimited)',
         'Multi-entity / business units support',
-        'POS webhook integration',
-        'Advanced accounting module',
-        'Customer pricing tiers (Distributor/Wholesaler/HoReCa)',
-        'Credit terms (Net 30/60/90)',
-        'Receivables aging reports',
         'Team management (5 users)',
         'API access & webhooks',
         'Custom branding',
         'Dedicated support'
       ],
       note: 'Built for agencies, holding companies, and multi-entity businesses.',
-      button: { text: 'Get Started', action: 'enterprise' },
+      button: { text: 'Contact Sales', action: 'enterprise' },
       highlighted: false
     }
   ]
@@ -130,10 +111,10 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold mb-4">Simple, transparent pricing</h1>
-            <p className="text-xl text-gray-400">Choose the plan that fits your needs</p>
+            <p className="text-xl text-gray-400">15-day free trial. Choose your plan.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-3 gap-6 mb-16">
             {plans.map((plan, i) => (
               <Card
                 key={i}
@@ -182,13 +163,7 @@ export default function PricingPage() {
                     </p>
                   )}
 
-                  {plan.button.action === 'free' ? (
-                    <Link href="/signup" className="w-full">
-                      <Button className="w-full border border-white/20 hover:border-white/40 text-white">
-                        {plan.button.text}
-                      </Button>
-                    </Link>
-                  ) : plan.button.action === 'enterprise' ? (
+                  {plan.button.action === 'enterprise' ? (
                     <a href="mailto:support@prismops.xyz" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}

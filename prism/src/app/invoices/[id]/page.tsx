@@ -43,11 +43,11 @@ interface Invoice {
 
 interface PaymentRecord {
   id: string
-  amount_paid: number
+  amount: number
   payment_date: string
-  payment_type: string
-  tx_hash?: string
-  status: string
+  payment_method: string
+  notes?: string
+  created_at?: string
 }
 
 export default function InvoiceDetail() {
@@ -760,35 +760,38 @@ export default function InvoiceDetail() {
         )}
 
         {/* Payment Records */}
-        {paymentRecords.length > 0 && invoice && (
+        {invoice && (
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold text-white">📋 Payment History</h2>
             </CardHeader>
             <CardBody className="space-y-4">
-              {paymentRecords.map((payment, idx) => (
-                <div 
-                  key={payment.id}
-                  className={`p-4 glass rounded-lg ${idx < paymentRecords.length - 1 ? 'border-b border-white/10' : ''}`}
-                >
-                  <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
-                    <div>
-                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice?.currency_code || currencyCode || 'MYR')} via {payment.payment_type.toUpperCase()}</p>
-                      <p className="text-gray-400 text-sm mt-1">{new Date(payment.payment_date).toLocaleDateString()}</p>
+              {paymentRecords.filter(p => (p.amount || 0) > 0).length > 0 ? (
+                paymentRecords.filter(p => (p.amount || 0) > 0).map((payment, idx, filtered) => (
+                  <div 
+                    key={payment.id}
+                    className={`p-4 glass rounded-lg ${idx < filtered.length - 1 ? 'border-b border-white/10' : ''}`}
+                  >
+                    <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
+                      <div>
+                        <p className="text-white font-semibold">{formatCurrency(payment.amount || 0, invoice?.currency_code || currencyCode || 'MYR')} via {(payment.payment_method || 'Unknown').toUpperCase()}</p>
+                        <p className="text-gray-400 text-sm mt-1">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}</p>
+                      </div>
+                      <span className={`px-4 py-2 rounded-full text-sm font-medium border bg-green-500/20 border-green-400/30 text-green-300`}>
+                        Completed
+                      </span>
                     </div>
-                    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
-                      payment.status === 'completed' 
-                        ? 'bg-green-500/20 border-green-400/30 text-green-300'
-                        : 'bg-blue-500/20 border-blue-400/30 text-blue-300'
-                    }`}>
-                      {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                    </span>
+                    {payment.notes && (
+                      <p className="text-gray-400 text-sm mt-3">{payment.notes}</p>
+                    )}
                   </div>
-                  {payment.tx_hash && (
-                    <p className="text-gray-400 text-sm mt-3 font-mono break-all">TX: {payment.tx_hash}</p>
-                  )}
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">No payment records yet</p>
+                  <p className="text-gray-500 text-sm mt-2">Payments you record will appear here</p>
                 </div>
-              ))}
+              )}
             </CardBody>
           </Card>
         )}
