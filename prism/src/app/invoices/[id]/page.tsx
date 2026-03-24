@@ -760,16 +760,16 @@ export default function InvoiceDetail() {
         )}
 
         {/* Payment Records */}
-        {paymentRecords.length > 0 && invoice && (
+        {invoice && paymentRecords.filter(p => (p.amount_paid || 0) > 0).length > 0 && (
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold text-white">📋 Payment History</h2>
             </CardHeader>
             <CardBody className="space-y-4">
-              {paymentRecords.map((payment, idx) => (
+              {paymentRecords.filter(p => (p.amount_paid || 0) > 0).map((payment, idx, filtered) => (
                 <div 
                   key={payment.id}
-                  className={`p-4 glass rounded-lg ${idx < paymentRecords.length - 1 ? 'border-b border-white/10' : ''}`}
+                  className={`p-4 glass rounded-lg ${idx < filtered.length - 1 ? 'border-b border-white/10' : ''}`}
                 >
                   <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div>
