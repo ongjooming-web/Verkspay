@@ -48,6 +48,9 @@ export default function Invoices() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [paidByCurrency, setPaidByCurrency] = useState<Record<string, number>>({})
   const [pendingByCurrency, setPendingByCurrency] = useState<Record<string, number>>({})
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [showSuggestionsPanel, setShowSuggestionsPanel] = useState(false)
+  const [additionalSuggestions, setAdditionalSuggestions] = useState<any[]>([])
   
   // Auto-update overdue status based on due_date
   const updateOverdueStatus = async () => {
@@ -137,6 +140,65 @@ export default function Invoices() {
       }
     }
   }, [refreshTrigger])
+
+  // Fetch suggestions and auto-populate form
+  const handleClientChange = async (clientId: string) => {
+    setFormData({ ...formData, client_id: clientId })
+    
+    if (!clientId) return
+
+    setSuggestionsLoading(true)
+    try {
+      const response = await fetch(`/api/invoices/suggestions?clientId=${clientId}`)
+      const suggestions = await response.json()
+
+      // If no history (invoice_count === 0), don't auto-populate
+      if (suggestions.invoice_count === 0) {
+        setSuggestionsLoading(false)
+        return
+      }
+
+      // Auto-populate payment_terms (if field is still empty)
+      if (!formData.payment_terms || formData.payment_terms === 'Net 30') {
+        if (suggestions.payment_terms) {
+          setFormData(prev => ({ ...prev, payment_terms: suggestions.payment_terms }))
+        }
+      }
+
+      // Auto-populate line items with top 3 suggestions
+      if (suggestions.suggested_line_items && suggestions.suggested_line_items.length > 0) {
+        const topThree = suggestions.suggested_line_items.slice(0, 3)
+        const newLineItems = topThree.map((item: any) => ({
+          description: item.description,
+          quantity: item.quantity || 1,
+          rate: item.rate,
+          amount: (item.quantity || 1) * item.rate
+        }))
+        setLineItems(newLineItems)
+        
+        // Store additional suggestions for "Suggested from history" panel
+        if (suggestions.suggested_line_items.length > 3) {
+          setAdditionalSuggestions(suggestions.suggested_line_items.slice(3))
+          setShowSuggestionsPanel(true)
+        }
+      }
+
+      // Show "✨ Auto-filled from history" indicator (fade after 3 seconds)
+      const indicator = document.getElementById('auto-fill-indicator')
+      if (indicator) {
+        indicator.style.display = 'block'
+        setTimeout(() => {
+          indicator.style.opacity = '0'
+          setTimeout(() => (indicator.style.display = 'none'), 300)
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('[InvoicesList] Error fetching suggestions:', error)
+      // Silently fail - suggestions are optional
+    } finally {
+      setSuggestionsLoading(false)
+    }
+  }
 
   const fetchClients = async () => {
     const { data } = await supabase.from('clients').select('id, name')
@@ -351,7 +413,7 @@ export default function Invoices() {
                     <label className="text-gray-400 text-sm mb-2 block">Client *</label>
                     <select
                       value={formData.client_id}
-                      onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                      onChange={(e) => handleClientChange(e.target.value)}
                       required
                       className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 appearance-none"
                     >
@@ -489,6 +551,64 @@ export default function Invoices() {
                   </div>
                 </div>
 
+                {/* Auto-fill Indicator */}
+                <div
+                  id="auto-fill-indicator"
+                  style={{
+                    display: 'none',
+                    opacity: '1',
+                    transition: 'opacity 0.3s ease',
+                    backgroundColor: '#10b981',
+                    color: '#fff',
+                    padding: '12px 16px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    textAlign: 'center'
+                  }}
+                >
+                  ✨ Auto-filled from history
+                </div>
+
+                {/* Suggested from History Panel */}
+                {showSuggestionsPanel && additionalSuggestions.length > 0 && (
+                  <div className="border border-blue-400/30 bg-blue-500/10 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-gray-400 text-sm font-semibold">💡 Suggested from History</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowSuggestionsPanel(false)}
+                        className="text-gray-400 hover:text-gray-200 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {additionalSuggestions.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-800/50 px-3 py-2 rounded">
+                          <div>
+                            <p className="text-white text-sm">{item.description}</p>
+                            <p className="text-gray-400 text-xs">Rate: {formatCurrency(item.rate, currencyCode)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLineItems([...lineItems, {
+                                description: item.description,
+                                quantity: item.quantity || 1,
+                                rate: item.rate,
+                                amount: (item.quantity || 1) * item.rate
+                              }])
+                            }}
+                            className="text-blue-400 hover:text-blue-300 text-sm font-semibold whitespace-nowrap ml-2"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-gray-400 text-sm mb-2 block">Invoice Notes (Optional)</label>
                   <textarea
@@ -499,8 +619,8 @@ export default function Invoices() {
                     className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
                   />
                 </div>
-                <Button type="submit" variant="primary">
-                  ✓ Create Invoice
+                <Button type="submit" variant="primary" disabled={suggestionsLoading}>
+                  {suggestionsLoading ? '⏳ Loading...' : '✓ Create Invoice'}
                 </Button>
               </form>
             </CardBody>
