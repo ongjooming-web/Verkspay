@@ -118,17 +118,8 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-center mb-4">Simple, transparent pricing</h2>
           <p className="text-center text-gray-400 mb-16">Choose the plan that fits your needs</p>
           
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              {
-                name: 'Free',
-                price: '$0',
-                period: '/mo',
-                desc: 'Perfect for trying Prism',
-                features: ['5 invoices/month', '3 payment links', 'Basic CRM', 'Contract templates', 'Community support'],
-                cta: 'Get Started',
-                highlighted: false
-              },
               {
                 name: 'Starter',
                 price: '$19',
