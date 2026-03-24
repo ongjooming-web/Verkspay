@@ -131,12 +131,11 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold mb-4">Simple, transparent pricing</h1>
-            <p className="text-xl text-gray-400">Start free for 15 days. Credit card required.</p>
-            <p className="text-sm text-gray-500 mt-2">After your trial, choose a plan that fits your needs</p>
+            <p className="text-xl text-gray-400">15-day free trial. Choose your plan.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6 mb-16">
-            {plans.map((plan, i) => (
+          <div className="grid md:grid-cols-3 gap-6 mb-16">
+            {plans.filter(plan => plan.name !== 'Trial').map((plan, i) => (
               <Card
                 key={i}
                 className={`flex flex-col relative ${
