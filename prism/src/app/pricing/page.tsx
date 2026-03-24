@@ -29,10 +29,17 @@ export default function PricingPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ plan })
+        body: JSON.stringify({ plan, billingPeriod })
       })
 
       const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Checkout error:', data)
+        const errorMsg = data.error || 'Failed to start checkout'
+        alert(`Error: ${errorMsg}\n\nPlease check the console for details.`)
+        return
+      }
 
       if (data.url) {
         window.location.href = data.url
@@ -40,8 +47,8 @@ export default function PricingPage() {
         alert('Failed to start checkout. Please try again.')
       }
     } catch (err) {
-      console.error('Error:', err)
-      alert('Something went wrong. Please try again.')
+      console.error('Checkout error:', err)
+      alert(`Something went wrong: ${err instanceof Error ? err.message : 'Unknown error'}\n\nPlease try again.`)
     } finally {
       setLoading(false)
     }

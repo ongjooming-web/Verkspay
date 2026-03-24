@@ -38,18 +38,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { plan, currency_code } = await request.json()
+    const { plan, currency_code, billingPeriod } = await request.json()
 
-    // Map plan names to Stripe price IDs
-    const priceMap: Record<string, string> = {
-      pro: process.env.STRIPE_PRICE_ID_PRO!,
-      enterprise: process.env.STRIPE_PRICE_ID_ENTERPRISE!,
-    }
+    // Map plan names and billing periods to Stripe price IDs
+    // Format: STRIPE_PRICE_ID_[PLAN]_[BILLING]
+    const priceMapKey = `STRIPE_PRICE_ID_${plan.toUpperCase()}_${(billingPeriod || 'monthly').toUpperCase()}`
+    const priceId = process.env[priceMapKey]
 
-    const priceId = priceMap[plan]
     if (!priceId) {
+      console.error(
+        `Missing Stripe price ID: ${priceMapKey}. 
+        Ensure this is set in Vercel environment variables:
+        STRIPE_PRICE_ID_STARTER_MONTHLY, STRIPE_PRICE_ID_STARTER_ANNUAL,
+        STRIPE_PRICE_ID_PRO_MONTHLY, STRIPE_PRICE_ID_PRO_ANNUAL,
+        STRIPE_PRICE_ID_ENTERPRISE_MONTHLY, STRIPE_PRICE_ID_ENTERPRISE_ANNUAL`
+      )
       return NextResponse.json(
-        { error: 'Invalid plan' },
+        { error: `Invalid plan or billing period: ${plan} - ${billingPeriod || 'monthly'}. Missing Stripe price ID.` },
         { status: 400 }
       )
     }
