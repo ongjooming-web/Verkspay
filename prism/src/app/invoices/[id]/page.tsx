@@ -43,11 +43,11 @@ interface Invoice {
 
 interface PaymentRecord {
   id: string
-  amount_paid: number
+  amount: number
   payment_date: string
-  payment_type: string
-  tx_hash?: string
-  status: string
+  payment_method: string
+  notes?: string
+  created_at?: string
 }
 
 export default function InvoiceDetail() {
