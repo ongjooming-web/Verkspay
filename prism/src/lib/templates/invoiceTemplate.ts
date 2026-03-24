@@ -1,5 +1,12 @@
 import { formatCurrency } from '@/lib/countries'
 
+export interface LineItem {
+  description: string
+  quantity: number
+  rate: number
+  amount: number
+}
+
 export interface InvoiceTemplateData {
   // Business Information (5 fields from Settings)
   business_name: string
@@ -16,6 +23,8 @@ export interface InvoiceTemplateData {
   payment_terms?: string
   description?: string
   currency_code: string
+  // Line Items (new)
+  line_items?: LineItem[] | null
   // Amounts
   subtotal: number
   tax_rate?: number
@@ -129,15 +138,31 @@ export function generateInvoiceHTML(data: InvoiceTemplateData): string {
     <table>
       <thead>
         <tr>
-          <th style="width:60%">Description</th>
+          <th style="width:50%">Description</th>
+          <th style="text-align:right">Qty</th>
+          <th style="text-align:right">Rate</th>
           <th style="text-align:right">Amount</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>${data.description || 'Professional Services'}</td>
-          <td>${formatCurrency(data.subtotal, data.currency_code)}</td>
-        </tr>
+        ${data.line_items && data.line_items.length > 0
+          ? data.line_items.map(item => `
+            <tr>
+              <td>${item.description}</td>
+              <td style="text-align:right">${item.quantity}</td>
+              <td style="text-align:right">${formatCurrency(item.rate, data.currency_code)}</td>
+              <td style="text-align:right">${formatCurrency(item.amount, data.currency_code)}</td>
+            </tr>
+          `).join('')
+          : `
+            <tr>
+              <td>${data.description || 'Professional Services'}</td>
+              <td style="text-align:right">1</td>
+              <td style="text-align:right">${formatCurrency(data.subtotal, data.currency_code)}</td>
+              <td style="text-align:right">${formatCurrency(data.subtotal, data.currency_code)}</td>
+            </tr>
+          `
+        }
       </tbody>
     </table>
     <table class="totals-table">

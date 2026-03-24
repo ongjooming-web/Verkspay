@@ -100,6 +100,7 @@ export async function GET(
       payment_terms: invoice.payment_terms,
       description: invoice.description,
       currency_code: invoice.currency_code || 'MYR',
+      line_items: invoice.line_items || null,
       subtotal,
       tax_rate: taxRate,
       tax_amount: taxAmount,
