@@ -773,8 +773,8 @@ export default function InvoiceDetail() {
                 >
                   <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                     <div>
-                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid, invoice?.currency_code || currencyCode || 'MYR')} via {(payment.payment_type || 'Unknown').toUpperCase()}</p>
-                      <p className="text-gray-400 text-sm mt-1">{new Date(payment.payment_date).toLocaleDateString()}</p>
+                      <p className="text-white font-semibold">{formatCurrency(payment.amount_paid || 0, invoice?.currency_code || currencyCode || 'MYR')} via {(payment.payment_type || 'Unknown').toUpperCase()}</p>
+                      <p className="text-gray-400 text-sm mt-1">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}</p>
                     </div>
                     <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
                       payment.status === 'completed' 
