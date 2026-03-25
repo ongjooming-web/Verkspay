@@ -279,7 +279,155 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        console.log(`Payment failed for ${invoice.customer}`)
+        console.log(`[Webhook] Payment failed for ${invoice.customer}`)
+        break
+      }
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = subscription.customer as string
+        const subscriptionId = subscription.id
+
+        console.log(`[Webhook] ${event.type} event received`)
+        console.log('[Webhook] Processing subscription:', { 
+          subscriptionId, 
+          customerId,
+          itemsCount: subscription.items?.data?.length 
+        })
+
+        // Extract price ID from subscription items
+        if (!subscription.items?.data || subscription.items.data.length === 0) {
+          console.error('[Webhook] No items in subscription')
+          break
+        }
+
+        const priceId = subscription.items.data[0].price?.id
+        if (!priceId) {
+          console.error('[Webhook] No price ID found in subscription items')
+          break
+        }
+
+        console.log('[Webhook] Price ID:', priceId)
+
+        // Map price ID to plan
+        let planToUpdate = getPlanFromPriceId(priceId)
+        console.log('[Webhook] Matched plan from price ID:', planToUpdate)
+
+        if (!planToUpdate) {
+          console.error('[Webhook] Could not match price ID to any plan:', priceId)
+          console.error('[Webhook] Available env vars:', {
+            starter_monthly: !!process.env.STRIPE_PRICE_ID_STARTER_MONTHLY,
+            starter_annual: !!process.env.STRIPE_PRICE_ID_STARTER_ANNUAL,
+            pro_monthly: !!process.env.STRIPE_PRICE_ID_PRO_MONTHLY,
+            pro_annual: !!process.env.STRIPE_PRICE_ID_PRO_ANNUAL,
+            enterprise_monthly: !!process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY,
+            enterprise_annual: !!process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL,
+          })
+          break
+        }
+
+        // Find user by stripe_customer_id
+        console.log('[Webhook] Looking up user by customer ID:', customerId)
+        const { data: users, error: findError } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .eq('stripe_customer_id', customerId)
+
+        if (findError) {
+          console.error('[Webhook] Error finding user by customer ID:', findError.message)
+          break
+        }
+
+        if (!users || users.length === 0) {
+          console.warn('[Webhook] No user found with customer ID:', customerId)
+          console.log('[Webhook] Note: User may not have completed checkout yet')
+          break
+        }
+
+        const userId = users[0].id
+        console.log('[Webhook] Found user:', { userId, email: users[0].email })
+
+        // Update user's subscription
+        console.log('[Webhook] Updating subscription:', {
+          userId,
+          plan: planToUpdate,
+          status: 'active',
+          subscriptionId
+        })
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            plan: planToUpdate,
+            subscription_status: 'active',
+            stripe_subscription_id: subscriptionId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('[Webhook] ❌ Failed to update subscription:', {
+            userId,
+            error: updateError.message,
+            hint: updateError.hint
+          })
+        } else {
+          console.log(`[Webhook] ✓ User ${userId} subscription updated to ${planToUpdate}`)
+        }
+        break
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = subscription.customer as string
+
+        console.log('[Webhook] Subscription deleted:', { 
+          subscriptionId: subscription.id,
+          customerId 
+        })
+
+        // Find user by Stripe customer ID
+        const { data: users, error: findError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+
+        if (findError) {
+          console.error('[Webhook] Error finding user by customer ID:', {
+            customerId,
+            error: findError.message
+          })
+          break
+        }
+
+        if (!users || users.length === 0) {
+          console.warn('[Webhook] No user found with customer ID:', customerId)
+          break
+        }
+
+        const userId = users[0].id
+        console.log('[Webhook] Found user to downgrade:', userId)
+
+        // Downgrade to trial
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            plan: 'trial',
+            subscription_status: 'canceled',
+            stripe_subscription_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('[Webhook] ❌ Failed to downgrade user:', {
+            userId,
+            error: updateError.message
+          })
+        } else {
+          console.log(`[Webhook] ✓ User ${userId} downgraded to trial (subscription canceled)`)
+        }
         break
       }
     }
