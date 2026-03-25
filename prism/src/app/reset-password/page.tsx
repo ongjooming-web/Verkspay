@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -13,7 +13,39 @@ export default function ResetPassword() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionReady, setSessionReady] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    // Check if user has a valid session from the password reset email link
+    const checkSession = async () => {
+      try {
+        console.log('[ResetPassword] Checking for valid reset session...')
+        
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error('[ResetPassword] Session error:', sessionError)
+          setError('Invalid or expired reset link. Please request a new one.')
+          return
+        }
+
+        if (!session) {
+          console.error('[ResetPassword] No session found')
+          setError('Invalid reset link. Please request a new password reset.')
+          return
+        }
+
+        console.log('[ResetPassword] Valid session found for user:', session.user.email)
+        setSessionReady(true)
+      } catch (err) {
+        console.error('[ResetPassword] Unexpected error checking session:', err)
+        setError('An error occurred. Please try again.')
+      }
+    }
+
+    checkSession()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,17 +74,27 @@ export default function ResetPassword() {
 
       console.log('[ResetPassword] Updating password...')
 
+      // Use updateUser which requires a valid session (from the reset email link)
       const { error } = await supabase.auth.updateUser({
         password: password,
       })
 
       if (error) {
         console.error('[ResetPassword] Error:', error)
-        setError(error.message || 'Failed to reset password')
+        // Check if it's a session error
+        if (error.status === 401 || error.message?.includes('session')) {
+          setError('Reset link expired. Please request a new password reset.')
+        } else {
+          setError(error.message || 'Failed to reset password')
+        }
         setLoading(false)
       } else {
         console.log('[ResetPassword] Password updated successfully')
-        setSuccess('✓ Password reset successful! Redirecting...')
+        setSuccess('✓ Password reset successful! Redirecting to login...')
+        
+        // Sign out to clear the reset session
+        await supabase.auth.signOut()
+        
         setTimeout(() => {
           router.push('/login')
         }, 2000)
@@ -101,57 +143,76 @@ export default function ResetPassword() {
           <p className="text-gray-400 text-sm mt-2">Create a new password</p>
         </CardHeader>
         <CardBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
+          {!sessionReady && !error && (
+            <div className="text-center py-8">
+              <p className="text-gray-400 text-sm">Verifying reset link...</p>
+              <div className="mt-4 inline-block">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="space-y-4">
               <div className="glass border-red-500/50 bg-red-500/10 text-red-300 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
-            )}
-            {success && (
-              <div className="glass border-green-500/50 bg-green-500/10 text-green-300 px-4 py-3 rounded-lg text-sm">
-                {success}
+              <Link href="/forgot-password">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  📧 Request New Reset Link
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {sessionReady && !error && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {success && (
+                <div className="glass border-green-500/50 bg-green-500/10 text-green-300 px-4 py-3 rounded-lg text-sm">
+                  {success}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={!!success}
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="••••••••"
+                />
+                <p className="text-gray-500 text-xs mt-1">Min. 8 characters</p>
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={!!success}
-                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="••••••••"
-              />
-              <p className="text-gray-500 text-xs mt-1">Min. 8 characters</p>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={!!success}
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={!!success}
-                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading || !!success}
-              className="w-full"
-            >
-              {loading ? '⏳ Resetting...' : '🔐 Reset Password'}
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                disabled={loading || !!success}
+                className="w-full"
+              >
+                {loading ? '⏳ Resetting...' : '🔐 Reset Password'}
+              </Button>
+            </form>
+          )}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-400">
