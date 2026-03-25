@@ -552,7 +552,7 @@ function BillingSection() {
     }
   }
 
-  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+  const handleUpgrade = async (plan: 'starter' | 'pro' | 'enterprise') => {
     try {
       console.log('[BillingSection] Starting upgrade for plan:', plan)
       
@@ -656,12 +656,13 @@ function BillingSection() {
   const tier = profile?.subscription_tier || 'free'
   const tierNames: { [key: string]: string } = {
     'free': 'Free',
-    'pro': 'Starter',
-    'enterprise': 'Pro'
+    'starter': 'Starter',
+    'pro': 'Pro',
+    'enterprise': 'Enterprise'
   }
   const tierDisplay = tierNames[tier] || 'Free'
-  const invoiceLimit = tier === 'free' ? 5 : Infinity
-  const linkLimit = tier === 'free' ? 3 : Infinity
+  const invoiceLimit = tier === 'free' ? 5 : tier === 'starter' ? 20 : Infinity
+  const linkLimit = tier === 'free' ? 3 : tier === 'starter' ? 10 : Infinity
 
   return (
     <Card className="mb-6 border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
@@ -678,11 +679,14 @@ function BillingSection() {
               {tier === 'free' && (
                 <p className="text-gray-400 text-xs mt-2">Perfect for trying out Prism</p>
               )}
+              {tier === 'starter' && (
+                <p className="text-green-400 text-xs mt-2">✓ $19/month · Up to 20 invoices/month · Smart Invoice Creation</p>
+              )}
               {tier === 'pro' && (
-                <p className="text-green-400 text-xs mt-2">✓ $19/month · Unlimited invoices · Smart reminders</p>
+                <p className="text-green-400 text-xs mt-2">✓ $49/month · Unlimited invoices · Partial payments · AI Insights</p>
               )}
               {tier === 'enterprise' && (
-                <p className="text-green-400 text-xs mt-2">✓ $49/month · Everything + recurring invoices</p>
+                <p className="text-green-400 text-xs mt-2">✓ $199/month · Everything in Pro + Multi-entity support</p>
               )}
               {tier !== 'free' && (
                 <p className="text-gray-400 text-sm mt-3">
@@ -692,7 +696,7 @@ function BillingSection() {
             </div>
             {tier === 'free' && (
               <Button
-                onClick={() => handleUpgrade('pro')}
+                onClick={() => handleUpgrade('starter')}
                 className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 whitespace-nowrap"
               >
                 Upgrade →
@@ -723,21 +727,62 @@ function BillingSection() {
           {tier === 'free' && (
             <>
               <Button
-                onClick={() => handleUpgrade('pro')}
+                onClick={() => handleUpgrade('starter')}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 font-semibold"
               >
                 Upgrade to Starter - $19/mo
               </Button>
               <Button
-                onClick={() => handleUpgrade('enterprise')}
+                onClick={() => handleUpgrade('pro')}
                 className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
               >
                 Upgrade to Pro - $49/mo
               </Button>
+              <Button
+                onClick={() => handleUpgrade('enterprise')}
+                className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
+              >
+                Upgrade to Enterprise - $199/mo
+              </Button>
             </>
           )}
 
-          {tier !== 'free' && (
+          {(tier === 'starter' || tier === 'pro') && (
+            <>
+              {tier === 'starter' && (
+                <>
+                  <Button
+                    onClick={() => handleUpgrade('pro')}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
+                  >
+                    Upgrade to Pro - $49/mo
+                  </Button>
+                  <Button
+                    onClick={() => handleUpgrade('enterprise')}
+                    className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
+                  >
+                    Upgrade to Enterprise - $199/mo
+                  </Button>
+                </>
+              )}
+              {tier === 'pro' && (
+                <Button
+                  onClick={() => handleUpgrade('enterprise')}
+                  className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
+                >
+                  Upgrade to Enterprise - $199/mo
+                </Button>
+              )}
+              <Button
+                onClick={handleManageSubscription}
+                className="flex-1 bg-blue-600/70 hover:bg-blue-700/70 text-white"
+              >
+                📋 Manage Subscription
+              </Button>
+            </>
+          )}
+
+          {tier === 'enterprise' && (
             <Button
               onClick={handleManageSubscription}
               className="w-full bg-blue-600/70 hover:bg-blue-700/70 text-white"
