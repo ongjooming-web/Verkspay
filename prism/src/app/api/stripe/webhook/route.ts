@@ -125,68 +125,102 @@ export async function POST(request: NextRequest) {
         }
 
         // SUBSCRIPTION HANDLING - Update plan based on metadata or price ID
-        if (userId && session.customer) {
-          let planToUpdate = plan
+        let planToUpdate = plan
+        let targetUserId = userId
+        
+        console.log('[Webhook] ===== SUBSCRIPTION HANDLING START =====')
+        console.log('[Webhook] Session metadata:', session.metadata)
+        console.log('[Webhook] Customer email:', session.customer_email)
+        console.log('[Webhook] Customer ID:', session.customer)
+        console.log('[Webhook] UserId from metadata:', userId)
+        console.log('[Webhook] Plan from metadata:', plan)
+
+        // If plan not in metadata, try to get it from price ID
+        if (!planToUpdate) {
+          console.log('[Webhook] Plan not in metadata, checking line items...')
+          const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
+          console.log('[Webhook] Line items retrieved:', { count: lineItems.data?.length })
           
-          // If plan not in metadata, try to get it from price ID
-          if (!planToUpdate && session.line_items) {
-            console.log('[Webhook] Plan not in metadata, checking line items...')
-            const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
-            if (lineItems.data && lineItems.data.length > 0) {
-              const firstItem = lineItems.data[0]
-              console.log('[Webhook] First line item:', { price: firstItem.price?.id })
-              if (firstItem.price?.id) {
-                planToUpdate = getPlanFromPriceId(firstItem.price.id)
-                console.log('[Webhook] Detected plan from price ID:', planToUpdate)
-              }
+          if (lineItems.data && lineItems.data.length > 0) {
+            const firstItem = lineItems.data[0]
+            console.log('[Webhook] First line item:', { price: firstItem.price?.id, type: firstItem.price?.type })
+            
+            if (firstItem.price?.id) {
+              planToUpdate = getPlanFromPriceId(firstItem.price.id)
+              console.log('[Webhook] Detected plan from price ID:', planToUpdate)
             }
           }
-
-          if (!planToUpdate) {
-            console.error('[Webhook] No plan could be determined from metadata or price ID')
-            console.error('[Webhook] Session:', { 
-              id: session.id, 
-              customer: session.customer,
-              metadata: session.metadata,
-              line_items: session.line_items
-            })
-            break
-          }
-
-          console.log('[Webhook] Updating user subscription:', {
-            userId,
-            plan: planToUpdate,
-            customer: session.customer,
-            sessionId: session.id
-          })
-
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-              stripe_customer_id: session.customer as string,
-              plan: planToUpdate,
-              subscription_status: 'active',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', userId)
-
-          if (updateError) {
-            console.error('[Webhook] Failed to update user profile:', {
-              userId,
-              error: updateError.message,
-              details: updateError.details
-            })
-          } else {
-            console.log(`[Webhook] ✓ User ${userId} upgraded to ${planToUpdate}`)
-          }
-        } else {
-          console.warn('[Webhook] Missing required data for subscription update:', {
-            userId,
-            plan,
-            customer: session.customer,
-            metadata: session.metadata
-          })
         }
+
+        // If no userId, try to find user by email
+        if (!targetUserId && session.customer_email) {
+          console.log('[Webhook] No userId in metadata, searching by email:', session.customer_email)
+          const { data: users, error: emailError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', session.customer_email)
+            .single()
+
+          if (emailError) {
+            console.error('[Webhook] Error finding user by email:', {
+              email: session.customer_email,
+              error: emailError.message
+            })
+          } else if (users) {
+            targetUserId = users.id
+            console.log('[Webhook] Found user by email:', targetUserId)
+          }
+        }
+
+        if (!planToUpdate) {
+          console.error('[Webhook] No plan could be determined from metadata or price ID')
+          console.error('[Webhook] Full Session:', { 
+            id: session.id, 
+            customer: session.customer,
+            customer_email: session.customer_email,
+            metadata: session.metadata,
+            subscription: session.subscription
+          })
+          break
+        }
+
+        if (!targetUserId) {
+          console.error('[Webhook] No user ID could be determined')
+          console.error('[Webhook] Session metadata:', session.metadata)
+          console.error('[Webhook] Customer email:', session.customer_email)
+          break
+        }
+
+        console.log('[Webhook] Updating user subscription:', {
+          userId: targetUserId,
+          plan: planToUpdate,
+          customer: session.customer,
+          sessionId: session.id,
+          subscriptionId: session.subscription
+        })
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            stripe_customer_id: session.customer as string,
+            plan: planToUpdate,
+            subscription_status: 'active',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', targetUserId)
+
+        if (updateError) {
+          console.error('[Webhook] ❌ Failed to update user profile:', {
+            userId: targetUserId,
+            error: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint
+          })
+        } else {
+          console.log(`[Webhook] ✓ User ${targetUserId} upgraded to ${planToUpdate}`)
+        }
+        
+        console.log('[Webhook] ===== SUBSCRIPTION HANDLING END =====')
         break
       }
 
