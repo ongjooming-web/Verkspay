@@ -10,6 +10,7 @@ import { useCurrency } from '@/hooks/useCurrency'
 import { formatCurrency } from '@/lib/countries'
 import { groupByCurrency } from '@/lib/currency-helper'
 import { LineItem } from '@/types/invoice'
+import { generateInvoiceNumber } from '@/utils/invoice-numbering'
 
 interface Invoice {
   id: string
@@ -242,7 +243,16 @@ export default function Invoices() {
 
     // Subscription limits removed - all features unlocked for all users
 
-    const invoiceNumber = `INV-${Date.now()}`
+    // Generate sequential invoice number
+    let invoiceNumber: string
+    try {
+      invoiceNumber = await generateInvoiceNumber(userId, supabase)
+    } catch (err) {
+      console.error('[InvoicesList] Failed to generate invoice number:', err)
+      alert('Error generating invoice number. Please try again.')
+      return
+    }
+
     const paymentTerms = formData.payment_terms === 'Custom' 
       ? formData.custom_payment_terms 
       : formData.payment_terms
