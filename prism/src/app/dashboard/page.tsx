@@ -83,7 +83,7 @@ export default function Dashboard() {
         // Fetch invoices with detailed data
         const { data: invoicesData } = await supabase
           .from('invoices')
-          .select('amount, status, created_at, id, due_date, currency_code')
+          .select('amount, status, created_at, id, due_date, currency_code, amount_paid, remaining_balance')
           .eq('user_id', userId)
 
         // Fetch proposals count
@@ -92,30 +92,50 @@ export default function Dashboard() {
           .select('id', { count: 'exact' })
           .eq('user_id', userId)
 
-        // Calculate comprehensive stats
+        // Calculate comprehensive stats using amount_paid and remaining_balance
         const revenue = invoicesData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
-        const paidRevenue = invoicesData
-          ?.filter(inv => inv.status === 'paid')
-          .reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
-        const pendingRevenue = invoicesData
-          ?.filter(inv => inv.status !== 'paid')
-          .reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
         
+        // Paid revenue = SUM(amount_paid) across all invoices with payments
+        const paidRevenue = invoicesData
+          ?.filter(inv => (inv.amount_paid || 0) > 0)
+          .reduce((sum, inv) => sum + (inv.amount_paid || 0), 0) || 0
+        
+        // Pending revenue = SUM(remaining_balance) for unpaid/partial invoices
+        const pendingRevenue = invoicesData
+          ?.filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft')
+          .reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0) || 0
+        
+        // Overdue amount = SUM(remaining_balance) for overdue invoices
         const now = new Date()
-        const overdue = invoicesData?.filter(inv => 
-          inv.status !== 'paid' && new Date(inv.due_date) < now
-        ) || []
-        const overdueAmount = overdue.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+        const overdue = invoicesData?.filter(inv => {
+          const isDue = inv.due_date && new Date(inv.due_date) < now
+          const isUnpaid = inv.status !== 'paid' && inv.status !== 'draft'
+          return isDue && isUnpaid
+        }) || []
+        const overdueAmount = overdue.reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
         const overdueCount = overdue.length
         
         // Store overdue invoices for display with per-invoice currency
         setOverdueInvoices(overdue)
 
-        // Calculate per-currency breakdowns (no false conversions)
-        const paidInvoices = invoicesData?.filter(inv => inv.status === 'paid') || []
-        const pendingInvoices = invoicesData?.filter(inv => inv.status !== 'paid') || []
-        setPaidByCurrency(groupByCurrency(paidInvoices))
-        setPendingByCurrency(groupByCurrency(pendingInvoices))
+        // Calculate per-currency breakdowns using amount_paid for paid, remaining_balance for pending
+        const paidInvoices = invoicesData?.filter(inv => (inv.amount_paid || 0) > 0) || []
+        const pendingInvoices = invoicesData?.filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft') || []
+        
+        // For display, we need to adjust the grouping to use amount_paid/remaining_balance
+        const paidByCurrencyMap: Record<string, number> = {}
+        paidInvoices.forEach((inv: any) => {
+          const code = inv.currency_code || 'MYR'
+          paidByCurrencyMap[code] = (paidByCurrencyMap[code] || 0) + (inv.amount_paid || 0)
+        })
+        setPaidByCurrency(paidByCurrencyMap)
+
+        const pendingByCurrencyMap: Record<string, number> = {}
+        pendingInvoices.forEach((inv: any) => {
+          const code = inv.currency_code || 'MYR'
+          pendingByCurrencyMap[code] = (pendingByCurrencyMap[code] || 0) + (inv.remaining_balance || 0)
+        })
+        setPendingByCurrency(pendingByCurrencyMap)
 
         const clientCount = clientsData?.length || 0
         const invoiceCount = invoicesData?.length || 0
@@ -132,7 +152,7 @@ export default function Dashboard() {
           overdueAmount,
         })
 
-        // Generate monthly revenue data (last 6 months)
+        // Generate monthly revenue data (last 6 months) - using amount_paid for actual collected revenue
         const monthlyRevenue: { [key: string]: number } = {}
         const today = new Date()
         
@@ -143,11 +163,11 @@ export default function Dashboard() {
         }
 
         invoicesData?.forEach(inv => {
-          if (inv.status === 'paid') {
+          if ((inv.amount_paid || 0) > 0) {
             const date = new Date(inv.created_at)
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
             if (monthKey in monthlyRevenue) {
-              monthlyRevenue[monthKey] += inv.amount
+              monthlyRevenue[monthKey] += inv.amount_paid || 0
             }
           }
         })
@@ -178,13 +198,18 @@ export default function Dashboard() {
           { name: 'Overdue', value: statusCounts.overdue, color: '#FF6B6B' }
         ])
 
-        // Invoice status breakdown
+        // Invoice status breakdown - use amount_paid for paid, remaining_balance for unpaid
         const statusRevenue: { [key: string]: number } = {}
         invoicesData?.forEach(inv => {
           if (!(inv.status in statusRevenue)) {
             statusRevenue[inv.status] = 0
           }
-          statusRevenue[inv.status] += inv.amount
+          // For paid invoices, use amount_paid; for unpaid, use remaining_balance
+          if (inv.status === 'paid') {
+            statusRevenue[inv.status] += inv.amount_paid || 0
+          } else if (inv.status !== 'draft') {
+            statusRevenue[inv.status] += inv.remaining_balance || 0
+          }
         })
 
         setInvoicesByStatus(
