@@ -518,6 +518,34 @@ function BillingSection() {
       if (profileError) {
         console.error('[BillingSection] Profile error:', profileError)
         console.error('[BillingSection] Failed to fetch profile for user:', userId)
+        
+        // If profile doesn't exist, create one with defaults
+        if (profileError.code === 'PGRST116') {
+          console.log('[BillingSection] Profile not found, creating default profile')
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: user.email,
+              plan: 'trial',
+              subscription_status: 'active',
+              trial_end_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          
+          if (createError) {
+            console.error('[BillingSection] Failed to create default profile:', createError)
+          } else {
+            console.log('[BillingSection] Default profile created')
+            // Set default profile
+            setProfile({
+              plan: 'trial',
+              subscription_status: 'active',
+              trial_end_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+            })
+          }
+        }
       } else {
         console.log('[BillingSection] Profile loaded:', { 
           plan: profileData?.plan, 

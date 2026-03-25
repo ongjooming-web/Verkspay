@@ -59,23 +59,31 @@ export default function Signup() {
         console.log('Signup successful:', data)
         console.log('Email confirmation required:', !data.user.confirmed_at)
         
-        // Save terms acceptance to profile
+        // Create/update profile with user data
         try {
           const { error: profileError } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: data.user.id,
+              email: email,
+              plan: 'trial',
+              subscription_status: 'active',
+              trial_end_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
               terms_accepted_at: new Date().toISOString(),
-              terms_version: '1.0'
+              terms_version: '1.0',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
             })
-            .eq('id', data.user.id)
           
           if (profileError) {
-            console.warn('Failed to save terms acceptance:', profileError)
+            console.error('Failed to create profile:', profileError)
           } else {
-            console.log('Terms acceptance saved successfully')
+            console.log('Profile created successfully')
           }
         } catch (profileErr) {
-          console.warn('Error saving terms acceptance:', profileErr)
+          console.error('Error creating profile:', profileErr)
         }
         
         // Check if email confirmation is required
