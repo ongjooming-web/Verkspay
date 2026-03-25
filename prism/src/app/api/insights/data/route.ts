@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     console.log('[Insights] Data request for user:', userId)
 
     // Fetch all invoices for the user
-    const { data: invoices, error: invoiceError } = await supabase
+    const { data: invoicesData, error: invoiceError } = await supabase
       .from('invoices')
       .select(
         `
@@ -107,9 +107,9 @@ export async function GET(request: NextRequest) {
 
     if (invoiceError) {
       console.error('[Insights] Error fetching invoices:', invoiceError)
-      // Return empty data instead of erroring for new users
-      invoices = []
     }
+
+    const invoices = invoicesData || []
 
     // If no invoices, return zeroed-out data
     if (!invoices || invoices.length === 0) {
@@ -308,7 +308,7 @@ export async function GET(request: NextRequest) {
     })
     const accountAgeDays = Math.round((now.getTime() - new Date(oldestInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24))
 
-    const data: InsightsData = {
+    const insightsData: InsightsData = {
       revenue: {
         total_paid: totalPaid,
         total_pending: totalPending,
@@ -338,7 +338,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[Insights] Data aggregation complete:', { userId, invoiceCount: invoices.length })
-    return NextResponse.json(data)
+    return NextResponse.json(insightsData)
   } catch (error) {
     console.error('[Insights] Data error:', error)
     return NextResponse.json(
