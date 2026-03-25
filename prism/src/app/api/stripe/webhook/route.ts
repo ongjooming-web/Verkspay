@@ -11,6 +11,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+/**
+ * Map Stripe price IDs to plan names
+ */
+function getPlanFromPriceId(priceId: string): string | null {
+  const priceMap: { [key: string]: string } = {
+    [process.env.STRIPE_PRICE_ID_STARTER_MONTHLY || '']: 'starter',
+    [process.env.STRIPE_PRICE_ID_STARTER_ANNUAL || '']: 'starter',
+    [process.env.STRIPE_PRICE_ID_PRO_MONTHLY || '']: 'pro',
+    [process.env.STRIPE_PRICE_ID_PRO_ANNUAL || '']: 'pro',
+    [process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY || '']: 'enterprise',
+    [process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL || '']: 'enterprise',
+  }
+  return priceMap[priceId] || null
+}
+
 export async function POST(request: NextRequest) {
   try {
     const sig = request.headers.get('stripe-signature')
@@ -109,19 +124,68 @@ export async function POST(request: NextRequest) {
           console.log(`[Webhook] Invoice ${invoiceId} updated: amount_paid=$${newAmountPaid}, status=${newStatus}`)
         }
 
-        // SUBSCRIPTION HANDLING
-        if (userId && plan && session.customer) {
-          await supabase
+        // SUBSCRIPTION HANDLING - Update plan based on metadata or price ID
+        if (userId && session.customer) {
+          let planToUpdate = plan
+          
+          // If plan not in metadata, try to get it from price ID
+          if (!planToUpdate && session.line_items) {
+            console.log('[Webhook] Plan not in metadata, checking line items...')
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
+            if (lineItems.data && lineItems.data.length > 0) {
+              const firstItem = lineItems.data[0]
+              console.log('[Webhook] First line item:', { price: firstItem.price?.id })
+              if (firstItem.price?.id) {
+                planToUpdate = getPlanFromPriceId(firstItem.price.id)
+                console.log('[Webhook] Detected plan from price ID:', planToUpdate)
+              }
+            }
+          }
+
+          if (!planToUpdate) {
+            console.error('[Webhook] No plan could be determined from metadata or price ID')
+            console.error('[Webhook] Session:', { 
+              id: session.id, 
+              customer: session.customer,
+              metadata: session.metadata,
+              line_items: session.line_items
+            })
+            break
+          }
+
+          console.log('[Webhook] Updating user subscription:', {
+            userId,
+            plan: planToUpdate,
+            customer: session.customer,
+            sessionId: session.id
+          })
+
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({
               stripe_customer_id: session.customer as string,
-              plan: plan,
+              plan: planToUpdate,
               subscription_status: 'active',
               updated_at: new Date().toISOString(),
             })
             .eq('id', userId)
 
-          console.log(`User ${userId} upgraded to ${plan}`)
+          if (updateError) {
+            console.error('[Webhook] Failed to update user profile:', {
+              userId,
+              error: updateError.message,
+              details: updateError.details
+            })
+          } else {
+            console.log(`[Webhook] ✓ User ${userId} upgraded to ${planToUpdate}`)
+          }
+        } else {
+          console.warn('[Webhook] Missing required data for subscription update:', {
+            userId,
+            plan,
+            customer: session.customer,
+            metadata: session.metadata
+          })
         }
         break
       }
@@ -130,14 +194,27 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        // Find user by Stripe customer ID and downgrade to free
-        const { data: users } = await supabase
+        console.log('[Webhook] Subscription canceled:', { 
+          subscriptionId: subscription.id,
+          customerId 
+        })
+
+        // Find user by Stripe customer ID and downgrade to trial
+        const { data: users, error: findError } = await supabase
           .from('profiles')
           .select('id')
           .eq('stripe_customer_id', customerId)
 
+        if (findError) {
+          console.error('[Webhook] Error finding user by customer ID:', {
+            customerId,
+            error: findError.message
+          })
+          break
+        }
+
         if (users && users.length > 0) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({
               plan: 'trial',
@@ -146,7 +223,16 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', users[0].id)
 
-          console.log(`User ${users[0].id} subscription canceled`)
+          if (updateError) {
+            console.error('[Webhook] Failed to update plan on subscription cancel:', {
+              userId: users[0].id,
+              error: updateError.message
+            })
+          } else {
+            console.log(`[Webhook] ✓ User ${users[0].id} subscription canceled, plan set to trial`)
+          }
+        } else {
+          console.warn('[Webhook] No user found with customer ID:', customerId)
         }
         break
       }
