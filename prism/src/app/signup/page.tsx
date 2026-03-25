@@ -57,6 +57,7 @@ export default function Signup() {
         setLoading(false)
       } else if (data.user) {
         console.log('Signup successful:', data)
+        console.log('Email confirmation required:', !data.user.confirmed_at)
         
         // Save terms acceptance to profile
         try {
@@ -77,10 +78,20 @@ export default function Signup() {
           console.warn('Error saving terms acceptance:', profileErr)
         }
         
-        setSuccess('Account created! Redirecting to onboarding...')
-        setTimeout(() => {
-          window.location.href = '/onboarding'
-        }, 1500)
+        // Check if email confirmation is required
+        if (!data.user.confirmed_at) {
+          console.log('Email confirmation required - redirecting to verify-email')
+          setSuccess('Account created! Check your email to verify.')
+          setTimeout(() => {
+            router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+          }, 1500)
+        } else {
+          console.log('Email already confirmed - redirecting to onboarding')
+          setSuccess('Account created! Redirecting to onboarding...')
+          setTimeout(() => {
+            router.push('/onboarding')
+          }, 1500)
+        }
       }
     } catch (err) {
       console.error('Unexpected error during signup:', err)

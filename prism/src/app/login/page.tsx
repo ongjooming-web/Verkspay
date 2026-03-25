@@ -38,12 +38,35 @@ export default function Login() {
 
       if (error) {
         console.error('Login error:', error)
-        setError(error.message || 'Failed to sign in')
-        setLoading(false)
-      } else {
+        
+        // Check if it's an unconfirmed email error
+        if (error.message?.includes('Email not confirmed') || error.status === 422) {
+          console.log('User email not confirmed')
+          setError('Please verify your email first')
+          setLoading(false)
+          // Show resend button by displaying verify-email page
+          setTimeout(() => {
+            router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+          }, 1500)
+        } else {
+          setError(error.message || 'Failed to sign in')
+          setLoading(false)
+        }
+      } else if (data.user) {
         console.log('Login successful:', data)
-        // Just navigate directly
-        router.push('/dashboard')
+        
+        // Check if email is confirmed
+        if (!data.user.confirmed_at) {
+          console.log('User email not confirmed - redirecting to verify-email')
+          setError('Please verify your email first')
+          setLoading(false)
+          setTimeout(() => {
+            router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+          }, 1500)
+        } else {
+          console.log('Email confirmed - redirecting to dashboard')
+          router.push('/dashboard')
+        }
       }
     } catch (err) {
       console.error('Unexpected error during login:', err)
