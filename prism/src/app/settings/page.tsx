@@ -510,7 +510,7 @@ function BillingSection() {
       // Get full profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('subscription_tier, subscription_status, trial_expires_at')
+        .select('plan, subscription_status, trial_expires_at')
         .eq('id', userId)
         .single()
 
@@ -660,7 +660,7 @@ function BillingSection() {
     )
   }
 
-  const tier = profile?.subscription_tier || 'trial'
+  const tier = profile?.plan || 'trial'
   const isMaster = isMasterAccount(userEmail)
   
   // Plan configuration

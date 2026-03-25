@@ -33,14 +33,14 @@ export async function checkSubscriptionLimits(
       supabaseKey
     )
 
-    // Get user's subscription tier
+    // Get user's plan
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('plan')
       .eq('id', userId)
       .single()
 
-    const tier = profile?.subscription_tier || 'free'
+    const tier = profile?.plan || 'trial'
 
     // Get current month counts
     const now = new Date()
@@ -79,7 +79,7 @@ export async function checkSubscriptionLimits(
 }
 
 /**
- * Get user's subscription tier
+ * Get user's plan
  */
 export async function getUserTier(userId: string) {
   try {
@@ -90,13 +90,13 @@ export async function getUserTier(userId: string) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('plan')
       .eq('id', userId)
       .single()
 
-    return profile?.subscription_tier || 'free'
+    return profile?.plan || 'trial'
   } catch (error) {
-    console.error('Error getting user tier:', error)
-    return 'free'
+    console.error('Error getting user plan:', error)
+    return 'trial'
   }
 }

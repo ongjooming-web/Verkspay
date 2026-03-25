@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
             .from('profiles')
             .update({
               stripe_customer_id: session.customer as string,
-              subscription_tier: plan,
+              plan: plan,
               subscription_status: 'active',
               updated_at: new Date().toISOString(),
             })
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           await supabase
             .from('profiles')
             .update({
-              subscription_tier: 'free',
+              plan: 'trial',
               subscription_status: 'canceled',
               updated_at: new Date().toISOString(),
             })
