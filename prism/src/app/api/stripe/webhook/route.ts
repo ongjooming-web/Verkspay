@@ -14,7 +14,7 @@ const supabase = createClient(
 /**
  * Map Stripe price IDs to plan names
  */
-function getPlanFromPriceId(priceId: string): string | null {
+function getPlanFromPriceId(priceId: string): string | undefined {
   const priceMap: { [key: string]: string } = {
     [process.env.STRIPE_PRICE_ID_STARTER_MONTHLY || '']: 'starter',
     [process.env.STRIPE_PRICE_ID_STARTER_ANNUAL || '']: 'starter',
@@ -23,7 +23,7 @@ function getPlanFromPriceId(priceId: string): string | null {
     [process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY || '']: 'enterprise',
     [process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL || '']: 'enterprise',
   }
-  return priceMap[priceId] || null
+  return priceMap[priceId]
 }
 
 export async function POST(request: NextRequest) {
