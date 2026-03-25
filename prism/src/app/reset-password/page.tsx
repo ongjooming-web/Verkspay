@@ -7,9 +7,9 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 
-export default function Login() {
-  const [email, setEmail] = useState('')
+export default function ResetPassword() {
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,56 +18,49 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     try {
-      if (!email || !password) {
+      if (!password || !confirmPassword) {
         setError('Please fill in all fields')
         setLoading(false)
         return
       }
 
-      console.log('Attempting login with:', { email })
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        setLoading(false)
+        return
+      }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters')
+        setLoading(false)
+        return
+      }
+
+      console.log('[ResetPassword] Updating password...')
+
+      const { error } = await supabase.auth.updateUser({
+        password: password,
       })
 
-      console.log('Login response:', { data, error })
-
       if (error) {
-        console.error('Login error:', error)
-        setError(error.message || 'Failed to sign in')
+        console.error('[ResetPassword] Error:', error)
+        setError(error.message || 'Failed to reset password')
         setLoading(false)
       } else {
-        console.log('Login successful:', data)
-        // Just navigate directly
-        router.push('/dashboard')
+        console.log('[ResetPassword] Password updated successfully')
+        setSuccess('✓ Password reset successful! Redirecting...')
+        setTimeout(() => {
+          router.push('/login')
+        }, 2000)
       }
     } catch (err) {
-      console.error('Unexpected error during login:', err)
+      console.error('[ResetPassword] Unexpected error:', err)
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       setLoading(false)
-    }
-  }
-
-  const handleGoogleSignIn = async () => {
-    try {
-      console.log('Attempting Google sign-in...')
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-      if (error) {
-        console.error('Google sign-in error:', error)
-        setError(error.message || 'Failed to sign in with Google')
-      }
-    } catch (err) {
-      console.error('Unexpected error during Google sign-in:', err)
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     }
   }
 
@@ -84,7 +77,7 @@ export default function Login() {
           <Link href="/" className="flex justify-center mb-4">
             <svg className="w-12 h-12 hover:opacity-80 transition-opacity cursor-pointer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="rainbowGradientLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="rainbowGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
                   <stop offset="16.67%" style={{ stopColor: '#ff9f6b', stopOpacity: 1 }} />
                   <stop offset="33.33%" style={{ stopColor: '#ffd93d', stopOpacity: 1 }} />
@@ -95,8 +88,8 @@ export default function Login() {
                 </linearGradient>
               </defs>
               <polygon points="50,5 93.3,28.33 93.3,75 50,98.33 6.7,75 6.7,28.33" 
-                       fill="url(#rainbowGradientLogin)" 
-                       stroke="url(#rainbowGradientLogin)" 
+                       fill="url(#rainbowGradient2)" 
+                       stroke="url(#rainbowGradient2)" 
                        strokeWidth="1.5"/>
               <text x="50" y="60" fontSize="40" fontWeight="bold" textAnchor="middle" 
                     dominantBaseline="middle" fill="white" fontFamily="Arial">◆</text>
@@ -105,7 +98,7 @@ export default function Login() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Prism
           </h1>
-          <p className="text-gray-400 text-sm mt-2">Sign in to your account</p>
+          <p className="text-gray-400 text-sm mt-2">Create a new password</p>
         </CardHeader>
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,74 +107,60 @@ export default function Login() {
                 {error}
               </div>
             )}
+            {success && (
+              <div className="glass border-green-500/50 bg-green-500/10 text-green-300 px-4 py-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
+                New Password
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-300">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                disabled={!!success}
+                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="••••••••"
+              />
+              <p className="text-gray-500 text-xs mt-1">Min. 8 characters</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={!!success}
+                className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
               />
             </div>
+
             <Button
               type="submit"
-              disabled={loading}
-              variant="primary"
+              disabled={loading || !!success}
               className="w-full"
             >
-              {loading ? '⏳ Signing in...' : '✓ Sign In'}
+              {loading ? '⏳ Resetting...' : '🔐 Reset Password'}
             </Button>
           </form>
 
-          {/* Google Sign-In disabled until enabled in Supabase */}
-          {/* <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-gray-400">Or continue with</span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGoogleSignIn}
-              className="w-full mt-4"
-            >
-              🔵 Google
-            </Button>
-          </div> */}
-
-          <p className="mt-6 text-center text-sm text-gray-400">
-            Don't have an account?{' '}
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-              Sign up now
-            </Link>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-400">
+              Know your password?{' '}
+              <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </CardBody>
       </Card>
     </div>
