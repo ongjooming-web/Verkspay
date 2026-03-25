@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
-import { getSupabaseServer } from '@/lib/supabase-server'
-import { isMasterAccount } from '@/utils/isMasterAccount'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export type InsightsData = {
   // Revenue overview
@@ -9,7 +12,7 @@ export type InsightsData = {
     total_paid: number
     total_pending: number
     total_overdue: number
-    currency_code: string // most used currency
+    currency_code: string
   }
 
   // Invoice stats
@@ -60,84 +63,63 @@ export type InsightsData = {
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Verify authentication
-    const { user, error: authError } = await requireAuth(request)
-    if (authError) {
-      console.error('[insights/data] Auth error:', authError)
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: authError.message },
-        { status: authError.status }
+        { error: 'Missing authorization header' },
+        { status: 401 }
       )
     }
 
-    const userId = user.id
-    const userEmail = user.email
-    const supabase = getSupabaseServer()
+    const token = authHeader.substring(7)
 
-    console.log(`[insights/data] Fetching aggregated data for user ${userId} (${userEmail})`)
-
-    // Master test accounts get unlimited access
-    if (isMasterAccount(userEmail)) {
-      console.log(`[insights/data] Master test account detected - bypassing all limits`)
-    }
-
-    // 2. Fetch user's profile to get account age and preferred currency
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('created_at, currency_code')
-      .eq('id', userId)
-      .single()
-
-    if (profileError) {
-      console.error('[insights/data] Error fetching profile:', profileError)
+    // Verify token and get user
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data.user) {
       return NextResponse.json(
-        { error: 'Failed to fetch user profile' },
-        { status: 500 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       )
     }
 
-    const profileCreatedAt = profile?.created_at ? new Date(profile.created_at) : new Date()
-    const accountAgeDays = Math.floor((Date.now() - profileCreatedAt.getTime()) / (1000 * 60 * 60 * 24))
+    const userId = data.user.id
+    console.log('[Insights] Data request for user:', userId)
 
-    // 3. Fetch all invoices for the user (JOIN with clients)
-    const { data: invoices, error: invoicesError } = await supabase
+    // Fetch all invoices for the user
+    const { data: invoices, error: invoiceError } = await supabase
       .from('invoices')
       .select(
         `
         id,
+        invoice_number,
+        user_id,
         client_id,
         amount,
-        amount_paid,
-        remaining_balance,
+        currency_code,
         status,
         created_at,
-        paid_date,
         due_date,
-        payment_method,
-        currency_code,
-        clients:client_id(id, name)
-        `
+        paid_date,
+        clients (id, name)
+      `
       )
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
 
-    if (invoicesError) {
-      console.error('[insights/data] Error fetching invoices:', invoicesError)
-      return NextResponse.json(
-        { error: 'Failed to fetch invoices' },
-        { status: 500 }
-      )
+    if (invoiceError) {
+      console.error('[Insights] Error fetching invoices:', invoiceError)
+      // Return empty data instead of erroring for new users
+      invoices = []
     }
 
-    // 4. Handle empty invoices case
+    // If no invoices, return zeroed-out data
     if (!invoices || invoices.length === 0) {
-      console.log(`[insights/data] No invoices found for user ${userId}`)
-      return NextResponse.json<InsightsData>({
+      console.log('[Insights] No invoices found for user, returning empty data')
+      return NextResponse.json({
         revenue: {
           total_paid: 0,
           total_pending: 0,
           total_overdue: 0,
-          currency_code: profile?.currency_code || 'USD'
+          currency_code: 'USD',
         },
         invoices: {
           total_count: 0,
@@ -147,303 +129,220 @@ export async function GET(request: NextRequest) {
           draft_count: 0,
           average_amount: 0,
           largest_invoice: 0,
-          smallest_invoice: 0
+          smallest_invoice: 0,
         },
         clients: [],
         payments: {
           on_time_count: 0,
           late_count: 0,
           average_days_to_payment: null,
-          payment_methods: []
+          payment_methods: [],
         },
         monthly_revenue: [],
-        account_age_days: accountAgeDays,
-        data_generated_at: new Date().toISOString()
-      })
+        account_age_days: 0,
+        data_generated_at: new Date().toISOString(),
+      } as InsightsData)
     }
 
-    // 5. Parse and normalize invoice data
-    interface ParsedInvoice {
-      id: string
-      client_id: string
-      client_name: string
-      amount: number
-      amount_paid: number
-      remaining_balance: number
-      status: string
-      created_at: Date
-      paid_date: Date | null
-      due_date: Date | null
-      payment_method: string | null
-      currency_code: string
-    }
-
-    const parsedInvoices: ParsedInvoice[] = invoices.map((inv: any) => ({
-      id: inv.id,
-      client_id: inv.client_id,
-      client_name: inv.clients?.name || 'Unknown Client',
-      amount: parseFloat(inv.amount?.toString() || '0'),
-      amount_paid: parseFloat(inv.amount_paid?.toString() || '0'),
-      remaining_balance: parseFloat(inv.remaining_balance?.toString() || '0'),
-      status: inv.status || 'draft',
-      created_at: new Date(inv.created_at),
-      paid_date: inv.paid_date ? new Date(inv.paid_date) : null,
-      due_date: inv.due_date ? new Date(inv.due_date) : null,
-      payment_method: inv.payment_method || null,
-      currency_code: inv.currency_code || profile?.currency_code || 'USD'
-    }))
-
-    // 6. Calculate revenue totals by status
+    // Calculate revenue totals
+    const now = new Date()
     let totalPaid = 0
     let totalPending = 0
     let totalOverdue = 0
+    const paidInvoices: any[] = []
+    const pendingInvoices: any[] = []
+    const overDueInvoices: any[] = []
+    const draftInvoices: any[] = []
+    const amounts: number[] = []
 
-    const now = new Date()
+    invoices.forEach((invoice: any) => {
+      const amount = parseFloat(invoice.amount) || 0
+      amounts.push(amount)
 
-    parsedInvoices.forEach((inv) => {
-      if (inv.status === 'paid') {
-        totalPaid += inv.amount
-      } else if (inv.status === 'draft') {
-        // Drafts don't count toward pending
+      if (invoice.status === 'paid') {
+        totalPaid += amount
+        paidInvoices.push(invoice)
+      } else if (invoice.status === 'draft') {
+        draftInvoices.push(invoice)
       } else {
-        // pending, partial_paid, overdue
-        if (inv.due_date && inv.due_date < now && inv.status !== 'paid') {
-          totalOverdue += inv.remaining_balance
+        // pending, partial, etc.
+        if (invoice.due_date && new Date(invoice.due_date) < now) {
+          totalOverdue += amount
+          overDueInvoices.push(invoice)
         } else {
-          totalPending += inv.remaining_balance
+          totalPending += amount
+          pendingInvoices.push(invoice)
         }
       }
     })
 
-    // 7. Calculate invoice statistics
-    const invoiceStats = {
-      total_count: parsedInvoices.length,
-      paid_count: parsedInvoices.filter((inv) => inv.status === 'paid').length,
-      pending_count: parsedInvoices.filter(
-        (inv) => inv.status !== 'paid' && inv.status !== 'draft' && (!inv.due_date || inv.due_date >= now)
-      ).length,
-      overdue_count: parsedInvoices.filter(
-        (inv) => inv.status !== 'paid' && inv.due_date && inv.due_date < now
-      ).length,
-      draft_count: parsedInvoices.filter((inv) => inv.status === 'draft').length,
-      average_amount: parsedInvoices.reduce((sum, inv) => sum + inv.amount, 0) / parsedInvoices.length,
-      largest_invoice: Math.max(...parsedInvoices.map((inv) => inv.amount)),
-      smallest_invoice: Math.min(...parsedInvoices.map((inv) => inv.amount))
-    }
+    // Determine most used currency
+    const currencyMap = new Map<string, number>()
+    invoices.forEach((inv: any) => {
+      const code = inv.currency_code || 'USD'
+      currencyMap.set(code, (currencyMap.get(code) || 0) + 1)
+    })
+    const currency = Array.from(currencyMap.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 'USD'
 
-    // 8. Group by client for client breakdown
-    interface ClientData {
-      client_id: string
-      client_name: string
-      total_invoices: number
-      total_revenue: number
-      paid_invoices: number
-      overdue_invoices: number
-      payment_days: number[]
-      last_invoice_date: Date | null
-      outstanding_balance: number
-    }
+    // Client breakdown
+    const clientMap = new Map<string, any>()
+    invoices.forEach((inv: any) => {
+      const clientId = inv.client_id
+      const clientName = inv.clients?.name || 'Unknown'
 
-    const clientMap = new Map<string, ClientData>()
-
-    parsedInvoices.forEach((inv) => {
-      if (!clientMap.has(inv.client_id)) {
-        clientMap.set(inv.client_id, {
-          client_id: inv.client_id,
-          client_name: inv.client_name,
+      if (!clientMap.has(clientId)) {
+        clientMap.set(clientId, {
+          client_id: clientId,
+          client_name: clientName,
           total_invoices: 0,
           total_revenue: 0,
           paid_invoices: 0,
           overdue_invoices: 0,
           payment_days: [],
           last_invoice_date: null,
-          outstanding_balance: 0
+          outstanding_balance: 0,
         })
       }
 
-      const clientData = clientMap.get(inv.client_id)!
-      clientData.total_invoices += 1
-      clientData.total_revenue += inv.amount
+      const client = clientMap.get(clientId)
+      const amount = parseFloat(inv.amount) || 0
 
+      client.total_invoices++
+      client.total_revenue += amount
       if (inv.status === 'paid') {
-        clientData.paid_invoices += 1
-        // Calculate days to payment for paid invoices
-        if (inv.paid_date && inv.created_at) {
-          const daysToPayment = Math.floor(
-            (inv.paid_date.getTime() - inv.created_at.getTime()) / (1000 * 60 * 60 * 24)
-          )
-          clientData.payment_days.push(daysToPayment)
+        client.paid_invoices++
+        // Calculate payment days
+        if (inv.created_at && inv.paid_date) {
+          const created = new Date(inv.created_at).getTime()
+          const paid = new Date(inv.paid_date).getTime()
+          const days = Math.round((paid - created) / (1000 * 60 * 60 * 24))
+          client.payment_days.push(days)
         }
-      } else if (inv.due_date && inv.due_date < now && inv.status !== 'draft') {
-        clientData.overdue_invoices += 1
+      } else if (inv.due_date && new Date(inv.due_date) < now) {
+        client.overdue_invoices++
+        client.outstanding_balance += amount
+      } else {
+        client.outstanding_balance += amount
       }
 
-      // Update last invoice date
-      if (!clientData.last_invoice_date || inv.created_at > clientData.last_invoice_date) {
-        clientData.last_invoice_date = inv.created_at
-      }
-
-      // Add to outstanding balance
-      if (inv.status !== 'paid' && inv.status !== 'draft') {
-        clientData.outstanding_balance += inv.remaining_balance
+      if (!client.last_invoice_date || new Date(inv.created_at) > new Date(client.last_invoice_date)) {
+        client.last_invoice_date = inv.created_at
       }
     })
 
-    // Convert client map to array with calculated averages
-    const clientsList = Array.from(clientMap.values()).map((client) => ({
-      client_id: client.client_id,
-      client_name: client.client_name,
-      total_invoices: client.total_invoices,
-      total_revenue: parseFloat(client.total_revenue.toFixed(2)),
-      paid_invoices: client.paid_invoices,
-      overdue_invoices: client.overdue_invoices,
+    const clients = Array.from(clientMap.values()).map((c: any) => ({
+      client_id: c.client_id,
+      client_name: c.client_name,
+      total_invoices: c.total_invoices,
+      total_revenue: c.total_revenue,
+      paid_invoices: c.paid_invoices,
+      overdue_invoices: c.overdue_invoices,
       average_payment_days:
-        client.payment_days.length > 0
-          ? Math.round(client.payment_days.reduce((a, b) => a + b, 0) / client.payment_days.length)
+        c.payment_days.length > 0
+          ? Math.round(c.payment_days.reduce((a: number, b: number) => a + b, 0) / c.payment_days.length)
           : null,
-      last_invoice_date: client.last_invoice_date ? client.last_invoice_date.toISOString().split('T')[0] : null,
-      outstanding_balance: parseFloat(client.outstanding_balance.toFixed(2))
+      last_invoice_date: c.last_invoice_date,
+      outstanding_balance: c.outstanding_balance,
     }))
 
-    // 9. Calculate payment patterns
-    // Count on-time vs late payments
+    // Payment patterns
     let onTimeCount = 0
     let lateCount = 0
-    const paymentDaysForAverage: number[] = []
-    const paymentMethodMap = new Map<string, number>()
+    const paymentDays: number[] = []
+    const methodMap = new Map<string, number>()
 
-    parsedInvoices.forEach((inv) => {
-      if (inv.status === 'paid' && inv.due_date && inv.paid_date) {
-        const daysToPayment = Math.floor(
-          (inv.paid_date.getTime() - inv.created_at.getTime()) / (1000 * 60 * 60 * 24)
-        )
-        paymentDaysForAverage.push(daysToPayment)
+    paidInvoices.forEach((inv: any) => {
+      if (inv.due_date && inv.paid_date) {
+        const dueDate = new Date(inv.due_date).getTime()
+        const paidDate = new Date(inv.paid_date).getTime()
+        const days = Math.round((paidDate - dueDate) / (1000 * 60 * 60 * 24))
 
-        if (inv.paid_date <= inv.due_date) {
-          onTimeCount += 1
+        if (days <= 0) {
+          onTimeCount++
         } else {
-          lateCount += 1
+          lateCount++
         }
-
-        // Track payment methods
-        const method = inv.payment_method || 'unknown'
-        paymentMethodMap.set(method, (paymentMethodMap.get(method) || 0) + 1)
+        paymentDays.push(Math.abs(days))
       }
     })
 
-    const averageDaysToPayment =
-      paymentDaysForAverage.length > 0
-        ? Math.round(paymentDaysForAverage.reduce((a, b) => a + b, 0) / paymentDaysForAverage.length)
-        : null
+    const averagePaymentDays = paymentDays.length > 0 ? Math.round(paymentDays.reduce((a, b) => a + b, 0) / paymentDays.length) : null
 
-    const paymentMethods = Array.from(paymentMethodMap.entries()).map(([method, count]) => ({
-      method,
-      count
-    }))
-
-    // 10. Calculate monthly revenue (last 6 months)
+    // Monthly revenue (last 6 months)
+    const monthlyMap = new Map<string, { invoiced: number; collected: number; count: number }>()
     const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5)
 
-    interface MonthlyData {
-      invoiced: number
-      collected: number
-      invoice_count: number
-    }
+    invoices.forEach((inv: any) => {
+      const createdDate = new Date(inv.created_at)
+      if (createdDate >= sixMonthsAgo) {
+        const monthKey = createdDate.toISOString().substring(0, 7) // "2026-01"
+        const amount = parseFloat(inv.amount) || 0
 
-    const monthlyMap = new Map<string, MonthlyData>()
-
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date()
-      date.setMonth(date.getMonth() - i)
-      const monthKey = date.toISOString().slice(0, 7) // YYYY-MM format
-      if (!monthlyMap.has(monthKey)) {
-        monthlyMap.set(monthKey, { invoiced: 0, collected: 0, invoice_count: 0 })
-      }
-    }
-
-    // Populate monthly data from invoices
-    parsedInvoices.forEach((inv) => {
-      if (inv.created_at >= sixMonthsAgo) {
-        const monthKey = inv.created_at.toISOString().slice(0, 7)
-        const monthData = monthlyMap.get(monthKey) || { invoiced: 0, collected: 0, invoice_count: 0 }
-
-        monthData.invoiced += inv.amount
-        monthData.invoice_count += 1
-
-        if (inv.status === 'paid') {
-          monthData.collected += inv.amount
+        if (!monthlyMap.has(monthKey)) {
+          monthlyMap.set(monthKey, { invoiced: 0, collected: 0, count: 0 })
         }
 
-        monthlyMap.set(monthKey, monthData)
+        const monthData = monthlyMap.get(monthKey)!
+        monthData.invoiced += amount
+        monthData.count++
+
+        if (inv.status === 'paid') {
+          monthData.collected += amount
+        }
       }
     })
 
     const monthlyRevenue = Array.from(monthlyMap.entries())
-      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => ({
         month,
-        invoiced: parseFloat(data.invoiced.toFixed(2)),
-        collected: parseFloat(data.collected.toFixed(2)),
-        invoice_count: data.invoice_count
+        invoiced: data.invoiced,
+        collected: data.collected,
+        invoice_count: data.count,
       }))
 
-    // 11. Determine most used currency
-    const currencyUsage = new Map<string, number>()
-    parsedInvoices.forEach((inv) => {
-      const currency = inv.currency_code || 'USD'
-      currencyUsage.set(currency, (currencyUsage.get(currency) || 0) + 1)
+    // Account age
+    const oldestInvoice = invoices.reduce((oldest: any, current: any) => {
+      return new Date(current.created_at) < new Date(oldest.created_at) ? current : oldest
     })
+    const accountAgeDays = Math.round((now.getTime() - new Date(oldestInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24))
 
-    let mostUsedCurrency = profile?.currency_code || 'USD'
-    let maxCount = 0
-    currencyUsage.forEach((count, currency) => {
-      if (count > maxCount) {
-        maxCount = count
-        mostUsedCurrency = currency
-      }
-    })
-
-    // 12. Compile final response
-    const response: InsightsData = {
+    const data: InsightsData = {
       revenue: {
-        total_paid: parseFloat(totalPaid.toFixed(2)),
-        total_pending: parseFloat(totalPending.toFixed(2)),
-        total_overdue: parseFloat(totalOverdue.toFixed(2)),
-        currency_code: mostUsedCurrency
+        total_paid: totalPaid,
+        total_pending: totalPending,
+        total_overdue: totalOverdue,
+        currency_code: currency,
       },
       invoices: {
-        total_count: invoiceStats.total_count,
-        paid_count: invoiceStats.paid_count,
-        pending_count: invoiceStats.pending_count,
-        overdue_count: invoiceStats.overdue_count,
-        draft_count: invoiceStats.draft_count,
-        average_amount: parseFloat(invoiceStats.average_amount.toFixed(2)),
-        largest_invoice: invoiceStats.largest_invoice,
-        smallest_invoice: invoiceStats.smallest_invoice
+        total_count: invoices.length,
+        paid_count: paidInvoices.length,
+        pending_count: pendingInvoices.length,
+        overdue_count: overDueInvoices.length,
+        draft_count: draftInvoices.length,
+        average_amount: amounts.length > 0 ? Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length) : 0,
+        largest_invoice: Math.max(...amounts),
+        smallest_invoice: amounts.filter((a) => a > 0).length > 0 ? Math.min(...amounts.filter((a) => a > 0)) : 0,
       },
-      clients: clientsList,
+      clients,
       payments: {
         on_time_count: onTimeCount,
         late_count: lateCount,
-        average_days_to_payment: averageDaysToPayment,
-        payment_methods: paymentMethods
+        average_days_to_payment: averagePaymentDays,
+        payment_methods: Array.from(methodMap.entries()).map(([method, count]) => ({ method, count })),
       },
       monthly_revenue: monthlyRevenue,
       account_age_days: accountAgeDays,
-      data_generated_at: new Date().toISOString()
+      data_generated_at: now.toISOString(),
     }
 
-    console.log(
-      `[insights/data] Successfully aggregated data for user ${userId}: ${invoiceStats.total_count} invoices, ${clientsList.length} clients`
-    )
-
-    return NextResponse.json(response, { status: 200 })
-  } catch (error: any) {
-    console.error('[insights/data] Error:', error)
+    console.log('[Insights] Data aggregation complete:', { userId, invoiceCount: invoices.length })
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('[Insights] Data error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Failed to aggregate business data' },
       { status: 500 }
     )
   }
