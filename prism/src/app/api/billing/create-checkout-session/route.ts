@@ -85,6 +85,28 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
+    // Save stripe_customer_id to user's profile immediately (don't wait for webhook)
+    if (session.customer) {
+      console.log('[Checkout] Saving stripe_customer_id:', session.customer)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          stripe_customer_id: session.customer as string,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', data.user.id)
+
+      if (updateError) {
+        console.error('[Checkout] Failed to save stripe_customer_id:', {
+          userId: data.user.id,
+          customerId: session.customer,
+          error: updateError.message
+        })
+      } else {
+        console.log('[Checkout] ✓ stripe_customer_id saved for user:', data.user.id)
+      }
+    }
+
     return NextResponse.json({ url: session.url })
   } catch (error) {
     console.error('Checkout error:', error)

@@ -218,6 +218,7 @@ export async function POST(request: NextRequest) {
           })
         } else {
           console.log(`[Webhook] ✓ User ${targetUserId} upgraded to ${planToUpdate}`)
+          console.log('[Webhook] ✓ stripe_customer_id saved:', session.customer)
         }
         
         console.log('[Webhook] ===== SUBSCRIPTION HANDLING END =====')
@@ -407,6 +408,7 @@ export async function POST(request: NextRequest) {
           .update({
             plan: planToUpdate,
             subscription_status: 'active',
+            stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
             updated_at: new Date().toISOString(),
           })
@@ -420,6 +422,8 @@ export async function POST(request: NextRequest) {
           })
         } else {
           console.log(`[Webhook] ✓ User ${userId} subscription updated to ${planToUpdate}`)
+          console.log('[Webhook] ✓ stripe_customer_id saved:', customerId)
+          console.log('[Webhook] ✓ stripe_subscription_id saved:', subscriptionId)
         }
         break
       }
