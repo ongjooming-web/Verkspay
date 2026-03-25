@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/countries'
 import { groupByCurrency } from '@/lib/currency-helper'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useCurrency } from '@/hooks/useCurrency'
+import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 interface RecentActivity {
   id: string
@@ -53,19 +54,25 @@ export default function Dashboard() {
   const [overdueInvoices, setOverdueInvoices] = useState<Invoice[]>([])
   const [paidByCurrency, setPaidByCurrency] = useState<Record<string, number>>({})
   const [pendingByCurrency, setPendingByCurrency] = useState<Record<string, number>>({})
+  const [insights, setInsights] = useState<ClaudeInsights | null>(null)
+  const [insightsUsage, setInsightsUsage] = useState<{ used: number; limit: number; plan: string } | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [insightsError, setInsightsError] = useState<string | null>(null)
+  const [token, setToken] = useState('')
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
+        const { data: { session } } = await supabase.auth.getSession()
         
-        if (!authUser) {
+        if (!session) {
           window.location.href = '/login'
           return
         }
 
-        setUser(authUser)
-        const userId = authUser.id
+        setUser(session.user)
+        setToken(session.access_token)
+        const userId = session.user.id
 
         // Fetch clients count
         const { data: clientsData } = await supabase
@@ -222,6 +229,45 @@ export default function Dashboard() {
     fetchDashboard()
   }, [router])
 
+  const generateInsights = async () => {
+    if (!token) return
+
+    setInsightsLoading(true)
+    setInsightsError(null)
+
+    try {
+      const response = await fetch('/api/insights/generate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          setInsightsError('Trial ended. Choose a plan to continue.')
+        } else if (response.status === 429) {
+          setInsightsError(`You've used all insights this month.`)
+        } else {
+          setInsightsError('Failed to generate insights')
+        }
+        return
+      }
+
+      const result = data as InsightsResponse
+      setInsights(result.insights)
+      setInsightsUsage(result.usage)
+    } catch (err) {
+      console.error('Insights error:', err)
+      setInsightsError('An error occurred')
+    } finally {
+      setInsightsLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen relative z-10">
@@ -354,6 +400,93 @@ export default function Dashboard() {
             </CardBody>
           </Card>
         </div>
+
+        {/* AI Insights Widget */}
+        <Card className="mb-10 border-blue-500/30">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                ✨ AI Insights
+              </h2>
+              <Button
+                onClick={generateInsights}
+                disabled={insightsLoading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-4 py-2 rounded disabled:opacity-50 text-sm"
+              >
+                {insightsLoading ? 'Analyzing...' : 'Generate'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardBody>
+            {insightsError && (
+              <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
+                <p className="text-red-400 text-sm">{insightsError}</p>
+              </div>
+            )}
+
+            {insightsLoading && (
+              <div className="flex items-center justify-center gap-2 py-6">
+                <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                <span className="text-gray-400 text-sm">Analyzing your data...</span>
+              </div>
+            )}
+
+            {!insightsLoading && insights && (
+              <>
+                {insightsUsage && (
+                  <div className="mb-4 text-xs text-gray-400">
+                    <span className="text-white font-semibold">{insightsUsage.used}</span> of{' '}
+                    <span className="text-white font-semibold">{insightsUsage.limit}</span> used this month
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <p className="text-gray-300 text-sm mb-3">{insights.summary}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">Trend:</span>
+                    <span
+                      className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                        insights.revenue_trend === 'growing'
+                          ? 'bg-green-500/20 text-green-400'
+                          : insights.revenue_trend === 'stable'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                      }`}
+                    >
+                      {insights.revenue_trend === 'growing' && '📈 Growing'}
+                      {insights.revenue_trend === 'stable' && '➡️ Stable'}
+                      {insights.revenue_trend === 'declining' && '📉 Declining'}
+                    </span>
+                  </div>
+                </div>
+
+                {insights.highlights.slice(0, 2).length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-white mb-2">Top Highlights</h3>
+                    <div className="space-y-2">
+                      {insights.highlights.slice(0, 2).map((h, idx) => (
+                        <div key={idx} className="flex gap-2 text-xs">
+                          <span className="flex-shrink-0">{h.type === 'positive' ? '✓' : h.type === 'warning' ? '⚠️' : '→'}</span>
+                          <span className="text-gray-400">{h.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Link href="/insights">
+                  <button className="text-blue-400 hover:text-blue-300 text-xs font-semibold">
+                    View All Insights →
+                  </button>
+                </Link>
+              </>
+            )}
+
+            {!insightsLoading && !insights && !insightsError && (
+              <p className="text-gray-400 text-sm">Click "Generate" to get AI-powered insights about your business.</p>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
