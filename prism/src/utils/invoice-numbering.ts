@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
 /**
  * Generate a sequential invoice number for a user
  * Format: INV-0001, INV-0002, ..., INV-9999, INV-10000, etc.
@@ -8,7 +6,7 @@ import { createClient } from '@supabase/supabase-js'
  */
 export async function generateInvoiceNumber(
   userId: string,
-  supabase: ReturnType<typeof createClient>
+  supabase: any
 ): Promise<string> {
   let attempts = 0
   const maxAttempts = 5
