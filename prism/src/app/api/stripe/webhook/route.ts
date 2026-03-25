@@ -345,6 +345,13 @@ export async function POST(request: NextRequest) {
           
           try {
             const customer = await stripe.customers.retrieve(customerId)
+            
+            // Type guard: check if customer is deleted
+            if ('deleted' in customer && customer.deleted) {
+              console.warn('[Webhook] Customer has been deleted:', customerId)
+              break
+            }
+
             console.log('[Webhook] Retrieved customer from Stripe:', { 
               id: customer.id, 
               email: customer.email 
@@ -446,14 +453,18 @@ export async function POST(request: NextRequest) {
           
           try {
             const customer = await stripe.customers.retrieve(customerId)
-            if (customer.email) {
-              const { data: usersByEmail } = await supabase
-                .from('profiles')
-                .select('id, email')
-                .eq('email', customer.email)
+            
+            // Type guard: check if customer is deleted
+            if (!('deleted' in customer) || !customer.deleted) {
+              if (customer.email) {
+                const { data: usersByEmail } = await supabase
+                  .from('profiles')
+                  .select('id, email')
+                  .eq('email', customer.email)
 
-              if (usersByEmail && usersByEmail.length > 0) {
-                users = usersByEmail
+                if (usersByEmail && usersByEmail.length > 0) {
+                  users = usersByEmail
+                }
               }
             }
           } catch (err) {
