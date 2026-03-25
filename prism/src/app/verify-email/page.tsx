@@ -14,6 +14,7 @@ function VerifyEmailLoading() {
   )
 }
 
+export default function VerifyEmail() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden flex justify-center items-center p-4">
       {/* Background decoration */}
