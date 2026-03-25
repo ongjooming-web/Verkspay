@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
+import { isMasterAccount } from '@/utils/isMasterAccount'
 
 export type InsightsData = {
   // Revenue overview
@@ -70,9 +71,15 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = user.id
+    const userEmail = user.email
     const supabase = getSupabaseServer()
 
-    console.log(`[insights/data] Fetching aggregated data for user ${userId}`)
+    console.log(`[insights/data] Fetching aggregated data for user ${userId} (${userEmail})`)
+
+    // Master test accounts get unlimited access
+    if (isMasterAccount(userEmail)) {
+      console.log(`[insights/data] Master test account detected - bypassing all limits`)
+    }
 
     // 2. Fetch user's profile to get account age and preferred currency
     const { data: profile, error: profileError } = await supabase
