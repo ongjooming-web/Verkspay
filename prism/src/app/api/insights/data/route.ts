@@ -74,15 +74,15 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7)
 
     // Verify token and get user
-    const { data, error } = await supabase.auth.getUser(token)
-    if (error || !data.user) {
+    const { data: authData, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !authData.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const userId = data.user.id
+    const userId = authData.user.id
     console.log('[Insights] Data request for user:', userId)
 
     // Fetch all invoices for the user
