@@ -61,21 +61,29 @@ export default function Signup() {
         
         // Create/update profile with user data
         try {
+          const now = new Date()
+          const trialEndDate = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000) // 15 days from now
+          
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert({
               id: data.user.id,
               email: email,
               plan: 'trial',
-              subscription_status: 'active',
-              trial_end_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
-              terms_accepted_at: new Date().toISOString(),
+              subscription_status: 'trialing',
+              trial_start_date: now.toISOString(),
+              trial_end_date: trialEndDate.toISOString(),
+              trial_expired: false,
+              stripe_customer_id: null,
+              terms_accepted_at: now.toISOString(),
               terms_version: '1.0',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: now.toISOString(),
+              updated_at: now.toISOString()
             }, {
               onConflict: 'id'
             })
+          
+          console.log('[Signup] Profile created:', { userId: data.user.id, email, plan: 'trial', trialEndDate: trialEndDate.toISOString() })
           
           if (profileError) {
             console.error('Failed to create profile:', profileError)

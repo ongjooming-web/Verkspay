@@ -33,18 +33,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's Stripe customer ID
-    const { data: userProfile } = await supabase
+    const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, subscription_status')
       .eq('id', data.user.id)
       .single()
 
-    if (!userProfile?.stripe_customer_id) {
+    if (profileError || !userProfile) {
+      console.error('[Portal] Profile fetch error:', profileError)
       return NextResponse.json(
-        { error: 'No Stripe customer found' },
+        { error: 'User profile not found' },
         { status: 404 }
       )
     }
+
+    if (!userProfile.stripe_customer_id) {
+      console.log('[Portal] User has no active subscription:', { userId: data.user.id, status: userProfile.subscription_status })
+      return NextResponse.json(
+        { error: 'No active subscription found. Please upgrade first.' },
+        { status: 404 }
+      )
+    }
+
+    console.log('[Portal] Creating portal for customer:', { customerId: userProfile.stripe_customer_id, userId: data.user.id })
 
     // Create Stripe customer portal session
     const session = await stripe.billingPortal.sessions.create({
@@ -52,6 +63,7 @@ export async function POST(request: NextRequest) {
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
     })
 
+    console.log('[Portal] ✓ Portal session created:', session.id)
     return NextResponse.json({ url: session.url })
   } catch (error) {
     console.error('Portal error:', error)

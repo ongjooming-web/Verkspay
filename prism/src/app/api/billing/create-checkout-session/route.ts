@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
 
     const { plan, currency_code, billingPeriod } = await request.json()
 
+    console.log('[Checkout] Creating session:', { userId: data.user.id, email: data.user.email, plan, billingPeriod })
+
     // Map plan names and billing periods to Stripe price IDs
-    // Format: STRIPE_PRICE_ID_[PLAN]_[BILLING]
     const priceMapKey = `STRIPE_PRICE_ID_${plan.toUpperCase()}_${(billingPeriod || 'monthly').toUpperCase()}`
     const priceId = process.env[priceMapKey]
 
@@ -59,22 +60,67 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Stripe checkout session with currency
+    // Check if user already has a stripe_customer_id
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', data.user.id)
+      .single()
+
+    let stripeCustomerId: string | null = null
+
+    if (!profileError && profile?.stripe_customer_id) {
+      // Use existing customer
+      stripeCustomerId = profile.stripe_customer_id
+      console.log('[Checkout] Using existing Stripe customer:', stripeCustomerId)
+    } else {
+      // Create new Stripe customer
+      console.log('[Checkout] Creating new Stripe customer for:', data.user.email)
+      const customer = await stripe.customers.create({
+        email: data.user.email,
+        metadata: { user_id: data.user.id },
+      })
+      stripeCustomerId = customer.id
+      console.log('[Checkout] New Stripe customer created:', stripeCustomerId)
+
+      // Save stripe_customer_id to profile immediately
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          stripe_customer_id: stripeCustomerId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', data.user.id)
+
+      if (updateError) {
+        console.error('[Checkout] Failed to save stripe_customer_id:', {
+          userId: data.user.id,
+          customerId: stripeCustomerId,
+          error: updateError.message
+        })
+      } else {
+        console.log('[Checkout] ✓ Stripe customer ID saved to profile')
+      }
+    }
+
+    // Create checkout session with customer and client_reference_id
     const sessionParams: any = {
       mode: 'subscription',
       payment_method_types: ['card'],
+      customer: stripeCustomerId,
+      client_reference_id: data.user.id,
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
-      customer_email: data.user.email,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
       metadata: {
-        userId: data.user.id,
+        user_id: data.user.id,
         plan,
+        billing_period: billingPeriod || 'monthly',
       },
     }
 
@@ -85,28 +131,7 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    // Save stripe_customer_id to user's profile immediately (don't wait for webhook)
-    if (session.customer) {
-      console.log('[Checkout] Saving stripe_customer_id:', session.customer)
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          stripe_customer_id: session.customer as string,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', data.user.id)
-
-      if (updateError) {
-        console.error('[Checkout] Failed to save stripe_customer_id:', {
-          userId: data.user.id,
-          customerId: session.customer,
-          error: updateError.message
-        })
-      } else {
-        console.log('[Checkout] ✓ stripe_customer_id saved for user:', data.user.id)
-      }
-    }
-
+    console.log('[Checkout] ✓ Session created:', { sessionId: session.id, customerId: stripeCustomerId })
     return NextResponse.json({ url: session.url })
   } catch (error) {
     console.error('Checkout error:', error)

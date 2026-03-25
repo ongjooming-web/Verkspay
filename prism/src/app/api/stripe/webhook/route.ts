@@ -290,12 +290,11 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string
         const subscriptionId = subscription.id
 
-        console.log(`[Webhook] ${event.type} event received`)
-        console.log('[Webhook] Processing subscription:', { 
-          subscriptionId, 
-          customerId,
-          itemsCount: subscription.items?.data?.length 
-        })
+        console.log(`[Webhook] ===== ${event.type.toUpperCase()} START =====`)
+        console.log('[Webhook] Subscription ID:', subscriptionId)
+        console.log('[Webhook] Customer ID:', customerId)
+        console.log('[Webhook] Status:', subscription.status)
+        console.log('[Webhook] Items count:', subscription.items?.data?.length)
 
         // Extract price ID from subscription items
         if (!subscription.items?.data || subscription.items.data.length === 0) {
@@ -395,21 +394,35 @@ export async function POST(request: NextRequest) {
         const userId = users[0].id
         console.log('[Webhook] Found user:', { userId, email: users[0].email })
 
+        // Map subscription status
+        let subscriptionStatus = 'active'
+        if (subscription.status === 'past_due') {
+          subscriptionStatus = 'past_due'
+        } else if (subscription.status === 'unpaid') {
+          subscriptionStatus = 'unpaid'
+        } else if (subscription.status === 'canceled') {
+          subscriptionStatus = 'canceled'
+        }
+
+        // If subscription is canceled, downgrade to trial
+        const finalPlan = subscription.status === 'canceled' ? 'trial' : planToUpdate
+
         // Update user's subscription
         console.log('[Webhook] Updating subscription:', {
           userId,
-          plan: planToUpdate,
-          status: 'active',
+          plan: finalPlan,
+          subscriptionStatus,
           subscriptionId
         })
 
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
-            plan: planToUpdate,
-            subscription_status: 'active',
+            plan: finalPlan,
+            subscription_status: subscriptionStatus,
             stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
+            stripe_subscription_id: subscription.status === 'canceled' ? null : subscriptionId,
+            trial_expired: subscription.status === 'canceled' ? true : false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', userId)
@@ -421,10 +434,11 @@ export async function POST(request: NextRequest) {
             hint: updateError.hint
           })
         } else {
-          console.log(`[Webhook] ✓ User ${userId} subscription updated to ${planToUpdate}`)
-          console.log('[Webhook] ✓ stripe_customer_id saved:', customerId)
-          console.log('[Webhook] ✓ stripe_subscription_id saved:', subscriptionId)
+          console.log(`[Webhook] ✓ User ${userId} subscription: plan=${finalPlan}, status=${subscriptionStatus}`)
+          console.log('[Webhook] ✓ stripe_customer_id:', customerId)
+          console.log('[Webhook] ✓ stripe_subscription_id:', subscriptionId)
         }
+        console.log(`[Webhook] ===== ${event.type.toUpperCase()} END =====`)
         break
       }
 
@@ -432,10 +446,9 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        console.log('[Webhook] Subscription deleted:', { 
-          subscriptionId: subscription.id,
-          customerId 
-        })
+        console.log('[Webhook] ===== SUBSCRIPTION DELETED START =====')
+        console.log('[Webhook] Subscription ID:', subscription.id)
+        console.log('[Webhook] Customer ID:', customerId)
 
         // Find user by Stripe customer ID
         let { data: users, error: findError } = await supabase
@@ -482,16 +495,20 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = users[0].id
+        const now = new Date()
         console.log('[Webhook] Found user to downgrade:', userId)
 
-        // Downgrade to trial
+        // Downgrade to trial (fresh trial, immediately expired)
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
             plan: 'trial',
             subscription_status: 'canceled',
             stripe_subscription_id: null,
-            updated_at: new Date().toISOString(),
+            trial_start_date: now.toISOString(),
+            trial_end_date: now.toISOString(), // Expired immediately
+            trial_expired: true,
+            updated_at: now.toISOString(),
           })
           .eq('id', userId)
 
@@ -501,8 +518,10 @@ export async function POST(request: NextRequest) {
             error: updateError.message
           })
         } else {
-          console.log(`[Webhook] ✓ User ${userId} downgraded to trial (subscription canceled)`)
+          console.log(`[Webhook] ✓ User ${userId} downgraded to trial`)
+          console.log('[Webhook] ✓ Subscription canceled, trial marked as expired')
         }
+        console.log('[Webhook] ===== SUBSCRIPTION DELETED END =====')
         break
       }
     }
