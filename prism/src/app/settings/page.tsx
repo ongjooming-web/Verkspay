@@ -8,6 +8,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { SUPPORTED_COUNTRIES, formatCurrency } from '@/lib/countries'
+import { isMasterAccount } from '@/utils/isMasterAccount'
 
 interface UserProfile {
   wallet_address?: string
@@ -483,8 +484,10 @@ function BillingSection() {
   const [profile, setProfile] = useState<any>(null)
   const [invoiceCount, setInvoiceCount] = useState(0)
   const [paymentLinkCount, setPaymentLinkCount] = useState(0)
+  const [aiInsightsCount, setAiInsightsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
+  const [userEmail, setUserEmail] = useState<string>('')
 
   useEffect(() => {
     loadBillingData()
@@ -492,7 +495,6 @@ function BillingSection() {
 
   const loadBillingData = async () => {
     try {
-      // Use proper Supabase auth method (not JWT decode)
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
@@ -502,12 +504,13 @@ function BillingSection() {
       }
 
       const userId = user.id
-      console.log('[BillingSection] Loaded user:', userId)
+      setUserEmail(user.email || '')
+      console.log('[BillingSection] Loaded user:', userId, user.email)
 
-      // Get profile with subscription info
+      // Get full profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('subscription_tier, subscription_status')
+        .select('subscription_tier, subscription_status, trial_expires_at')
         .eq('id', userId)
         .single()
 
@@ -521,7 +524,7 @@ function BillingSection() {
       const now = new Date()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-      const { data: invoices, count: invCount, error: invError } = await supabase
+      const { count: invCount, error: invError } = await supabase
         .from('invoices')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -534,7 +537,7 @@ function BillingSection() {
       }
 
       // Count payment links this month
-      const { data: links, count: linkCount, error: linkError } = await supabase
+      const { count: linkCount, error: linkError } = await supabase
         .from('invoices')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -546,6 +549,9 @@ function BillingSection() {
       } else {
         setPaymentLinkCount(linkCount || 0)
       }
+
+      // For now, AI insights count is placeholder (will update when we have tracking)
+      setAiInsightsCount(0)
     } catch (err) {
       console.error('[BillingSection] Error loading billing data:', err)
     } finally {
@@ -655,82 +661,128 @@ function BillingSection() {
   }
 
   const tier = profile?.subscription_tier || 'trial'
-  const tierNames: { [key: string]: string } = {
-    'trial': 'Trial',
-    'starter': 'Starter',
-    'pro': 'Pro',
-    'enterprise': 'Enterprise'
+  const isMaster = isMasterAccount(userEmail)
+  
+  // Plan configuration
+  const plans = [
+    { id: 'starter', name: 'Starter', monthlyPrice: 19, annualPrice: 15, features: '20 invoices/month' },
+    { id: 'pro', name: 'Pro', monthlyPrice: 49, annualPrice: 39, features: 'Unlimited invoices' },
+    { id: 'enterprise', name: 'Enterprise', monthlyPrice: 199, annualPrice: 159, features: 'Multi-entity' }
+  ]
+
+  // Calculate trial days remaining
+  const trialExpiresAt = profile?.trial_expires_at
+  const trialDaysRemaining = trialExpiresAt 
+    ? Math.ceil((new Date(trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0
+
+  // Get limits for current tier
+  const getLimits = (t: string) => {
+    if (isMaster) return { invoices: Infinity, links: Infinity, insights: Infinity }
+    switch (t) {
+      case 'trial': return { invoices: 5, links: 3, insights: 5 }
+      case 'starter': return { invoices: 20, links: 10, insights: 5 }
+      case 'pro': return { invoices: Infinity, links: Infinity, insights: 30 }
+      case 'enterprise': return { invoices: Infinity, links: Infinity, insights: Infinity }
+      default: return { invoices: 5, links: 3, insights: 5 }
+    }
   }
-  const tierDisplay = tierNames[tier] || 'Trial'
-  const invoiceLimit = tier === 'trial' ? 5 : tier === 'starter' ? 20 : Infinity
-  const linkLimit = tier === 'trial' ? 3 : tier === 'starter' ? 10 : Infinity
+
+  const limits = getLimits(tier)
+
+  // Get status badge
+  const getStatusBadge = () => {
+    if (isMaster) return { label: 'Master', color: 'bg-purple-500' }
+    if (tier === 'trial' && trialDaysRemaining <= 3) return { label: 'Expiring Soon', color: 'bg-yellow-500' }
+    if (tier === 'trial' && trialDaysRemaining < 0) return { label: 'Expired', color: 'bg-red-500' }
+    return { label: 'Active', color: 'bg-green-500' }
+  }
+
+  const statusBadge = getStatusBadge()
 
   return (
     <Card className="mb-6 border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
       <CardHeader>
-        <h2 className="text-2xl font-bold text-white">💳 Subscription</h2>
+        <h2 className="text-2xl font-bold text-white">💳 Subscription & Billing</h2>
       </CardHeader>
       <CardBody className="space-y-6">
-        {/* Current Plan */}
-        <div className="glass rounded-lg p-4 border-blue-400/30">
-          <div className="flex justify-between items-start">
+        {/* Current Plan Display */}
+        <div className="glass rounded-lg p-6 border-blue-400/30">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-gray-400 text-sm mb-1">Current Plan</p>
-              <p className="text-3xl font-bold text-blue-400">{tierDisplay}</p>
-              {tier === 'trial' && (
-                <p className="text-gray-400 text-xs mt-2">15-day free trial. Upgrade to continue.</p>
-              )}
-              {tier === 'starter' && (
-                <p className="text-green-400 text-xs mt-2">✓ Up to 20 invoices/month · Smart Invoice Creation</p>
-              )}
-              {tier === 'pro' && (
-                <p className="text-green-400 text-xs mt-2">✓ Unlimited invoices · Partial payments · AI Insights</p>
-              )}
-              {tier === 'enterprise' && (
-                <p className="text-green-400 text-xs mt-2">✓ Everything in Pro + Multi-entity support</p>
-              )}
-              {tier !== 'trial' && (
-                <p className="text-gray-400 text-sm mt-3">
-                  Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-4xl font-bold text-blue-400">
+                  {isMaster ? 'Enterprise (Master)' : plans.find(p => p.id === tier)?.name || 'Trial'}
+                </h3>
+                <span className={`${statusBadge.color} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                  {statusBadge.label}
+                </span>
+              </div>
+              {tier === 'trial' && !isMaster && (
+                <p className="text-yellow-300 text-sm font-semibold">
+                  ⏱️  {trialDaysRemaining > 0 ? `${trialDaysRemaining} days remaining` : 'Trial expired'}
                 </p>
               )}
+              {tier !== 'trial' && (
+                <p className="text-gray-400 text-sm">Billing monthly • Next billing in 30 days</p>
+              )}
             </div>
-            {tier === 'trial' && (
-              <Button
-                onClick={() => handleUpgrade('starter')}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 whitespace-nowrap"
-              >
-                Upgrade →
-              </Button>
-            )}
           </div>
         </div>
 
-        {/* Usage Stats - Trial tier only */}
-        {tier === 'trial' && (
-          <div className="space-y-3">
-            <p className="text-gray-400 text-sm font-semibold">Usage This Month</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="glass rounded-lg p-3 border-yellow-400/30 bg-yellow-500/10">
-                <p className="text-yellow-300 text-sm font-semibold">{invoiceCount}/5</p>
-                <p className="text-gray-400 text-xs">Invoices</p>
+        {/* Plan Comparison Grid */}
+        <div className="space-y-3">
+          <p className="text-gray-400 text-sm font-semibold">Compare Plans</p>
+          <div className="grid grid-cols-3 gap-3">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`rounded-lg p-4 border transition ${
+                  tier === plan.id
+                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
+                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+              >
+                <div className="mb-3">
+                  <h4 className="text-white font-bold text-sm">{plan.name}</h4>
+                  <p className="text-gray-400 text-xs mt-1">{plan.features}</p>
+                </div>
+                <p className="text-2xl font-bold text-blue-300 mb-3">
+                  ${billingPeriod === 'monthly' ? plan.monthlyPrice : plan.annualPrice}
+                  <span className="text-sm text-gray-400">/mo</span>
+                </p>
+                {tier === plan.id ? (
+                  <div className="text-xs font-semibold text-green-400 px-3 py-2 rounded bg-green-500/10 border border-green-500/20 text-center">
+                    ✓ Current Plan
+                  </div>
+                ) : tier === 'trial' ? (
+                  <Button
+                    onClick={() => handleUpgrade(plan.id as 'starter' | 'pro' | 'enterprise')}
+                    className="w-full text-xs py-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Choose
+                  </Button>
+                ) : plan.id === 'enterprise' || (tier === 'starter' && plan.id === 'pro') || (tier === 'pro' && plan.id === 'enterprise') ? (
+                  <Button
+                    onClick={() => handleUpgrade(plan.id as 'starter' | 'pro' | 'enterprise')}
+                    className="w-full text-xs py-2 bg-purple-600 hover:bg-purple-700"
+                  >
+                    Upgrade
+                  </Button>
+                ) : null}
               </div>
-              <div className="glass rounded-lg p-3 border-yellow-400/30 bg-yellow-500/10">
-                <p className="text-yellow-300 text-sm font-semibold">{paymentLinkCount}/3</p>
-                <p className="text-gray-400 text-xs">Payment Links</p>
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Billing Period Toggle - Only show for trial users (before they choose a plan) */}
+        {/* Billing Period Selector - Trial only */}
         {tier === 'trial' && (
           <div className="space-y-3">
-            <p className="text-gray-400 text-sm font-semibold">Choose Billing Period</p>
+            <p className="text-gray-400 text-sm font-semibold">Choose Billing</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setBillingPeriod('monthly')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm ${
                   billingPeriod === 'monthly'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
@@ -740,7 +792,7 @@ function BillingSection() {
               </button>
               <button
                 onClick={() => setBillingPeriod('annual')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition relative ${
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm relative ${
                   billingPeriod === 'annual'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
@@ -757,84 +809,56 @@ function BillingSection() {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 flex-wrap">
-          {tier === 'trial' && (
-            <>
-              <Button
-                onClick={() => handleUpgrade('starter')}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 font-semibold"
-              >
-                {billingPeriod === 'monthly' ? 'Start with Starter - $19/mo' : 'Start with Starter - $180/yr'}
-              </Button>
-              <Button
-                onClick={() => handleUpgrade('pro')}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
-              >
-                {billingPeriod === 'monthly' ? 'Start with Pro - $49/mo' : 'Start with Pro - $468/yr'}
-              </Button>
-              <Button
-                onClick={() => handleUpgrade('enterprise')}
-                className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
-              >
-                {billingPeriod === 'monthly' ? 'Start with Enterprise - $199/mo' : 'Start with Enterprise - $1,908/yr'}
-              </Button>
-            </>
-          )}
-
-          {(tier === 'starter' || tier === 'pro') && (
-            <>
-              {tier === 'starter' && (
-                <>
-                  <Button
-                    onClick={() => handleUpgrade('pro')}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
-                  >
-                    Upgrade to Pro - $49/mo
-                  </Button>
-                  <Button
-                    onClick={() => handleUpgrade('enterprise')}
-                    className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
-                  >
-                    Upgrade to Enterprise - $199/mo
-                  </Button>
-                </>
-              )}
-              {tier === 'pro' && (
-                <Button
-                  onClick={() => handleUpgrade('enterprise')}
-                  className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
-                >
-                  Upgrade to Enterprise - $199/mo
-                </Button>
-              )}
-              <Button
-                onClick={handleManageSubscription}
-                className="flex-1 bg-blue-600/70 hover:bg-blue-700/70 text-white"
-              >
-                📋 Manage Subscription
-              </Button>
-            </>
-          )}
-
-          {tier === 'enterprise' && (
-            <Button
-              onClick={handleManageSubscription}
-              className="w-full bg-blue-600/70 hover:bg-blue-700/70 text-white"
-            >
-              📋 Manage Subscription
-            </Button>
-          )}
+        {/* Usage Summary */}
+        <div className="space-y-3">
+          <p className="text-gray-400 text-sm font-semibold">Usage This Month</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="glass rounded-lg p-3 border-white/10">
+              <p className="text-white text-sm font-bold">
+                {limits.invoices === Infinity ? '∞' : `${invoiceCount}/${limits.invoices}`}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">Invoices</p>
+            </div>
+            <div className="glass rounded-lg p-3 border-white/10">
+              <p className="text-white text-sm font-bold">
+                {limits.links === Infinity ? '∞' : `${paymentLinkCount}/${limits.links}`}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">Payment Links</p>
+            </div>
+            <div className="glass rounded-lg p-3 border-white/10">
+              <p className="text-white text-sm font-bold">
+                {limits.insights === Infinity ? '∞' : `${aiInsightsCount}/${limits.insights}`}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">AI Insights</p>
+            </div>
+          </div>
         </div>
 
-        {/* Info */}
-        <p className="text-gray-400 text-xs leading-relaxed">
-          {tier === 'free'
-            ? '📌 Free tier: 5 invoices/month, 3 payment links/month. Most users upgrade within 2 weeks.'
-            : tier === 'pro'
-            ? '✓ Starter includes: Smart payment reminders, partial payments, unlimited invoices & links.'
-            : '✓ Pro includes: Everything in Starter + recurring invoices, API access (coming soon).'}
-        </p>
+        {/* Actions */}
+        <div className="flex gap-3">
+          {tier === 'trial' && (
+            <Button
+              onClick={() => handleUpgrade('starter')}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 font-semibold py-3"
+            >
+              🚀 Choose a Plan
+            </Button>
+          )}
+          {tier !== 'trial' && !isMaster && (
+            <Button
+              onClick={handleManageSubscription}
+              className="flex-1 bg-blue-600/70 hover:bg-blue-700/70 text-white py-3"
+            >
+              📋 Manage Billing
+            </Button>
+          )}
+          {isMaster && (
+            <div className="flex-1 glass rounded-lg p-3 border-purple-400/30 text-center">
+              <p className="text-purple-300 text-xs font-semibold">Master test account</p>
+              <p className="text-gray-400 text-xs mt-1">All features unlocked</p>
+            </div>
+          )}
+        </div>
       </CardBody>
     </Card>
   )
