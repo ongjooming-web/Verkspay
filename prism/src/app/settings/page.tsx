@@ -484,6 +484,7 @@ function BillingSection() {
   const [invoiceCount, setInvoiceCount] = useState(0)
   const [paymentLinkCount, setPaymentLinkCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
 
   useEffect(() => {
     loadBillingData()
@@ -578,7 +579,7 @@ function BillingSection() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ plan })
+        body: JSON.stringify({ plan, billingPeriod })
       })
 
       console.log('[BillingSection] Response status:', response.status)
@@ -653,16 +654,16 @@ function BillingSection() {
     )
   }
 
-  const tier = profile?.subscription_tier || 'free'
+  const tier = profile?.subscription_tier || 'trial'
   const tierNames: { [key: string]: string } = {
-    'free': 'Free',
+    'trial': 'Trial',
     'starter': 'Starter',
     'pro': 'Pro',
     'enterprise': 'Enterprise'
   }
-  const tierDisplay = tierNames[tier] || 'Free'
-  const invoiceLimit = tier === 'free' ? 5 : tier === 'starter' ? 20 : Infinity
-  const linkLimit = tier === 'free' ? 3 : tier === 'starter' ? 10 : Infinity
+  const tierDisplay = tierNames[tier] || 'Trial'
+  const invoiceLimit = tier === 'trial' ? 5 : tier === 'starter' ? 20 : Infinity
+  const linkLimit = tier === 'trial' ? 3 : tier === 'starter' ? 10 : Infinity
 
   return (
     <Card className="mb-6 border-blue-500/30 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
@@ -676,25 +677,25 @@ function BillingSection() {
             <div>
               <p className="text-gray-400 text-sm mb-1">Current Plan</p>
               <p className="text-3xl font-bold text-blue-400">{tierDisplay}</p>
-              {tier === 'free' && (
-                <p className="text-gray-400 text-xs mt-2">Perfect for trying out Prism</p>
+              {tier === 'trial' && (
+                <p className="text-gray-400 text-xs mt-2">15-day free trial. Upgrade to continue.</p>
               )}
               {tier === 'starter' && (
-                <p className="text-green-400 text-xs mt-2">✓ $19/month · Up to 20 invoices/month · Smart Invoice Creation</p>
+                <p className="text-green-400 text-xs mt-2">✓ Up to 20 invoices/month · Smart Invoice Creation</p>
               )}
               {tier === 'pro' && (
-                <p className="text-green-400 text-xs mt-2">✓ $49/month · Unlimited invoices · Partial payments · AI Insights</p>
+                <p className="text-green-400 text-xs mt-2">✓ Unlimited invoices · Partial payments · AI Insights</p>
               )}
               {tier === 'enterprise' && (
-                <p className="text-green-400 text-xs mt-2">✓ $199/month · Everything in Pro + Multi-entity support</p>
+                <p className="text-green-400 text-xs mt-2">✓ Everything in Pro + Multi-entity support</p>
               )}
-              {tier !== 'free' && (
+              {tier !== 'trial' && (
                 <p className="text-gray-400 text-sm mt-3">
                   Status: <span className="text-green-400 font-semibold capitalize">{profile?.subscription_status || 'active'}</span>
                 </p>
               )}
             </div>
-            {tier === 'free' && (
+            {tier === 'trial' && (
               <Button
                 onClick={() => handleUpgrade('starter')}
                 className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 whitespace-nowrap"
@@ -705,8 +706,8 @@ function BillingSection() {
           </div>
         </div>
 
-        {/* Usage Stats - Free tier only */}
-        {tier === 'free' && (
+        {/* Usage Stats - Trial tier only */}
+        {tier === 'trial' && (
           <div className="space-y-3">
             <p className="text-gray-400 text-sm font-semibold">Usage This Month</p>
             <div className="grid grid-cols-2 gap-3">
@@ -722,27 +723,61 @@ function BillingSection() {
           </div>
         )}
 
+        {/* Billing Period Toggle - Only show for trial users (before they choose a plan) */}
+        {tier === 'trial' && (
+          <div className="space-y-3">
+            <p className="text-gray-400 text-sm font-semibold">Choose Billing Period</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                  billingPeriod === 'monthly'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod('annual')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition relative ${
+                  billingPeriod === 'annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+                }`}
+              >
+                Annual
+                {billingPeriod === 'annual' && (
+                  <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    Save 20%
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3 flex-wrap">
-          {tier === 'free' && (
+          {tier === 'trial' && (
             <>
               <Button
                 onClick={() => handleUpgrade('starter')}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 font-semibold"
               >
-                Upgrade to Starter - $19/mo
+                {billingPeriod === 'monthly' ? 'Start with Starter - $19/mo' : 'Start with Starter - $180/yr'}
               </Button>
               <Button
                 onClick={() => handleUpgrade('pro')}
                 className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 font-semibold"
               >
-                Upgrade to Pro - $49/mo
+                {billingPeriod === 'monthly' ? 'Start with Pro - $49/mo' : 'Start with Pro - $468/yr'}
               </Button>
               <Button
                 onClick={() => handleUpgrade('enterprise')}
                 className="flex-1 bg-gradient-to-r from-pink-600 to-pink-500 text-white hover:from-pink-700 hover:to-pink-600 font-semibold"
               >
-                Upgrade to Enterprise - $199/mo
+                {billingPeriod === 'monthly' ? 'Start with Enterprise - $199/mo' : 'Start with Enterprise - $1,908/yr'}
               </Button>
             </>
           )}
