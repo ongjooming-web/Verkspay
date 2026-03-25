@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
 
         // Find user by stripe_customer_id
         console.log('[Webhook] Looking up user by customer ID:', customerId)
-        const { data: users, error: findError } = await supabase
+        let { data: users, error: findError } = await supabase
           .from('profiles')
           .select('id, email')
           .eq('stripe_customer_id', customerId)
@@ -339,9 +339,48 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        // If not found by stripe_customer_id, try to get customer email from Stripe and lookup by email
         if (!users || users.length === 0) {
-          console.warn('[Webhook] No user found with customer ID:', customerId)
-          console.log('[Webhook] Note: User may not have completed checkout yet')
+          console.log('[Webhook] No user found by stripe_customer_id, trying to lookup by customer email...')
+          
+          try {
+            const customer = await stripe.customers.retrieve(customerId)
+            console.log('[Webhook] Retrieved customer from Stripe:', { 
+              id: customer.id, 
+              email: customer.email 
+            })
+
+            if (customer.email) {
+              const { data: usersByEmail, error: emailError } = await supabase
+                .from('profiles')
+                .select('id, email')
+                .eq('email', customer.email)
+
+              if (!emailError && usersByEmail && usersByEmail.length > 0) {
+                console.log('[Webhook] Found user by email:', { 
+                  userId: usersByEmail[0].id,
+                  email: usersByEmail[0].email 
+                })
+                users = usersByEmail
+              } else if (emailError) {
+                console.error('[Webhook] Error finding user by email:', emailError.message)
+              } else {
+                console.warn('[Webhook] No user found with email:', customer.email)
+              }
+            } else {
+              console.warn('[Webhook] Customer has no email address')
+            }
+          } catch (stripeError: any) {
+            console.error('[Webhook] Error retrieving customer from Stripe:', stripeError.message)
+          }
+        }
+
+        if (!users || users.length === 0) {
+          console.error('[Webhook] ❌ Could not find user by customer ID or email')
+          console.error('[Webhook] Customer ID:', customerId)
+          console.log('[Webhook] This usually means:')
+          console.log('[Webhook] 1. User never completed checkout (stripe_customer_id not stored)')
+          console.log('[Webhook] 2. Email in Stripe customer doesn\'t match email in profiles table')
           break
         }
 
@@ -388,9 +427,9 @@ export async function POST(request: NextRequest) {
         })
 
         // Find user by Stripe customer ID
-        const { data: users, error: findError } = await supabase
+        let { data: users, error: findError } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, email')
           .eq('stripe_customer_id', customerId)
 
         if (findError) {
@@ -401,8 +440,29 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        // If not found by stripe_customer_id, try email fallback
         if (!users || users.length === 0) {
-          console.warn('[Webhook] No user found with customer ID:', customerId)
+          console.log('[Webhook] No user found by stripe_customer_id, trying email lookup...')
+          
+          try {
+            const customer = await stripe.customers.retrieve(customerId)
+            if (customer.email) {
+              const { data: usersByEmail } = await supabase
+                .from('profiles')
+                .select('id, email')
+                .eq('email', customer.email)
+
+              if (usersByEmail && usersByEmail.length > 0) {
+                users = usersByEmail
+              }
+            }
+          } catch (err) {
+            console.error('[Webhook] Error retrieving customer:', err)
+          }
+        }
+
+        if (!users || users.length === 0) {
+          console.warn('[Webhook] No user found with customer ID or email:', customerId)
           break
         }
 
