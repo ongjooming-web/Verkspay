@@ -504,19 +504,26 @@ function BillingSection() {
       }
 
       const userId = user.id
-      setUserEmail(user.email || '')
-      console.log('[BillingSection] Loaded user:', userId, user.email)
+      const userEmailValue = user.email || ''
+      setUserEmail(userEmailValue)
+      console.log('[BillingSection] Loaded user:', userId, userEmailValue)
 
       // Get full profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('plan, subscription_status, trial_expires_at')
+        .select('plan, subscription_status, trial_end_date')
         .eq('id', userId)
         .single()
 
       if (profileError) {
         console.error('[BillingSection] Profile error:', profileError)
+        console.error('[BillingSection] Failed to fetch profile for user:', userId)
       } else {
+        console.log('[BillingSection] Profile loaded:', { 
+          plan: profileData?.plan, 
+          status: profileData?.subscription_status,
+          trialEndDate: profileData?.trial_end_date 
+        })
         setProfile(profileData)
       }
 
@@ -536,17 +543,24 @@ function BillingSection() {
         setInvoiceCount(invCount || 0)
       }
 
-      // Count payment links this month
+      // Count payment links this month (invoices with a stripe_payment_session_id)
       const { count: linkCount, error: linkError } = await supabase
         .from('invoices')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .eq('stripe_payment_session_id IS NOT', null)
-        .gte('payment_link_generated_at', monthStart.toISOString())
+        .not('stripe_payment_session_id', 'is', null)
+        .gte('created_at', monthStart.toISOString())
 
       if (linkError) {
         console.error('[BillingSection] Payment link count error:', linkError)
+        console.error('[BillingSection] Error details:', { 
+          message: linkError.message,
+          code: linkError.code,
+          details: linkError.details 
+        })
+        setPaymentLinkCount(0)
       } else {
+        console.log('[BillingSection] Payment links counted:', linkCount)
         setPaymentLinkCount(linkCount || 0)
       }
 
@@ -671,9 +685,9 @@ function BillingSection() {
   ]
 
   // Calculate trial days remaining
-  const trialExpiresAt = profile?.trial_expires_at
-  const trialDaysRemaining = trialExpiresAt 
-    ? Math.ceil((new Date(trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const trialEndDate = profile?.trial_end_date
+  const trialDaysRemaining = trialEndDate 
+    ? Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : 0
 
   // Get limits for current tier
