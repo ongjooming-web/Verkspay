@@ -837,45 +837,50 @@ function BillingSection() {
                   >
                     Upgrade
                   </Button>
-                ) : null}
+                ) : (
+                  <Button
+                    onClick={() => handleUpgrade(plan.id as 'starter' | 'pro' | 'enterprise')}
+                    className="w-full text-xs py-2 bg-gray-600 hover:bg-gray-700"
+                  >
+                    Change Plan
+                  </Button>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Billing Period Selector - Trial only */}
-        {tier === 'trial' && (
-          <div className="space-y-3">
-            <p className="text-gray-400 text-sm font-semibold">Choose Billing</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setBillingPeriod('monthly')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm ${
-                  billingPeriod === 'monthly'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingPeriod('annual')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm relative ${
-                  billingPeriod === 'annual'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
-                }`}
-              >
-                Annual
-                {billingPeriod === 'annual' && (
-                  <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    Save 20%
-                  </span>
-                )}
-              </button>
-            </div>
+        {/* Billing Period Selector */}
+        <div className="space-y-3">
+          <p className="text-gray-400 text-sm font-semibold">Billing Period</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm ${
+                billingPeriod === 'monthly'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod('annual')}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-sm relative ${
+                billingPeriod === 'annual'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/5 border border-white/10 text-gray-300 hover:border-white/20'
+              }`}
+            >
+              Annual
+              {billingPeriod === 'annual' && (
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  Save 20%
+                </span>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Usage Summary */}
         <div className="space-y-3">
