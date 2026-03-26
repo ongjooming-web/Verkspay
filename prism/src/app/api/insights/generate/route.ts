@@ -286,7 +286,6 @@ export async function POST(request: NextRequest) {
     const newCount = usageCount + 1
     console.log('[Insights] Updating usage count:', { userId, newCount, plan })
 
-    const now = new Date()
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
