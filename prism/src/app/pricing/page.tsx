@@ -10,6 +10,36 @@ import Link from 'next/link'
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
+  const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Check user's current plan on mount
+  React.useEffect(() => {
+    const checkUserPlan = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (!sessionData?.session) {
+          setIsLoggedIn(false)
+          return
+        }
+
+        setIsLoggedIn(true)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', sessionData.session.user.id)
+          .single()
+
+        if (profile?.plan) {
+          setUserPlan(profile.plan)
+        }
+      } catch (err) {
+        console.error('[PricingPage] Error checking user plan:', err)
+      }
+    }
+
+    checkUserPlan()
+  }, [])
 
   const handleUpgrade = async (plan: 'starter' | 'pro' | 'enterprise') => {
     try {
@@ -247,7 +277,8 @@ export default function PricingPage() {
                         {plan.button.text}
                       </Button>
                     </a>
-                  ) : (
+                  ) : !isLoggedIn ? (
+                    // Not logged in: show "Start Free Trial" for all plans
                     <Button
                       onClick={() =>
                         handleUpgrade(
@@ -261,7 +292,38 @@ export default function PricingPage() {
                           : 'border border-white/20 hover:border-white/40 text-white'
                       }`}
                     >
-                      {loading ? 'Loading...' : plan.button.text}
+                      {loading ? 'Loading...' : 'Start Free Trial'}
+                    </Button>
+                  ) : userPlan === plan.button.action ? (
+                    // Current plan: show "Current Plan" badge
+                    <div className="w-full text-center px-3 py-2 rounded bg-green-500/10 border border-green-500/20">
+                      <p className="text-xs font-semibold text-green-400">✓ Current Plan</p>
+                    </div>
+                  ) : (plan.button.action === 'pro' && userPlan === 'starter') || (plan.button.action === 'enterprise' && (userPlan === 'starter' || userPlan === 'pro')) ? (
+                    // Upgrade path: show "Upgrade" button
+                    <Button
+                      onClick={() =>
+                        handleUpgrade(
+                          plan.button.action as 'starter' | 'pro' | 'enterprise'
+                        )
+                      }
+                      disabled={loading}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {loading ? 'Loading...' : 'Upgrade'}
+                    </Button>
+                  ) : (
+                    // Any other plan: show "Change Plan" button
+                    <Button
+                      onClick={() =>
+                        handleUpgrade(
+                          plan.button.action as 'starter' | 'pro' | 'enterprise'
+                        )
+                      }
+                      disabled={loading}
+                      className="w-full bg-gray-600 hover:bg-gray-700 text-white"
+                    >
+                      {loading ? 'Loading...' : 'Change Plan'}
                     </Button>
                   )}
                 </CardBody>
