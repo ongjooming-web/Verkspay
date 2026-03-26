@@ -347,9 +347,13 @@ export default function ProposalDetail() {
         {/* Actions */}
         <Card className="border-blue-500/30">
           <CardBody className="flex gap-3 flex-wrap">
-            <Link href={`/proposals/${proposal.id}/edit`}>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">✏️ Edit</Button>
-            </Link>
+            {proposal.status === 'draft' ? (
+              <Link href={`/proposals/${proposal.id}/edit`}>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">✏️ Edit</Button>
+              </Link>
+            ) : (
+              <Button disabled className="bg-gray-600 text-gray-400 cursor-not-allowed">✏️ Edit (draft only)</Button>
+            )}
             {proposal.status === 'accepted' && (
               <Button
                 onClick={handleConvertToInvoice}
