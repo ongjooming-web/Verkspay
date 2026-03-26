@@ -27,6 +27,8 @@ export default function NewProposal() {
   const [clients, setClients] = useState<Client[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [limitInfo, setLimitInfo] = useState<any>(null)
+  const [canCreate, setCanCreate] = useState(true)
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: '', quantity: 1, rate: 0, amount: 0 }
   ])
@@ -64,6 +66,28 @@ export default function NewProposal() {
 
       if (clientsData) {
         setClients(clientsData)
+      }
+
+      // Check proposal limit
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (sessionData?.session?.access_token) {
+          const response = await fetch('/api/proposals/check-limit', {
+            headers: {
+              'Authorization': `Bearer ${sessionData.session.access_token}`
+            }
+          })
+
+          const data = await response.json()
+          setLimitInfo(data)
+          setCanCreate(data.canCreate)
+
+          if (!data.canCreate) {
+            setMessage(`⚠️ ${data.message}`)
+          }
+        }
+      } catch (err) {
+        console.error('[NewProposal] Error checking limit:', err)
       }
     }
 
@@ -108,6 +132,12 @@ export default function NewProposal() {
   const handleSave = async (asDraft: boolean) => {
     if (!user || !formData.title || !formData.client_id) {
       setMessage('❌ Fill in title and client')
+      return
+    }
+
+    // Check limit before creating
+    if (!canCreate) {
+      setMessage(`❌ You've reached your proposal limit for this month. Upgrade to Pro to create more.`)
       return
     }
 
@@ -169,6 +199,35 @@ export default function NewProposal() {
 
       <div className="max-w-4xl mx-auto p-6 md:p-8">
         <h1 className="text-4xl font-bold text-white mb-10">Create Proposal</h1>
+
+        {limitInfo && !canCreate && (
+          <Card className="mb-6 border-yellow-500/30">
+            <CardBody>
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <p className="text-yellow-300 font-semibold mb-2">⚠️ Proposal Limit Reached</p>
+                  <p className="text-gray-300 text-sm">{limitInfo.message}</p>
+                  <p className="text-gray-400 text-xs mt-2">
+                    Your {limitInfo.plan} plan allows {limitInfo.limit} proposals per month.
+                  </p>
+                </div>
+                <Link href="/settings" className="text-blue-400 hover:text-blue-300 text-sm font-medium whitespace-nowrap">
+                  Upgrade →
+                </Link>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {limitInfo && canCreate && (
+          <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
+            <CardBody>
+              <p className="text-blue-300 text-sm">
+                ✓ {limitInfo.plan === 'master' ? 'Master account - Unlimited proposals' : `${limitInfo.limit - limitInfo.count} proposals remaining this month`}
+              </p>
+            </CardBody>
+          </Card>
+        )}
 
         {message && (
           <Card className={`mb-6 border-${message.includes('✅') ? 'green' : 'red'}-500/30`}>
@@ -380,14 +439,14 @@ export default function NewProposal() {
         <div className="flex gap-3">
           <Button
             onClick={() => handleSave(true)}
-            disabled={saving}
+            disabled={saving || !canCreate}
             className="bg-gray-600 hover:bg-gray-700 text-white disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save as Draft'}
           </Button>
           <Button
             onClick={() => handleSave(false)}
-            disabled={saving}
+            disabled={saving || !canCreate}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white disabled:opacity-50"
           >
             {saving ? 'Sending...' : 'Send Proposal'}
