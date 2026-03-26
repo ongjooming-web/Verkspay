@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
@@ -14,7 +14,7 @@ export default function PricingPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   // Check user's current plan on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const checkUserPlan = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession()
