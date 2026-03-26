@@ -13,6 +13,10 @@ import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useCurrency } from '@/hooks/useCurrency'
 import { LineItem } from '@/types/invoice'
+import {
+  generateInvoiceWhatsAppLink,
+  generateReminderWhatsAppLink
+} from '@/utils/whatsapp'
 
 interface Invoice {
   id: string
@@ -248,6 +252,66 @@ export default function InvoiceDetail() {
     }
   }
 
+  const handleSendViaWhatsApp = () => {
+    if (!invoice || !invoice.clients?.phone) {
+      alert('Add a phone number to this client to send via WhatsApp')
+      return
+    }
+
+    const businessName = profile?.business_name || profile?.full_name || userEmail?.split('@')[0] || 'Business'
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+
+    const whatsappLink = generateInvoiceWhatsAppLink(
+      invoice.clients.name || 'Client',
+      invoice.invoice_number,
+      invoice.amount,
+      invoice.currency_code || 'MYR',
+      invoice.due_date,
+      invoice.description || '',
+      paymentUrl,
+      businessName,
+      invoice.clients.phone
+    )
+
+    if (whatsappLink) {
+      window.open(whatsappLink, '_blank')
+    } else {
+      alert('Invalid phone number. Please check the client phone number.')
+    }
+  }
+
+  const handleSendReminderViaWhatsApp = () => {
+    if (!invoice || !invoice.clients?.phone) {
+      alert('Add a phone number to this client to send via WhatsApp')
+      return
+    }
+
+    const businessName = profile?.business_name || profile?.full_name || userEmail?.split('@')[0] || 'Business'
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+
+    const dueDate = new Date(invoice.due_date)
+    const now = new Date()
+    const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+
+    const whatsappLink = generateReminderWhatsAppLink(
+      invoice.clients.name || 'Client',
+      invoice.invoice_number,
+      invoice.remaining_balance || invoice.amount,
+      invoice.currency_code || 'MYR',
+      invoice.due_date,
+      daysOverdue,
+      paymentUrl,
+      businessName,
+      invoice.clients.phone
+    )
+
+    if (whatsappLink) {
+      window.open(whatsappLink, '_blank')
+    } else {
+      alert('Invalid phone number. Please check the client phone number.')
+    }
+  }
+
   const handleMarkAsPaid = async () => {
     if (!invoice) return
 
@@ -468,6 +532,7 @@ export default function InvoiceDetail() {
                 onMarkAsPaid={handleMarkAsPaid}
                 onEdit={() => setIsEditing(true)}
                 onDelete={handleDeleteInvoice}
+                onSendViaWhatsApp={handleSendViaWhatsApp}
                 isEditing={isEditing}
               />
             )}
@@ -654,7 +719,7 @@ export default function InvoiceDetail() {
                 )}
               </div>
 
-              {/* Send Reminder Button */}
+              {/* Send Reminder Buttons */}
               <div>
                 {invoice.reminder_sent_count && invoice.reminder_sent_count < 3 ? (
                   <>
@@ -662,26 +727,42 @@ export default function InvoiceDetail() {
                       {invoice.reminder_sent_count === 1 && '📩 Send a follow-up (Day 3 template)'}
                       {invoice.reminder_sent_count === 2 && '🚨 Send final urgent reminder (Day 7 template)'}
                     </p>
-                    <Button
-                      onClick={handleSendReminder}
-                      disabled={sendingReminder}
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                    >
-                      {sendingReminder ? '⏳ Sending...' : '📧 Send Next Reminder'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSendReminder}
+                        disabled={sendingReminder}
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {sendingReminder ? '⏳ Sending...' : '📧 Email'}
+                      </Button>
+                      <Button
+                        onClick={handleSendReminderViaWhatsApp}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        💬 WhatsApp
+                      </Button>
+                    </div>
                   </>
                 ) : invoice.reminder_sent_count === 0 ? (
                   <>
                     <p className="text-gray-400 text-xs mb-3">
                       Send a polite payment reminder to your client
                     </p>
-                    <Button
-                      onClick={handleSendReminder}
-                      disabled={sendingReminder}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {sendingReminder ? '⏳ Sending...' : '📧 Send Reminder'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSendReminder}
+                        disabled={sendingReminder}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {sendingReminder ? '⏳ Sending...' : '📧 Email'}
+                      </Button>
+                      <Button
+                        onClick={handleSendReminderViaWhatsApp}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        💬 WhatsApp
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <div className="glass border-amber-400/30 bg-amber-500/10 px-4 py-3 rounded-lg text-amber-300">

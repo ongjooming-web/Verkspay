@@ -8,6 +8,10 @@ interface InvoiceActionMenuProps {
     id: string
     status: string
     sent_at?: string
+    clients?: {
+      phone?: string
+      name?: string
+    }
   }
   onDownloadPDF: () => void
   onSendToClient: () => void
@@ -15,6 +19,7 @@ interface InvoiceActionMenuProps {
   onMarkAsPaid: () => void
   onEdit: () => void
   onDelete: () => void
+  onSendViaWhatsApp?: () => void
   isEditing: boolean
 }
 
@@ -26,6 +31,7 @@ export function InvoiceActionMenu({
   onMarkAsPaid,
   onEdit,
   onDelete,
+  onSendViaWhatsApp,
   isEditing,
 }: InvoiceActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -82,6 +88,19 @@ export function InvoiceActionMenu({
               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-blue-500/20 transition"
             >
               🔗 Share Payment Link
+            </button>
+          )}
+
+          {/* Send via WhatsApp */}
+          {onSendViaWhatsApp && invoice.status !== 'paid' && (
+            <button
+              onClick={() => {
+                onSendViaWhatsApp()
+                setIsOpen(false)
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-green-500/20 transition"
+            >
+              💬 Send via WhatsApp
             </button>
           )}
 
