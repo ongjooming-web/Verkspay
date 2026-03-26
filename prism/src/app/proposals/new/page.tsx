@@ -74,11 +74,14 @@ export default function NewProposal() {
     const updated = [...lineItems]
     const item = updated[idx]
 
-    if (field === 'quantity' || field === 'rate') {
-      item[field as keyof LineItem] = parseFloat(value) || 0
+    if (field === 'quantity') {
+      item.quantity = parseFloat(value) || 0
       item.amount = item.quantity * item.rate
-    } else {
-      item[field as keyof LineItem] = value
+    } else if (field === 'rate') {
+      item.rate = parseFloat(value) || 0
+      item.amount = item.quantity * item.rate
+    } else if (field === 'description') {
+      item.description = value
     }
 
     updated[idx] = item
