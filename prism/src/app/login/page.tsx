@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Card, CardBody, CardHeader } from '@/components/Card'
@@ -106,7 +105,7 @@ export default function Login() {
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/10">
         <CardHeader className="text-center">
           <Link href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
-            <Image src="/logo.png" alt="Prism Logo" width={48} height={48} className="w-12 h-12" />
+            <img src="/logo.svg" alt="Prism Logo" className="w-16 h-16" />
           </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Prism

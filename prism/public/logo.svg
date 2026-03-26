@@ -1,0 +1,37 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hexagonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="16.67%" style="stop-color:#ff9f6b;stop-opacity:1" />
+      <stop offset="33.33%" style="stop-color:#ffd93d;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#6bdb77;stop-opacity:1" />
+      <stop offset="66.67%" style="stop-color:#4d96ff;stop-opacity:1" />
+      <stop offset="83.33%" style="stop-color:#b565d8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 3D Hexagon with depth -->
+  <!-- Back face (shadow) -->
+  <polygon points="100,20 180,60 180,140 100,180 20,140 20,60" 
+           fill="url(#hexagonGradient)" 
+           opacity="0.3"
+           transform="translate(5, 5)" />
+  
+  <!-- Front face (main) -->
+  <polygon points="100,20 180,60 180,140 100,180 20,140 20,60" 
+           fill="url(#hexagonGradient)" 
+           stroke="url(#hexagonGradient)"
+           stroke-width="2"
+           stroke-linejoin="round" />
+  
+  <!-- Inner shine/highlight -->
+  <polygon points="100,50 150,80 150,120 100,150 50,120 50,80" 
+           fill="white" 
+           opacity="0.15" />
+  
+  <!-- Prism symbol in center -->
+  <circle cx="100" cy="100" r="8" fill="white" opacity="0.9" />
+  <line x1="100" y1="85" x2="100" y2="115" stroke="white" stroke-width="2" opacity="0.8" />
+  <line x1="85" y1="100" x2="115" y2="100" stroke="white" stroke-width="2" opacity="0.8" />
+</svg>
