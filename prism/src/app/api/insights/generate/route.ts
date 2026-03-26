@@ -282,17 +282,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // STEP 4: Update usage & return
+    // STEP 4: Update usage & save insights to profile
     const newCount = usageCount + 1
     console.log('[Insights] Updating usage count:', { userId, newCount, plan })
 
+    const now = new Date()
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ insights_generated_count: newCount })
+      .update({
+        insights_generated_count: newCount,
+        latest_insights: insights,
+        insights_generated_at: now.toISOString(),
+      })
       .eq('id', userId)
 
     if (updateError) {
-      console.error('[Insights] Failed to update usage:', updateError)
+      console.error('[Insights] Failed to update profile:', updateError)
       // Don't fail the request, just log it
     }
 
@@ -305,7 +310,7 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    console.log('[Insights] ✓ Insights generated successfully for user:', userId)
+    console.log('[Insights] ✓ Insights generated and saved successfully for user:', userId)
     return NextResponse.json(response)
   } catch (error) {
     console.error('[Insights] Unexpected error:', error)

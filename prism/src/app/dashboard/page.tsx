@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [insightsUsage, setInsightsUsage] = useState<{ used: number; limit: number; plan: string } | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [insightsError, setInsightsError] = useState<string | null>(null)
+  const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<string | null>(null)
   const [token, setToken] = useState('')
   const [displayName, setDisplayName] = useState<string>('')
 
@@ -75,16 +76,22 @@ export default function Dashboard() {
         setToken(session.access_token)
         const userId = session.user.id
 
-        // Fetch user's display name from profile
+        // Fetch user's display name and insights from profile
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, business_name')
+          .select('full_name, business_name, latest_insights, insights_generated_at')
           .eq('id', userId)
           .single()
 
         if (profileData) {
           const name = profileData.full_name || profileData.business_name || session.user.email?.split('@')[0] || 'User'
           setDisplayName(name)
+          
+          // Load saved insights if they exist
+          if (profileData.latest_insights) {
+            setInsights(profileData.latest_insights)
+            setInsightsGeneratedAt(profileData.insights_generated_at)
+          }
         } else {
           setDisplayName(session.user.email?.split('@')[0] || 'User')
         }
@@ -300,6 +307,7 @@ export default function Dashboard() {
       const result = data as InsightsResponse
       setInsights(result.insights)
       setInsightsUsage(result.usage)
+      setInsightsGeneratedAt(new Date().toISOString())
     } catch (err) {
       console.error('Insights error:', err)
       setInsightsError('An error occurred')
@@ -476,7 +484,12 @@ export default function Dashboard() {
                 {insightsUsage && (
                   <div className="mb-4 text-xs text-gray-400">
                     <span className="text-white font-semibold">{insightsUsage.used}</span> of{' '}
-                    <span className="text-white font-semibold">{insightsUsage.limit}</span> used this month
+                    <span className="text-white font-semibold">{insightsUsage.limit === 999999 ? '∞' : insightsUsage.limit}</span> used this month
+                  </div>
+                )}
+                {insightsGeneratedAt && (
+                  <div className="mb-4 text-xs text-gray-500">
+                    Last updated: {new Date(insightsGeneratedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 )}
 

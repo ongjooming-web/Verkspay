@@ -16,11 +16,12 @@ export default function InsightsPage() {
   const [generating, setGenerating] = useState(false)
   const [insights, setInsights] = useState<ClaudeInsights | null>(null)
   const [usage, setUsage] = useState<{ used: number; limit: number; plan: string } | null>(null)
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [errorType, setErrorType] = useState<'trial_expired' | 'rate_limit' | 'api_error' | null>(null)
   const [token, setToken] = useState<string>('')
 
-  // Auth check
+  // Auth check & load saved insights
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -32,6 +33,23 @@ export default function InsightsPage() {
 
         setUser(data.session.user)
         setToken(data.session.access_token)
+
+        // Load saved insights
+        try {
+          const response = await fetch('/api/insights/latest', {
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+          })
+          const data_: any = await response.json()
+          if (data_.insights) {
+            setInsights(data_.insights)
+            setUsage(data_.usage)
+            setGeneratedAt(data_.generated_at)
+          }
+        } catch (err) {
+          console.error('Failed to load saved insights:', err)
+        }
       } catch (err) {
         console.error('Auth error:', err)
         router.push('/login')
@@ -42,6 +60,36 @@ export default function InsightsPage() {
 
     checkAuth()
   }, [router])
+
+  const downloadPDF = async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch('/api/insights/pdf', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        console.error('PDF download failed:', response.status)
+        return
+      }
+
+      const html = await response.text()
+      const blob = new Blob([html], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'business-insights.html'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error downloading PDF:', err)
+    }
+  }
 
   const generateInsights = async () => {
     if (!token) return
@@ -79,6 +127,7 @@ export default function InsightsPage() {
       const result = data as InsightsResponse
       setInsights(result.insights)
       setUsage(result.usage)
+      setGeneratedAt(new Date().toISOString())
     } catch (err) {
       console.error('Generate error:', err)
       setErrorType('api_error')
@@ -112,7 +161,7 @@ export default function InsightsPage() {
         </div>
 
         {/* Action Bar */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <Button
               onClick={generateInsights}
@@ -121,14 +170,27 @@ export default function InsightsPage() {
             >
               {generating ? 'Analyzing...' : 'Generate Insights'}
             </Button>
+            {insights && (
+              <Button
+                onClick={downloadPDF}
+                className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg"
+              >
+                📄 Download PDF
+              </Button>
+            )}
             {usage && (
               <div className="text-sm text-gray-400">
                 <span className="text-white font-semibold">{usage.used}</span> of{' '}
-                <span className="text-white font-semibold">{usage.limit}</span> used this month
+                <span className="text-white font-semibold">{usage.limit === 999999 ? '∞' : usage.limit}</span> used this month
               </div>
             )}
           </div>
         </div>
+        {generatedAt && (
+          <div className="text-xs text-gray-500 mb-8">
+            Last generated: {new Date(generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
 
         {/* Loading State */}
         {generating && (
@@ -306,11 +368,10 @@ export default function InsightsPage() {
                 <h2 className="text-2xl font-bold text-white mb-4">Recommendations</h2>
                 <Card className="border-blue-500/30">
                   <CardBody>
-                    <ol className="space-y-3">
+                    <ol className="space-y-3 list-decimal list-inside">
                       {insights.recommendations.map((rec, idx) => (
-                        <li key={idx} className="flex gap-3">
-                          <span className="text-blue-400 font-semibold flex-shrink-0">{idx + 1}.</span>
-                          <span className="text-gray-300">{rec}</span>
+                        <li key={idx} className="text-gray-300">
+                          {rec}
                         </li>
                       ))}
                     </ol>
