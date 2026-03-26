@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
 
     const insights = profile.latest_insights as ClaudeInsights
     const businessName = profile.business_name || profile.full_name || 'Your Business'
-    const generatedAt = new Date(profile.insights_generated_at).toLocaleDateString('en-US', {
+    const generatedAt = new Date(profile.insights_generated_at)
+    const dateStr = generatedAt.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -57,14 +58,15 @@ export async function GET(request: NextRequest) {
     })
 
     // Generate HTML for PDF
-    const html = generatePDFHTML(insights, businessName, generatedAt)
+    const html = generatePDFHTML(insights, businessName, dateStr)
 
-    // For now, return HTML as text with proper headers for browser rendering
-    // Client can print to PDF or use a print-to-PDF service
+    // Return as HTML that the client-side will convert to PDF
+    // This works with html2pdf.js library or browser's print-to-PDF feature
     return new NextResponse(html, {
+      status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="business-insights.html"',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     })
   } catch (error) {

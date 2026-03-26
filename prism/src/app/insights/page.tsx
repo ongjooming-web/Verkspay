@@ -62,9 +62,10 @@ export default function InsightsPage() {
   }, [router])
 
   const downloadPDF = async () => {
-    if (!token) return
+    if (!token || !insights) return
 
     try {
+      // Fetch the HTML from the PDF endpoint
       const response = await fetch('/api/insights/pdf', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -72,22 +73,40 @@ export default function InsightsPage() {
       })
 
       if (!response.ok) {
-        console.error('PDF download failed:', response.status)
+        console.error('PDF generation failed:', response.status)
+        setError('Failed to generate PDF')
         return
       }
 
       const html = await response.text()
-      const blob = new Blob([html], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'business-insights.html'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+
+      // Create a container for html2pdf
+      const element = document.createElement('div')
+      element.innerHTML = html
+
+      // Use html2pdf via a script tag (load from CDN)
+      const script = document.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+      script.onload = () => {
+        // @ts-ignore - html2pdf is now globally available
+        const opt = {
+          margin: 10,
+          filename: `business-insights-${new Date().toISOString().split('T')[0]}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+        }
+        // @ts-ignore
+        html2pdf().set(opt).from(element).save()
+      }
+      script.onerror = () => {
+        console.error('Failed to load html2pdf library')
+        setError('Failed to load PDF library. Please try again.')
+      }
+      document.head.appendChild(script)
     } catch (err) {
       console.error('Error downloading PDF:', err)
+      setError('An error occurred while generating the PDF')
     }
   }
 
