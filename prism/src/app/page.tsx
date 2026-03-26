@@ -26,30 +26,36 @@ export default function LandingPage() {
       <div className="relative z-10">
         {/* Header */}
         <header className="backdrop-blur-xl border-b border-white/10 sticky top-0">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2 md:gap-0">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Prism Logo" className="h-10 w-10" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Prism</span>
+              <img src="/logo.svg" alt="Prism Logo" className="h-8 md:h-10 w-8 md:w-10" />
+              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Prism</span>
             </Link>
-            <nav className="flex gap-6 items-center">
-              <a href="#features" className="text-gray-300 hover:text-white transition">Features</a>
-              <a href="#pricing" className="text-gray-300 hover:text-white transition">Pricing</a>
-              <Link href="/login" className="text-gray-300 hover:text-white transition">Login</Link>
-              <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
+            <nav className="hidden md:flex gap-6 items-center">
+              <a href="#features" className="text-gray-300 hover:text-white transition text-sm">Features</a>
+              <a href="#pricing" className="text-gray-300 hover:text-white transition text-sm">Pricing</a>
+              <Link href="/login" className="text-gray-300 hover:text-white transition text-sm">Login</Link>
+              <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2 rounded-lg font-medium hover:opacity-90 transition text-sm">
                 Get Started
               </Link>
             </nav>
+            {/* Mobile menu button */}
+            <button className="md:hidden text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </header>
 
         {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-6 py-24">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+        <section className="max-w-7xl mx-auto px-4 md:px-6 py-16 md:py-24">
+          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6">
               Get paid faster.{' '}
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Chase invoices less.</span>
             </h1>
-            <p className="text-xl text-gray-400 mb-8">
+            <p className="text-base md:text-lg lg:text-xl text-gray-400 mb-6 md:mb-8">
               Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
             </p>
 

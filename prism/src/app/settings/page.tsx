@@ -801,7 +801,7 @@ function BillingSection() {
         {/* Plan Comparison Grid */}
         <div className="space-y-3">
           <p className="text-gray-400 text-sm font-semibold">Compare Plans</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {plans.map((plan) => (
               <div
                 key={plan.id}
@@ -812,10 +812,10 @@ function BillingSection() {
                 }`}
               >
                 <div className="mb-3">
-                  <h4 className="text-white font-bold text-sm">{plan.name}</h4>
-                  <p className="text-gray-400 text-xs mt-1">{plan.features}</p>
+                  <h4 className="text-white font-bold text-base md:text-sm">{plan.name}</h4>
+                  <p className="text-gray-400 text-xs mt-2 line-clamp-3">{plan.features}</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-300 mb-3">
+                <p className="text-3xl md:text-2xl font-bold text-blue-300 mb-3">
                   ${billingPeriod === 'monthly' ? plan.monthlyPrice : plan.annualPrice}
                   <span className="text-sm text-gray-400">/mo</span>
                 </p>
