@@ -733,9 +733,9 @@ function BillingSection() {
   
   // Plan configuration
   const plans = [
-    { id: 'starter', name: 'Starter', monthlyPrice: 19, annualPrice: 15, features: '20 invoices/month' },
-    { id: 'pro', name: 'Pro', monthlyPrice: 49, annualPrice: 39, features: 'Unlimited invoices' },
-    { id: 'enterprise', name: 'Enterprise', monthlyPrice: 199, annualPrice: 159, features: 'Multi-entity' }
+    { id: 'starter', name: 'Starter', monthlyPrice: 19, annualPrice: 15, features: 'Up to 20 invoices, Smart reminders, 5 AI Insights/mo, WhatsApp' },
+    { id: 'pro', name: 'Pro', monthlyPrice: 49, annualPrice: 39, features: 'Unlimited invoices, Partial payments, Proposals, 30 AI Insights/mo' },
+    { id: 'enterprise', name: 'Enterprise', monthlyPrice: 199, annualPrice: 159, features: 'Everything, Unlimited AI, Revenue forecasting, Team mgmt' }
   ]
 
   // Calculate trial days remaining

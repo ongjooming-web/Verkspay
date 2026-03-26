@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 export default function LandingPage() {
   const [email, setEmail] = useState('')
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
 
   const handleEmailSignup = (e: React.FormEvent) => {
     e.preventDefault()
@@ -123,7 +124,38 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section id="pricing" className="max-w-7xl mx-auto px-6 py-20">
           <h2 className="text-4xl font-bold text-center mb-4">Simple, transparent pricing</h2>
-          <p className="text-center text-gray-400 mb-16">Choose the plan that fits your needs</p>
+          <p className="text-center text-gray-400 mb-8">Choose the plan that fits your needs</p>
+          
+          {/* Billing Toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="inline-flex bg-white/10 border border-white/20 rounded-lg p-1">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`px-6 py-2 rounded-md font-medium transition ${
+                  billingPeriod === 'monthly'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod('annual')}
+                className={`px-6 py-2 rounded-md font-medium transition relative ${
+                  billingPeriod === 'annual'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Annual
+                {billingPeriod === 'annual' && (
+                  <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    Save 20%
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
           
           <div className="grid md:grid-cols-3 gap-6">
             {[
@@ -217,7 +249,9 @@ export default function LandingPage() {
                 <div className={plan.badge ? 'pt-4' : ''}>
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <div className="mb-2">
-                    <span className="text-4xl font-bold">{plan.price}</span>
+                    <span className="text-4xl font-bold">
+                      {billingPeriod === 'monthly' ? plan.price : plan.annualPrice}
+                    </span>
                     <span className="text-gray-400 ml-2">{plan.period}</span>
                   </div>
                   <p className="text-gray-400 mb-6 text-sm">{plan.desc}</p>
@@ -239,13 +273,13 @@ export default function LandingPage() {
                   <p className="text-gray-400 text-xs italic mb-4 pb-4 border-t border-white/10 pt-4">{plan.note}</p>
                 )}
 
-                <button className={`w-full py-2 rounded-lg font-medium transition ${
+                <Link href="/signup" className={`w-full py-2 rounded-lg font-medium transition block text-center ${
                   plan.highlighted
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'border border-white/20 hover:border-white/40 text-white'
                 }`}>
                   {plan.cta}
-                </button>
+                </Link>
               </div>
             ))}
           </div>
