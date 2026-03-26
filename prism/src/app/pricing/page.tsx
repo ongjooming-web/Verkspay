@@ -68,6 +68,7 @@ export default function PricingPage() {
         'Stripe payments',
         'Smart reminders',
         'Smart Invoice Creation (auto-fill from history)',
+        'WhatsApp invoice sharing',
         '5 AI Insights/month',
         'Client management',
         'Flexible payment terms (Net 30/60/90, Due on Receipt)',
@@ -90,17 +91,21 @@ export default function PricingPage() {
         'Stripe payments',
         'Smart reminders',
         'Partial payments',
-        'AI-powered Invoice Creation',
+        'Recurring invoices',
+        'Smart Invoice Creation (auto-fill from history)',
+        'Proposals & Contracts',
+        'WhatsApp invoice sharing',
         '30 AI Insights/month',
         'AI Business Recommendations',
-        'Client management',
+        'AI Client Summaries & Health Scores',
+        'Smart Follow-up Suggestions',
         'Advanced reporting',
         'Flexible payment terms (Net 30/60/90, Due on Receipt)',
         'Priority email support'
       ],
-      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.',
+      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for freelancers.',
       button: { text: 'Start Free Trial', action: 'pro' },
-      highlighted: false
+      highlighted: true
     },
     {
       name: 'Enterprise',
@@ -108,21 +113,19 @@ export default function PricingPage() {
       annualPrice: '$159',
       annualTotal: '$1,908',
       period: '/mo',
-      description: 'For teams & agencies',
+      description: 'For agencies & growing teams',
       features: [
         'Everything in Pro',
         'Unlimited AI Insights',
-        'Multi-entity / business units support',
-        'POS webhook integration',
-        'Advanced accounting module',
-        'Customer pricing tiers (Distributor/Wholesaler/HoReCa)',
+        'Revenue Forecasting',
         'Receivables aging reports',
+        'POS webhook integration',
         'Team management (5 users)',
-        'API access & webhooks',
         'Custom branding',
-        'Dedicated support'
+        'API access & webhooks',
+        'Priority support'
       ],
-      note: 'Built for agencies, holding companies, and multi-entity businesses.',
+      note: 'Built for agencies and growing teams that need advanced tools.',
       button: { text: 'Contact Us', action: 'enterprise' },
       highlighted: false
     }
