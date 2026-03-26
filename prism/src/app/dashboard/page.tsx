@@ -61,6 +61,17 @@ export default function Dashboard() {
   const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<string | null>(null)
   const [token, setToken] = useState('')
   const [displayName, setDisplayName] = useState<string>('')
+  const [proposalStats, setProposalStats] = useState<any>({
+    total: 0,
+    draft: 0,
+    sent: 0,
+    viewed: 0,
+    accepted: 0,
+    declined: 0,
+    pipelineValue: 0,
+    acceptedValue: 0,
+    winRate: 0
+  })
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -173,6 +184,22 @@ export default function Dashboard() {
           overdueCount,
           overdueAmount,
         })
+
+        // Fetch proposal stats
+        try {
+          const { data: sessionData } = await supabase.auth.getSession()
+          if (sessionData?.session?.access_token) {
+            const response = await fetch('/api/proposals/stats', {
+              headers: {
+                'Authorization': `Bearer ${sessionData.session.access_token}`
+              }
+            })
+            const statsData = await response.json()
+            setProposalStats(statsData)
+          }
+        } catch (err) {
+          console.error('[Dashboard] Error fetching proposal stats:', err)
+        }
 
         // Generate monthly revenue data (last 6 months) - using amount_paid for actual collected revenue
         const monthlyRevenue: { [key: string]: number } = {}
@@ -447,6 +474,14 @@ export default function Dashboard() {
               <div className="text-orange-400 text-sm mt-3">{stats.proposalCount} proposals</div>
             </CardBody>
           </Card>
+
+          <Card className="hover:scale-105 hover:border-cyan-400/50">
+            <CardBody>
+              <div className="text-gray-400 text-sm font-medium mb-3">Proposal Pipeline</div>
+              <div className="text-4xl font-bold text-cyan-400">{proposalStats.total}</div>
+              <div className="text-cyan-400 text-sm mt-3">{proposalStats.accepted} accepted • {proposalStats.winRate}% win rate</div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* AI Insights Widget */}
@@ -712,6 +747,51 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
+          {/* Proposal Stats */}
+          <Card className="border-cyan-500/30">
+            <CardHeader>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <span>📋</span> Proposal Pipeline
+              </h2>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 rounded-lg p-3">
+                  <div className="text-gray-400 text-xs mb-1">Draft</div>
+                  <div className="text-2xl font-bold text-gray-400">{proposalStats.draft}</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-3">
+                  <div className="text-gray-400 text-xs mb-1">Sent</div>
+                  <div className="text-2xl font-bold text-blue-400">{proposalStats.sent}</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-3">
+                  <div className="text-gray-400 text-xs mb-1">Accepted</div>
+                  <div className="text-2xl font-bold text-green-400">{proposalStats.accepted}</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-3">
+                  <div className="text-gray-400 text-xs mb-1">Declined</div>
+                  <div className="text-2xl font-bold text-red-400">{proposalStats.declined}</div>
+                </div>
+              </div>
+              <div className="border-t border-white/10 pt-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-400 text-sm">Pipeline Value</span>
+                  <span className="text-cyan-300 font-semibold">{formatCurrency(proposalStats.pipelineValue, 'MYR')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Win Rate</span>
+                  <span className="text-green-400 font-semibold">{proposalStats.winRate}%</span>
+                </div>
+              </div>
+              <Link href="/proposals">
+                <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-sm">View Proposals</Button>
+              </Link>
+            </CardBody>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="lg:col-span-2">
             <CardHeader>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
