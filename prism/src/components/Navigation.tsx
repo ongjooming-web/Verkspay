@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from './Button'
@@ -31,8 +32,9 @@ export function Navigation() {
         {/* Desktop & Mobile Header */}
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-            ◆ Prism
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Image src="/logo.png" alt="Prism Logo" width={32} height={32} className="h-8 w-8" />
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Prism</span>
           </Link>
 
           {/* Desktop Navigation */}

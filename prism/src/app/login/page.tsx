@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Card, CardBody, CardHeader } from '@/components/Card'
@@ -104,26 +105,8 @@ export default function Login() {
 
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/10">
         <CardHeader className="text-center">
-          <Link href="/" className="flex justify-center mb-4">
-            <svg className="w-12 h-12 hover:opacity-80 transition-opacity cursor-pointer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="rainbowGradientLogin" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
-                  <stop offset="16.67%" style={{ stopColor: '#ff9f6b', stopOpacity: 1 }} />
-                  <stop offset="33.33%" style={{ stopColor: '#ffd93d', stopOpacity: 1 }} />
-                  <stop offset="50%" style={{ stopColor: '#6bdb77', stopOpacity: 1 }} />
-                  <stop offset="66.67%" style={{ stopColor: '#4d96ff', stopOpacity: 1 }} />
-                  <stop offset="83.33%" style={{ stopColor: '#b565d8', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              <polygon points="50,5 93.3,28.33 93.3,75 50,98.33 6.7,75 6.7,28.33" 
-                       fill="url(#rainbowGradientLogin)" 
-                       stroke="url(#rainbowGradientLogin)" 
-                       strokeWidth="1.5"/>
-              <text x="50" y="60" fontSize="40" fontWeight="bold" textAnchor="middle" 
-                    dominantBaseline="middle" fill="white" fontFamily="Arial">◆</text>
-            </svg>
+          <Link href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
+            <Image src="/logo.png" alt="Prism Logo" width={48} height={48} className="w-12 h-12" />
           </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Prism

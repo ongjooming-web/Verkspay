@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 
 export default function LandingPage() {
@@ -26,8 +27,9 @@ export default function LandingPage() {
         {/* Header */}
         <header className="backdrop-blur-xl border-b border-white/10 sticky top-0">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold">
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Prism</span>
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Prism Logo" width={32} height={32} className="h-8 w-8" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Prism</span>
             </Link>
             <nav className="flex gap-6 items-center">
               <a href="#features" className="text-gray-300 hover:text-white transition">Features</a>
