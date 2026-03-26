@@ -43,16 +43,16 @@ export async function POST(request: NextRequest) {
     console.log('[Checkout] Creating session:', { userId: data.user.id, email: data.user.email, plan, billingPeriod })
 
     // Map plan names and billing periods to Stripe price IDs
-    const priceMapKey = `STRIPE_PRICE_ID_${plan.toUpperCase()}_${(billingPeriod || 'monthly').toUpperCase()}`
+    const priceMapKey = `PRISM_${plan.toUpperCase()}_${(billingPeriod || 'monthly').toUpperCase()}`
     const priceId = process.env[priceMapKey]
 
     if (!priceId) {
       console.error(
         `Missing Stripe price ID: ${priceMapKey}. 
         Ensure this is set in Vercel environment variables:
-        STRIPE_PRICE_ID_STARTER_MONTHLY, STRIPE_PRICE_ID_STARTER_ANNUAL,
-        STRIPE_PRICE_ID_PRO_MONTHLY, STRIPE_PRICE_ID_PRO_ANNUAL,
-        STRIPE_PRICE_ID_ENTERPRISE_MONTHLY, STRIPE_PRICE_ID_ENTERPRISE_ANNUAL`
+        PRISM_STARTER_MONTHLY, PRISM_STARTER_ANNUAL,
+        PRISM_PRO_MONTHLY, PRISM_PRO_ANNUAL,
+        PRISM_ENTERPRISE_MONTHLY, PRISM_ENTERPRISE_ANNUAL`
       )
       return NextResponse.json(
         { error: `Invalid plan or billing period: ${plan} - ${billingPeriod || 'monthly'}. Missing Stripe price ID.` },
