@@ -28,6 +28,7 @@ export default function Settings() {
   const [countryCode, setCountryCode] = useState('MY')
   const [currencyCode, setCurrencyCode] = useState('MYR')
   const [formData, setFormData] = useState({
+    full_name: '',
     wallet_address: '',
     preferred_network: 'base',
     business_name: '',
@@ -55,6 +56,7 @@ export default function Settings() {
           setCountryCode(profileData.country_code || 'MY')
           setCurrencyCode(profileData.currency_code || 'MYR')
           setFormData({
+            full_name: profileData.full_name || '',
             wallet_address: profileData.wallet_address || '',
             preferred_network: profileData.preferred_network || 'base',
             business_name: profileData.business_name || '',
@@ -115,12 +117,13 @@ export default function Settings() {
     setMessage('')
 
     try {
-      // Upsert to profiles table with all 5 business fields
+      // Upsert to profiles table with all fields
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           email: user.email,
+          full_name: formData.full_name,
           country_code: countryCode,
           wallet_address: formData.wallet_address,
           preferred_network: formData.preferred_network,
@@ -321,6 +324,29 @@ export default function Settings() {
               </button>
               <p className="text-gray-400 text-xs mt-2">All invoices and amounts will display in this currency</p>
             </div>
+          </CardBody>
+        </Card>
+
+        {/* Profile Settings */}
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-2xl font-bold text-white">Your Profile</h2>
+            <p className="text-gray-400 text-sm mt-1">Personalize how you appear to clients</p>
+          </CardHeader>
+          <CardBody>
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Display Name *</label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="Your name (e.g., John Doe)"
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
+                />
+                <p className="text-gray-400 text-xs mt-2">This is how you'll be greeted on the dashboard and shown to clients</p>
+              </div>
+            </form>
           </CardBody>
         </Card>
 

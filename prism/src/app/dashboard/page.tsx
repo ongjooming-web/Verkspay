@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [insightsError, setInsightsError] = useState<string | null>(null)
   const [token, setToken] = useState('')
+  const [displayName, setDisplayName] = useState<string>('')
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -73,6 +74,20 @@ export default function Dashboard() {
         setUser(session.user)
         setToken(session.access_token)
         const userId = session.user.id
+
+        // Fetch user's display name from profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, business_name')
+          .eq('id', userId)
+          .single()
+
+        if (profileData) {
+          const name = profileData.full_name || profileData.business_name || session.user.email?.split('@')[0] || 'User'
+          setDisplayName(name)
+        } else {
+          setDisplayName(session.user.email?.split('@')[0] || 'User')
+        }
 
         // Fetch clients count
         const { data: clientsData } = await supabase
@@ -346,7 +361,7 @@ export default function Dashboard() {
 
         <div className="mb-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-3">
-            Welcome back, {user?.email?.split('@')[0]}! 👋
+            Welcome back, {displayName}! 👋
           </h1>
           <p className="text-gray-400 text-lg">Here's your business overview at a glance</p>
         </div>
