@@ -68,43 +68,53 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="max-w-7xl mx-auto px-6 py-20">
           <h2 className="text-4xl font-bold text-center mb-16">Built for your workflow</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
-                icon: '📨',
+                icon: '🔔',
                 title: 'Smart Reminders',
                 desc: 'Automated follow-ups at 3, 7, 14 days overdue. Stop chasing manually.'
               },
               {
-                icon: '💳',
+                icon: '💸',
                 title: 'Partial Payments',
                 desc: 'Collect deposits upfront, track the remainder automatically.'
               },
               {
-                icon: '💰',
+                icon: '💳',
                 title: 'Stripe Payments',
                 desc: 'Send a payment link, get paid instantly.'
               },
               {
-                icon: '👥',
-                title: 'Client CRM',
-                desc: 'Every client, invoice, and conversation in one place.'
-              },
-              {
                 icon: '🤖',
-                title: 'AI Insights',
-                desc: 'AI-powered analysis of your revenue, clients, and payment patterns. Get actionable recommendations instantly.'
+                title: 'AI Business Insights',
+                desc: 'AI-powered analysis of your revenue, clients, and payment patterns. Get actionable insights.'
               },
               {
-                icon: '📊',
-                title: 'Dashboard',
-                desc: 'Real-time revenue, pipeline, and cash flow.'
+                icon: '💬',
+                title: 'WhatsApp Integration',
+                desc: 'Send invoices and payment reminders directly via WhatsApp. Meet your clients where they are.'
+              },
+              {
+                icon: '🔄',
+                title: 'Recurring Invoices',
+                desc: 'Set up auto-generated invoices for retainer clients. Review and send on your schedule.'
+              },
+              {
+                icon: '📋',
+                title: 'Proposals & Contracts',
+                desc: 'Create professional proposals, win clients, and convert to invoices with one click.'
+              },
+              {
+                icon: '👥',
+                title: 'AI-Powered CRM',
+                desc: 'Client health scores, AI summaries, smart follow-up suggestions, and revenue insights.'
               }
             ].map((feature, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-6 hover:border-blue-500/30 transition">
                 <div className="text-3xl mb-3">{feature.icon}</div>
                 <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.desc}</p>
+                <p className="text-gray-400 text-sm">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -120,32 +130,73 @@ export default function LandingPage() {
               {
                 name: 'Starter',
                 price: '$19',
+                annualPrice: '$15',
                 period: '/mo',
                 desc: 'For freelancers just getting started',
-                features: ['Up to 20 invoices/month', '10 payment links/month', 'Stripe payments', 'Smart reminders', 'Smart Invoice Creation (auto-fill from history)', '5 AI Insights/month', 'Client management', 'Flexible payment terms (Net 30/60/90, Due on Receipt)', 'Email support'],
+                features: [
+                  'Up to 20 invoices/month',
+                  '10 payment links/month',
+                  'Stripe payments',
+                  'Smart reminders',
+                  'Smart Invoice Creation (auto-fill from history)',
+                  'WhatsApp invoice sharing',
+                  '5 AI Insights/month',
+                  'Client management',
+                  'Flexible payment terms (Net 30/60/90, Due on Receipt)',
+                  'Email support'
+                ],
                 cta: 'Start Free Trial',
                 highlighted: false
               },
               {
                 name: 'Pro',
                 price: '$49',
+                annualPrice: '$39',
                 period: '/mo',
                 desc: 'For growing freelancers',
                 badge: 'Most Popular',
-                features: ['Unlimited invoices', 'Unlimited payment links', 'Stripe payments', 'Smart reminders', 'Partial payments', 'AI-powered Invoice Creation', '30 AI Insights/month', 'AI Business Recommendations', 'Client management', 'Advanced reporting', 'Flexible payment terms (Net 30/60/90, Due on Receipt)', 'Priority email support'],
+                features: [
+                  'Unlimited invoices',
+                  'Unlimited payment links',
+                  'Stripe payments',
+                  'Smart reminders',
+                  'Partial payments',
+                  'Recurring invoices',
+                  'Smart Invoice Creation (auto-fill from history)',
+                  'Proposals & Contracts',
+                  'WhatsApp invoice sharing',
+                  '30 AI Insights/month',
+                  'AI Business Recommendations',
+                  'AI Client Summaries & Health Scores',
+                  'Smart Follow-up Suggestions',
+                  'Advanced reporting',
+                  'Flexible payment terms (Net 30/60/90, Due on Receipt)',
+                  'Priority email support'
+                ],
                 cta: 'Start Free Trial',
                 highlighted: true,
-                comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for you.'
+                comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for freelancers.'
               },
               {
                 name: 'Enterprise',
                 price: '$199',
+                annualPrice: '$159',
                 period: '/mo',
-                desc: 'For teams & agencies',
-                features: ['Everything in Pro', 'Unlimited AI Insights', 'Multi-entity / business units support', 'POS webhook integration', 'Advanced accounting module', 'Customer pricing tiers (Distributor/Wholesaler/HoReCa)', 'Receivables aging reports', 'Team management (5 users)', 'API access & webhooks', 'Custom branding', 'Dedicated support'],
+                desc: 'For agencies & growing teams',
+                features: [
+                  'Everything in Pro',
+                  'Unlimited AI Insights',
+                  'Revenue Forecasting',
+                  'Receivables aging reports',
+                  'POS webhook integration',
+                  'Team management (5 users)',
+                  'Custom branding',
+                  'API access & webhooks',
+                  'Priority support'
+                ],
                 cta: 'Contact Us',
                 highlighted: false,
-                note: 'Built for agencies, holding companies, and multi-entity businesses.'
+                note: 'Built for agencies and growing teams that need advanced tools.'
               }
             ].map((plan, i) => (
               <div
