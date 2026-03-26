@@ -6,12 +6,21 @@ import { useState } from 'react'
 export default function LandingPage() {
   const [email, setEmail] = useState('')
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleEmailSignup = (e: React.FormEvent) => {
     e.preventDefault()
     if (email) {
       alert('Thanks! We\'ll notify you when Prism launches.')
       setEmail('')
+    }
+  }
+
+  const scrollToPricing = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const pricingSection = document.getElementById('pricing')
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth' })
     }
   }
 
@@ -25,7 +34,7 @@ export default function LandingPage() {
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="backdrop-blur-xl border-b border-white/10 sticky top-0">
+        <header className="backdrop-blur-xl border-b border-white/10 sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2 md:gap-0">
             <Link href="/" className="flex items-center gap-2">
               <img src="/logo.svg" alt="Prism Logo" className="h-8 md:h-10 w-8 md:w-10" />
@@ -40,12 +49,30 @@ export default function LandingPage() {
               </Link>
             </nav>
             {/* Mobile menu button */}
-            <button className="md:hidden text-white">
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden text-white hover:text-gray-300 transition z-30"
+              aria-label="Toggle menu"
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
           </div>
+
+          {/* Mobile menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/10 bg-slate-900/95 backdrop-blur-xl">
+              <nav className="flex flex-col gap-3 px-4 py-4">
+                <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 hover:text-white transition text-sm py-2">Features</a>
+                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 hover:text-white transition text-sm py-2">Pricing</a>
+                <Link href="/login" className="text-gray-300 hover:text-white transition text-sm py-2">Login</Link>
+                <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 rounded-lg font-medium hover:opacity-90 transition text-sm text-center">
+                  Get Started
+                </Link>
+              </nav>
+            </div>
+          )}
         </header>
 
         {/* Hero Section */}
@@ -59,13 +86,16 @@ export default function LandingPage() {
               Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
             </p>
 
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Link href="/signup" className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 rounded-lg font-medium hover:opacity-90 transition text-lg">
                 Start Free Trial
               </Link>
-              <Link href="/pricing" className="border border-gray-500 px-8 py-3 rounded-lg font-medium hover:border-white transition text-lg">
+              <button 
+                onClick={scrollToPricing}
+                className="border border-gray-500 px-8 py-3 rounded-lg font-medium hover:border-white transition text-lg"
+              >
                 View Pricing
-              </Link>
+              </button>
             </div>
           </div>
 
