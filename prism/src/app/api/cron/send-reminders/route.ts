@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         user_id,
         client_id,
         payment_link,
-        clients (id, name, email, phone_number),
+        clients (id, name, email, phone),
         profiles (id, business_name, bank_name, bank_account_number, bank_account_name, duitnow_id, payment_instructions)
       `)
       .in('status', ['unpaid', 'paid_partial'])
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
 
         // 5. Generate WhatsApp link
         let whatsappLink = ''
-        if (client?.phone_number) {
+        if (client?.phone) {
           whatsappLink = generateReminderWhatsAppLink(
             client.name,
             invoice.invoice_number,
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
             daysOverdue,
             invoice.payment_link || `https://app.prismops.xyz/pay/${invoice.id}`,
             profile?.business_name || 'Prism',
-            client.phone_number
+            client.phone
           )
           console.log(`[Cron] Generated WhatsApp link for ${invoice.invoice_number}`)
         }
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
         results.push({
           invoiceNumber: invoice.invoice_number,
           clientEmail: client.email,
-          clientPhone: client?.phone_number || null,
+          clientPhone: client?.phone || null,
           reminderType,
           daysOverdue,
           reminderCount: newCount,

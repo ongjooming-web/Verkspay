@@ -125,10 +125,10 @@ export default function InvoiceDetail() {
     }
 
     if (data) {
-      // Fetch client name and phone
+      // Fetch client name, email, and phone
       const { data: clientData } = await supabase
         .from('clients')
-        .select('name, phone_number, email')
+        .select('name, phone, email')
         .eq('id', data.client_id)
         .single()
 
@@ -138,10 +138,11 @@ export default function InvoiceDetail() {
         clients: {
           name: clientData?.name || 'Client',
           email: clientData?.email || '',
-          phone: clientData?.phone_number || undefined
+          phone: clientData?.phone || undefined
         }
       }
       console.log('[InvoiceDetail] Invoice with client:', invoiceWithClient)
+      console.log('[InvoiceDetail] Client phone:', clientData?.phone)
       setInvoice(invoiceWithClient)
       setEditData(invoiceWithClient)
     }
