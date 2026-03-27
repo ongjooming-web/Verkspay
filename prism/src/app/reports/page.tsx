@@ -101,13 +101,19 @@ export default function ReportsPage() {
           setClients(clientsData)
         }
 
-        // Set default dates
+        // Set default dates (This month)
         const now = new Date()
-        setCustomTo(now.toISOString().split('T')[0])
-        const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1)
-        setCustomFrom(monthAgo.toISOString().split('T')[0])
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const fromDate = monthStart.toISOString().split('T')[0]
+        const toDate = now.toISOString().split('T')[0]
+        
+        setCustomFrom(fromDate)
+        setCustomTo(toDate)
+        setDatePreset('this_month')
+        
+        console.log('[Reports] Page initialized with default dates:', { fromDate, toDate })
       } catch (err) {
-        console.error('[ReportsPage] Init error:', err)
+        console.error('[Reports] Init error:', err)
       } finally {
         setLoading(false)
       }
@@ -115,6 +121,14 @@ export default function ReportsPage() {
 
     initPage()
   }, [router])
+
+  // Auto-fetch default report when user and dates are ready
+  useEffect(() => {
+    if (user && customFrom && customTo && selectedReport) {
+      console.log('[Reports] Auto-fetching default report on load:', { user: user.id, customFrom, customTo })
+      fetchReportData(selectedReport, customFrom, customTo, selectedClient)
+    }
+  }, [user])
 
   const getDateRange = () => {
     const now = new Date()
@@ -157,127 +171,169 @@ export default function ReportsPage() {
   }
 
   const handlePresetClick = (preset: string) => {
+    console.log('[Reports] Preset clicked:', preset)
     setDatePreset(preset)
-    // Just update the date inputs - don't auto-generate
-    // User must click "Generate Report" manually
+    
+    // Calculate date range for this preset
+    const now = new Date()
+    let from = new Date()
+    let to = new Date()
+
+    switch (preset) {
+      case 'this_month':
+        from = new Date(now.getFullYear(), now.getMonth(), 1)
+        to = now
+        break
+      case 'last_month':
+        from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        to = new Date(now.getFullYear(), now.getMonth(), 0)
+        break
+      case 'this_quarter':
+        const quarter = Math.floor(now.getMonth() / 3)
+        from = new Date(now.getFullYear(), quarter * 3, 1)
+        to = now
+        break
+      case 'last_quarter':
+        const lastQuarter = Math.floor(now.getMonth() / 3) - 1
+        from = new Date(now.getFullYear(), lastQuarter * 3, 1)
+        to = new Date(now.getFullYear(), lastQuarter * 3 + 3, 0)
+        break
+      case 'this_year':
+        from = new Date(now.getFullYear(), 0, 1)
+        to = now
+        break
+      case 'last_6_months':
+        from = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+        to = now
+        break
+    }
+
+    const fromStr = from.toISOString().split('T')[0]
+    const toStr = to.toISOString().split('T')[0]
+
+    console.log('[Reports] Preset date range calculated:', { fromStr, toStr })
+
+    // Update the date inputs
+    setCustomFrom(fromStr)
+    setCustomTo(toStr)
+
+    // Immediately fetch the report with these dates
+    fetchReportData(selectedReport, fromStr, toStr, selectedClient)
   }
 
-  const handleGenerateReport = async () => {
+  const fetchReportData = async (reportType: ReportType, from: string, to: string, clientId: string) => {
     if (!user) return
 
     setReportLoading(true)
     try {
-      // Use custom dates if provided, otherwise use preset range
-      let from = customFrom
-      let to = customTo
-
-      if (!from || !to) {
-        const dateRange = getDateRange()
-        from = from || dateRange.from
-        to = to || dateRange.to
-      }
-
-      console.log('[ReportsPage] Generating report with date range:', { from, to, selectedReport })
+      console.log('[Reports] Fetching report data:', { reportType, from, to, clientId })
 
       // Validate date range
       if (new Date(from) > new Date(to)) {
-        console.error('[ReportsPage] Invalid date range: from > to')
+        console.error('[Reports] Invalid date range: from > to')
+        setReportLoading(false)
         return
       }
 
-      // For Tax Report, use paid_date instead of created_at
-      if (selectedReport === 'tax') {
-        let query = supabase
-          .from('invoices')
-          .select('*, clients(id, name, email)')
-          .eq('user_id', user.id)
+      let invoices: any[] = []
+      let query = supabase
+        .from('invoices')
+        .select('*,clients:client_id(id,name,email)')
+        .eq('user_id', user.id)
+
+      // Apply date filter based on report type
+      if (reportType === 'tax') {
+        // Tax report uses paid_date (when money was actually received)
+        query = query
           .gte('paid_date', from)
-          .lte('paid_date', to)
-          .gt('amount_paid', 0) // Only paid invoices
-
-        if (selectedClient !== 'all') {
-          query = query.eq('client_id', selectedClient)
-        }
-
-        const { data: invoices, error } = await query
-        if (error) {
-          console.error('[ReportsPage] Query error:', error)
-          return
-        }
-        processTaxReport(invoices || [])
-      }
-      // For Payment Report, fetch from payment_records with date filter
-      else if (selectedReport === 'payments') {
-        let query = supabase
+          .lte('paid_date', to + 'T23:59:59')
+          .gt('amount_paid', 0) // Only include invoices with actual payment
+      } else if (reportType === 'payments') {
+        // Payments uses payment_records table, not invoices
+        const { data: paymentData } = await supabase
           .from('payment_records')
-          .select('*, invoices(invoice_number, amount, clients(name))')
-          .gte('created_at', from)
-          .lte('created_at', to)
-          .order('created_at', { ascending: false })
-
-        const { data: payments, error } = await query
-        if (error) {
-          console.error('[ReportsPage] Query error:', error)
-          return
-        }
-
-        const paymentData = (payments || []).map((p: any) => ({
-          date: new Date(p.created_at).toLocaleDateString(),
-          invoiceNumber: p.invoices?.invoice_number || 'N/A',
-          client: p.invoices?.clients?.name || 'Unknown',
-          amount: p.amount || 0,
-          method: p.payment_method || 'Unknown',
-          type: p.amount < (p.invoices?.amount || 0) ? 'Partial' : 'Full',
-        }))
-
-        setTableData(paymentData)
-
-        const totalAmount = paymentData.reduce((sum: number, p: any) => sum + p.amount, 0)
-        setSummaryMetrics({
-          totalRevenue: totalAmount,
-          totalInvoiced: paymentData.length,
-          collectionRate: paymentData.length,
-          avgInvoiceSize: paymentData.length > 0 ? totalAmount / paymentData.length : 0,
-        })
-      }
-      // For all other reports, use created_at (invoice creation date)
-      else {
-        let query = supabase
-          .from('invoices')
-          .select('*, clients(id, name, email)')
+          .select('*,invoice:invoice_id(invoice_number,amount),client:client_id(name)')
           .eq('user_id', user.id)
           .gte('created_at', from)
-          .lte('created_at', to)
+          .lte('created_at', to + 'T23:59:59')
 
-        if (selectedClient !== 'all') {
-          query = query.eq('client_id', selectedClient)
-        }
+        if (paymentData) {
+          const formattedPayments = paymentData.map((p) => ({
+            invoiceNumber: p.invoice?.invoice_number || 'N/A',
+            dateIssued: new Date(p.created_at).toLocaleDateString('en-US', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+            }),
+            client: p.client?.name || 'Unknown',
+            amount: p.amount || 0,
+            paid: p.amount || 0,
+            outstanding: 0,
+            status: p.type || 'payment',
+          }))
 
-        const { data: invoices, error } = await query
+          console.log('[Reports] Payments data fetched:', formattedPayments.length, 'records')
 
-        if (error) {
-          console.error('[ReportsPage] Query error:', error)
+          setTableData(formattedPayments)
+          setChartData([])
+          setSummaryMetrics({
+            totalRevenue: formattedPayments.reduce((sum, p) => sum + (p.paid || 0), 0),
+            totalInvoiced: 0,
+            collectionRate: 0,
+            avgInvoiceSize: 0,
+          })
+          setReportLoading(false)
           return
         }
-
-        // Process data based on selected report
-        switch (selectedReport) {
-          case 'revenue':
-            processRevenueReport(invoices || [])
-            break
-          case 'aging':
-            processAgingReport(invoices || [])
-            break
-          case 'client':
-            processClientReport(invoices || [])
-            break
-        }
+      } else {
+        // Revenue, Aging, Client reports use created_at (when invoice was created)
+        query = query
+          .gte('created_at', from)
+          .lte('created_at', to + 'T23:59:59')
       }
-    } catch (err) {
-      console.error('[ReportsPage] Error:', err)
-    } finally {
+
+      if (clientId && clientId !== 'all') {
+        query = query.eq('client_id', clientId)
+      }
+
+      const { data } = await query.order('created_at', { ascending: false })
+
+      if (data) {
+        invoices = data
+        console.log('[Reports] API response:', invoices.length, 'invoices')
+      }
+
+      // Process data based on report type
+      if (reportType === 'revenue') {
+        processRevenueReport(invoices)
+      } else if (reportType === 'aging') {
+        processAgingReport(invoices)
+      } else if (reportType === 'client') {
+        processClientReport(invoices)
+      } else if (reportType === 'tax') {
+        processTaxReport(invoices)
+      }
+
+      setReportLoading(false)
+    } catch (error) {
+      console.error('[Reports] Error fetching report:', error)
       setReportLoading(false)
     }
+  }
+
+  const handleGenerateReport = async () => {
+    // Use custom dates if provided, otherwise use preset range
+    let from = customFrom
+    let to = customTo
+
+    if (!from || !to) {
+      const dateRange = getDateRange()
+      from = from || dateRange.from
+      to = to || dateRange.to
+    }
+
+    console.log('[Reports] Generate Report clicked:', { from, to, selectedReport })
+    fetchReportData(selectedReport, from, to, selectedClient)
   }
 
   const processRevenueReport = (invoices: any[]) => {
@@ -798,7 +854,11 @@ export default function ReportsPage() {
                 <input
                   type="date"
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(e) => {
+                    console.log('[Reports] Custom From date changed to:', e.target.value)
+                    setCustomFrom(e.target.value)
+                    setDatePreset('') // Clear preset when custom date is entered
+                  }}
                   className="w-full glass px-3 py-2 rounded text-white text-sm"
                 />
               </div>
@@ -807,7 +867,11 @@ export default function ReportsPage() {
                 <input
                   type="date"
                   value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
+                  onChange={(e) => {
+                    console.log('[Reports] Custom To date changed to:', e.target.value)
+                    setCustomTo(e.target.value)
+                    setDatePreset('') // Clear preset when custom date is entered
+                  }}
                   className="w-full glass px-3 py-2 rounded text-white text-sm"
                 />
               </div>
