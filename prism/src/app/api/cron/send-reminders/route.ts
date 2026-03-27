@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { generateReminderWhatsAppLink } from '@/utils/whatsapp'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -102,8 +103,9 @@ export async function POST(request: NextRequest) {
         last_reminder_sent_at,
         user_id,
         client_id,
-        clients (id, name, email),
-        profiles (bank_name, bank_account_number, bank_account_name, duitnow_id, payment_instructions)
+        payment_link,
+        clients (id, name, email, phone_number),
+        profiles (id, business_name, bank_name, bank_account_number, bank_account_name, duitnow_id, payment_instructions)
       `)
       .in('status', ['unpaid', 'paid_partial'])
       .lte('due_date', today)
@@ -150,7 +152,24 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // 5. Generate and send email
+        // 5. Generate WhatsApp link
+        let whatsappLink = ''
+        if (client?.phone_number) {
+          whatsappLink = generateReminderWhatsAppLink(
+            client.name,
+            invoice.invoice_number,
+            invoice.remaining_balance ?? invoice.amount,
+            'MYR', // TODO: Get from invoice currency_code if available
+            invoice.due_date,
+            daysOverdue,
+            invoice.payment_link || `https://app.prismops.xyz/pay/${invoice.id}`,
+            profile?.business_name || 'Prism',
+            client.phone_number
+          )
+          console.log(`[Cron] Generated WhatsApp link for ${invoice.invoice_number}`)
+        }
+
+        // 6. Generate and send email
         const { subject, html } = generateReminderEmail(
           invoice,
           { name: client.name, email: client.email },
@@ -171,7 +190,27 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // 6. Update invoice reminder tracking columns
+        // 7. Log reminder in reminders_log table with WhatsApp link
+        const { error: logError } = await supabase
+          .from('reminders_log')
+          .upsert(
+            {
+              invoice_id: invoice.id,
+              reminder_type: reminderType,
+              days_overdue: daysOverdue,
+              email_sent: true,
+              email_sent_at: new Date().toISOString(),
+              whatsapp_link: whatsappLink || null,
+            },
+            { onConflict: 'invoice_id,reminder_type' }
+          )
+
+        if (logError) {
+          console.error(`[Cron] Failed to log reminder for ${invoice.invoice_number}:`, logError)
+          // Don't fail the entire process, just log the error
+        }
+
+        // 8. Update invoice reminder tracking columns
         const newCount = (invoice.reminder_sent_count ?? 0) + 1
         const { error: updateError } = await supabase
           .from('invoices')
@@ -188,13 +227,18 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`[Cron] Reminder ${newCount}/3 sent for ${invoice.invoice_number} → ${client.email}`)
+        if (whatsappLink) {
+          console.log(`[Cron] WhatsApp link available: ${whatsappLink.substring(0, 50)}...`)
+        }
         remindersCount++
         results.push({
           invoiceNumber: invoice.invoice_number,
           clientEmail: client.email,
+          clientPhone: client?.phone_number || null,
           reminderType,
           daysOverdue,
           reminderCount: newCount,
+          whatsappLink: whatsappLink || null,
         })
       } catch (err) {
         console.error('[Cron] Error processing invoice:', err)

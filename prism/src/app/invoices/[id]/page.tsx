@@ -74,11 +74,13 @@ export default function InvoiceDetail() {
   const [sendMessage, setSendMessage] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [profile, setProfile] = useState<any>({})
+  const [reminderLogs, setReminderLogs] = useState<any[]>([])
 
   useEffect(() => {
     fetchInvoiceDetails()
     fetchPaymentRecords()
     fetchUserProfile()
+    fetchReminderLogs()
   }, [invoiceId])
 
   const fetchUserProfile = async () => {
@@ -150,6 +152,18 @@ export default function InvoiceDetail() {
 
     if (data) {
       setPaymentRecords(data)
+    }
+  }
+
+  const fetchReminderLogs = async () => {
+    const { data } = await supabase
+      .from('reminders_log')
+      .select('*')
+      .eq('invoice_id', invoiceId)
+      .order('created_at', { ascending: false })
+
+    if (data) {
+      setReminderLogs(data)
     }
   }
 
