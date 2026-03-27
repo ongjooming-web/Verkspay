@@ -267,42 +267,12 @@ export default function ReportsPage() {
           .lte('paid_date', to)
           .gt('amount_paid', 0) // Only include invoices with actual payment
       } else if (reportType === 'payments') {
-        // Payments uses payment_records table, not invoices
-        const { data: paymentData } = await supabase
-          .from('payment_records')
-          .select('*,invoice:invoice_id(invoice_number,amount),client:client_id(name)')
-          .eq('user_id', user.id)
+        // Payments report: use invoices with amount_paid > 0 (since payment_records may not exist)
+        console.log('[Reports] Fetching payment history from invoices table (amount_paid > 0)')
+        query = query
           .gte('created_at', from)
-          .lte('created_at', to + 'T23:59:59')
-
-        if (paymentData) {
-          const formattedPayments = paymentData.map((p) => ({
-            invoiceNumber: p.invoice?.invoice_number || 'N/A',
-            dateIssued: new Date(p.created_at).toLocaleDateString('en-US', {
-              year: '2-digit',
-              month: '2-digit',
-              day: '2-digit',
-            }),
-            client: p.client?.name || 'Unknown',
-            amount: p.amount || 0,
-            paid: p.amount || 0,
-            outstanding: 0,
-            status: p.type || 'payment',
-          }))
-
-          console.log('[Reports] Payments data fetched:', formattedPayments.length, 'records')
-
-          setTableData(formattedPayments)
-          setChartData([])
-          setSummaryMetrics({
-            totalRevenue: formattedPayments.reduce((sum, p) => sum + (p.paid || 0), 0),
-            totalInvoiced: 0,
-            collectionRate: 0,
-            avgInvoiceSize: 0,
-          })
-          setReportLoading(false)
-          return
-        }
+          .lte('created_at', to)
+          .gt('amount_paid', 0) // Only show invoices with payments
       } else {
         // Revenue, Aging, Client reports use created_at (when invoice was created)
         console.log('[Reports] Using created_at filter for', reportType, 'report')
@@ -339,6 +309,8 @@ export default function ReportsPage() {
         processClientReport(invoices)
       } else if (reportType === 'tax') {
         processTaxReport(invoices)
+      } else if (reportType === 'payments') {
+        processPaymentsReport(invoices)
       }
 
       setReportLoading(false)
@@ -568,6 +540,39 @@ export default function ReportsPage() {
       collectionRate: chartData.length || 1, // months with payments
       avgInvoiceSize: totalIncome / (totalPaidCount || 1),
     })
+  }
+
+  const processPaymentsReport = (invoices: any[]) => {
+    // Show all invoices with payments in the date range
+    const paymentRows = invoices.map((inv) => ({
+      invoiceNumber: inv.invoice_number || 'N/A',
+      dateIssued: new Date(inv.created_at).toLocaleDateString('en-US', {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit',
+      }),
+      client: inv.clients?.name || 'Unknown',
+      amount: inv.amount || 0,
+      paid: inv.amount_paid || 0,
+      outstanding: inv.remaining_balance || 0,
+      status: inv.status || 'unknown',
+    }))
+
+    setTableData(paymentRows)
+    setChartData([])
+
+    // Summary metrics
+    const totalPaid = paymentRows.reduce((sum, p) => sum + (p.paid || 0), 0)
+    const totalAmount = paymentRows.reduce((sum, p) => sum + (p.amount || 0), 0)
+
+    setSummaryMetrics({
+      totalRevenue: totalPaid,
+      totalInvoiced: totalAmount,
+      collectionRate: totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0,
+      avgInvoiceSize: paymentRows.length > 0 ? totalPaid / paymentRows.length : 0,
+    })
+
+    console.log('[Reports] Payments report processed:', paymentRows.length, 'paid invoices, total:', totalPaid)
   }
 
 
