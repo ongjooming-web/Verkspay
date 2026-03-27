@@ -154,7 +154,16 @@ export default function NewProposal() {
         return
       }
 
-      const { error } = await supabase
+      console.log('[NewProposal] Attempting to insert proposal:', {
+        user_id: user.id,
+        proposal_number: proposalNumber,
+        title: formData.title,
+        client_id: formData.client_id,
+        total_amount: formData.total_amount,
+        lineItems: lineItems.length
+      })
+
+      const { error, data: insertedData } = await supabase
         .from('proposals')
         .insert([
           {
@@ -162,27 +171,36 @@ export default function NewProposal() {
             proposal_number: proposalNumber,
             title: formData.title,
             client_id: formData.client_id,
-            summary: formData.summary,
-            scope_of_work: formData.scope_of_work,
-            deliverables: formData.deliverables,
-            timeline: formData.timeline,
-            total_amount: formData.total_amount,
-            currency_code: formData.currency_code,
+            summary: formData.summary || '',
+            scope_of_work: formData.scope_of_work || '',
+            deliverables: formData.deliverables || '',
+            timeline: formData.timeline || '',
+            total_amount: parseFloat(String(formData.total_amount)) || 0,
+            currency_code: formData.currency_code || 'MYR',
             line_items: lineItems,
-            valid_until: formData.valid_until,
-            payment_terms: formData.payment_terms,
-            terms_and_conditions: formData.terms_and_conditions,
+            valid_until: formData.valid_until || null,
+            payment_terms: formData.payment_terms || 'Net 30',
+            terms_and_conditions: formData.terms_and_conditions || '',
             status: asDraft ? 'draft' : 'sent',
             sent_at: asDraft ? null : new Date().toISOString()
           }
         ])
+        .select()
 
       if (error) {
-        console.error('[NewProposal] Error:', error)
-        setMessage('❌ Failed to create proposal')
+        console.error('[NewProposal] Supabase error:', error)
+        console.error('[NewProposal] Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        setMessage(`❌ Failed to create proposal: ${error.message}`)
         setSaving(false)
         return
       }
+
+      console.log('[NewProposal] Proposal created successfully:', insertedData)
 
       setMessage(`✅ Proposal ${asDraft ? 'saved as draft' : 'sent'}!`)
       setTimeout(() => router.push('/proposals'), 1500)
