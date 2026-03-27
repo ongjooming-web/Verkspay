@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { generateInvoiceNumber } from '@/utils/invoice-numbering'
+import { generateRecurringInvoiceNumber } from '@/utils/invoice-numbering'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,12 +73,12 @@ export async function GET(request: NextRequest) {
     // 2. For each template, create invoice and update template
     for (const template of templates) {
       try {
-        // Generate invoice number using normal INV- sequence (same as regular invoices)
+        // Generate recurring invoice number (REC-XXXX format to distinguish from manual invoices)
         let invoiceNumber: string
         try {
-          invoiceNumber = await generateInvoiceNumber(template.user_id, supabase)
+          invoiceNumber = await generateRecurringInvoiceNumber(template.user_id, supabase)
         } catch (err) {
-          console.error(`[RecurringCron] Failed to generate number for template ${template.id}:`, err)
+          console.error(`[RecurringCron] Failed to generate recurring invoice number for template ${template.id}:`, err)
           results.push({
             success: false,
             templateId: template.id,
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        console.log(`[RecurringCron] Generated invoice ${invoiceNumber} from recurring template ${template.id}`)
+        console.log(`[RecurringCron] Generated recurring invoice ${invoiceNumber} from template ${template.id}`)
 
         // Calculate due date based on payment terms
         const generatedDate = new Date(template.next_generate_date)
