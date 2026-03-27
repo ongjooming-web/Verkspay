@@ -238,23 +238,201 @@ export default function ReportsPage() {
   }
 
   const processAgingReport = (invoices: any[]) => {
-    // TODO: Implement aging report
-    console.log('Aging report:', invoices)
+    // Calculate aging buckets per client
+    const today = new Date()
+    const byClient: Record<string, any> = {}
+
+    invoices.forEach((inv) => {
+      // Only unpaid/partial invoices
+      if (inv.status === 'paid') return
+
+      const clientName = inv.clients?.name || 'Unknown'
+      const dueDate = new Date(inv.due_date)
+      const daysSinceDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+
+      if (!byClient[clientName]) {
+        byClient[clientName] = {
+          client: clientName,
+          current: 0,
+          '1-30': 0,
+          '31-60': 0,
+          '61-90': 0,
+          '90+': 0,
+          total: 0,
+        }
+      }
+
+      const balance = inv.remaining_balance || inv.amount
+
+      if (daysSinceDue <= 0) {
+        byClient[clientName].current += balance
+      } else if (daysSinceDue <= 30) {
+        byClient[clientName]['1-30'] += balance
+      } else if (daysSinceDue <= 60) {
+        byClient[clientName]['31-60'] += balance
+      } else if (daysSinceDue <= 90) {
+        byClient[clientName]['61-90'] += balance
+      } else {
+        byClient[clientName]['90+'] += balance
+      }
+
+      byClient[clientName].total += balance
+    })
+
+    const chartData = Object.values(byClient).sort((a: any, b: any) => b.total - a.total)
+    setChartData(chartData)
+    setTableData(chartData)
+
+    // Summary
+    const totalOutstanding = Object.values(byClient).reduce((sum: number, b: any) => sum + b.total, 0)
+    const current = Object.values(byClient).reduce((sum: number, b: any) => sum + b.current, 0)
+    const overdue1_30 = Object.values(byClient).reduce((sum: number, b: any) => sum + b['1-30'], 0)
+
+    setSummaryMetrics({
+      totalRevenue: totalOutstanding,
+      totalInvoiced: current,
+      collectionRate: (current / totalOutstanding) * 100,
+      avgInvoiceSize: overdue1_30,
+    })
   }
 
   const processClientReport = (invoices: any[]) => {
-    // TODO: Implement client report
-    console.log('Client report:', invoices)
+    const byClient: Record<string, any> = {}
+
+    invoices.forEach((inv) => {
+      const clientName = inv.clients?.name || 'Unknown'
+
+      if (!byClient[clientName]) {
+        byClient[clientName] = {
+          client: clientName,
+          count: 0,
+          invoiced: 0,
+          paid: 0,
+          outstanding: 0,
+          avgPaymentDays: 0,
+          percentage: 0,
+        }
+      }
+
+      byClient[clientName].invoiced += inv.amount || 0
+      byClient[clientName].paid += inv.amount_paid || 0
+      byClient[clientName].outstanding += inv.remaining_balance || 0
+      byClient[clientName].count++
+    })
+
+    const chartData = Object.values(byClient).sort((a: any, b: any) => b.paid - a.paid)
+    const totalPaid = chartData.reduce((sum: number, c: any) => sum + c.paid, 0)
+
+    chartData.forEach((c: any) => {
+      c.percentage = totalPaid > 0 ? (c.paid / totalPaid) * 100 : 0
+    })
+
+    setChartData(chartData)
+    setTableData(chartData)
+
+    // Summary
+    const totalInvoiced = chartData.reduce((sum: number, c: any) => sum + c.invoiced, 0)
+    const topClient = chartData[0]?.paid || 0
+    const revenueConcentration = totalPaid > 0 ? (topClient / totalPaid) * 100 : 0
+
+    setSummaryMetrics({
+      totalRevenue: totalPaid,
+      totalInvoiced: chartData.length,
+      collectionRate: revenueConcentration,
+      avgInvoiceSize: totalPaid / chartData.length,
+    })
   }
 
   const processTaxReport = (invoices: any[]) => {
-    // TODO: Implement tax report
-    console.log('Tax report:', invoices)
+    // Only count actual money received (amount_paid)
+    const byMonth: Record<string, any> = {}
+    let yearGroups: Record<string, number> = {}
+
+    invoices.forEach((inv) => {
+      if (!inv.paid_date || inv.amount_paid === 0) return
+
+      const date = new Date(inv.paid_date)
+      const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+      const year = date.getFullYear().toString()
+
+      if (!byMonth[monthKey]) {
+        byMonth[monthKey] = {
+          month: monthKey,
+          income: 0,
+          paidCount: 0,
+          cumulative: 0,
+        }
+      }
+
+      if (!yearGroups[year]) {
+        yearGroups[year] = 0
+      }
+
+      byMonth[monthKey].income += inv.amount_paid
+      byMonth[monthKey].paidCount++
+      yearGroups[year] += inv.amount_paid
+    })
+
+    const chartData = Object.values(byMonth)
+    let cumulative = 0
+    chartData.forEach((row: any) => {
+      cumulative += row.income
+      row.cumulative = cumulative
+    })
+
+    setChartData(chartData)
+    setTableData(chartData)
+
+    // Summary
+    const totalIncome = chartData.reduce((sum: number, row: any) => sum + row.income, 0)
+    const totalPaidCount = chartData.reduce((sum: number, row: any) => sum + row.paidCount, 0)
+
+    setSummaryMetrics({
+      totalRevenue: totalIncome,
+      totalInvoiced: totalPaidCount,
+      collectionRate: chartData.length, // months with payments
+      avgInvoiceSize: totalIncome / totalPaidCount,
+    })
   }
 
   const processPaymentReport = async (userId: string) => {
-    // TODO: Implement payment report
-    console.log('Payment report for user:', userId)
+    // Fetch payment records
+    const { data: payments } = await supabase
+      .from('payment_records')
+      .select('*, invoices(invoice_number, amount, clients(name))')
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (payments) {
+      const paymentData = payments.map((p: any) => ({
+        date: new Date(p.created_at).toLocaleDateString(),
+        invoiceNumber: p.invoices?.invoice_number || 'N/A',
+        client: p.invoices?.clients?.name || 'Unknown',
+        amount: p.amount || 0,
+        method: p.payment_method || 'Unknown',
+        type: p.amount < (p.invoices?.amount || 0) ? 'Partial' : 'Full',
+      }))
+
+      setTableData(paymentData)
+
+      // Summary
+      const totalAmount = paymentData.reduce((sum: number, p: any) => sum + p.amount, 0)
+      const methods = paymentData.reduce(
+        (acc: any, p: any) => {
+          acc[p.method] = (acc[p.method] || 0) + 1
+          return acc
+        },
+        {}
+      )
+      const mostCommon = Object.entries(methods).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'None'
+
+      setSummaryMetrics({
+        totalRevenue: totalAmount,
+        totalInvoiced: paymentData.length,
+        collectionRate: paymentData.length,
+        avgInvoiceSize: paymentData.length > 0 ? totalAmount / paymentData.length : 0,
+      })
+    }
   }
 
   const isReportGated = () => {
@@ -427,53 +605,181 @@ export default function ReportsPage() {
               </Link>
             </CardBody>
           </Card>
-        ) : chartData.length > 0 ? (
+        ) : tableData.length > 0 ? (
           <Card className="border-blue-500/30">
             <CardBody className="space-y-8">
-              {/* Chart */}
-              <div className="w-full h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis dataKey="month" stroke="#999" />
-                    <YAxis stroke="#999" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Legend />
-                    <Bar dataKey="invoiced" fill="#3b82f6" />
-                    <Bar dataKey="collected" fill="#10b981" />
-                    <Bar dataKey="outstanding" fill="#f59e0b" />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
+              {/* Render appropriate table based on report type */}
+              {selectedReport === 'revenue' && (
+                <>
+                  <div className="w-full h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <XAxis dataKey="month" stroke="#999" />
+                        <YAxis stroke="#999" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                        <Legend />
+                        <Bar dataKey="invoiced" fill="#3b82f6" name="Invoiced" />
+                        <Bar dataKey="collected" fill="#10b981" name="Collected" />
+                        <Bar dataKey="outstanding" fill="#f59e0b" name="Outstanding" />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left py-3 px-4 text-gray-400">Month</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Invoiced</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Collected</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Outstanding</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableData.map((row: any, idx) => (
+                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-4 text-white">{row.month}</td>
+                            <td className="text-right py-3 px-4 text-white">MYR {row.invoiced.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-green-400">MYR {row.collected.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-yellow-400">MYR {row.outstanding.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-gray-400">Month</th>
-                      <th className="text-right py-3 px-4 text-gray-400">Invoiced</th>
-                      <th className="text-right py-3 px-4 text-gray-400">Collected</th>
-                      <th className="text-right py-3 px-4 text-gray-400">Outstanding</th>
-                      <th className="text-right py-3 px-4 text-gray-400">Invoices</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableData.map((row, idx) => (
-                      <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4 text-white">{row.month}</td>
-                        <td className="text-right py-3 px-4 text-white">MYR {row.invoiced.toFixed(0)}</td>
-                        <td className="text-right py-3 px-4 text-green-400">MYR {row.collected.toFixed(0)}</td>
-                        <td className="text-right py-3 px-4 text-yellow-400">MYR {row.outstanding.toFixed(0)}</td>
-                        <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
+              {selectedReport === 'aging' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-gray-400">Client</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Current</th>
+                        <th className="text-right py-3 px-4 text-gray-400">1-30 Days</th>
+                        <th className="text-right py-3 px-4 text-gray-400">31-60 Days</th>
+                        <th className="text-right py-3 px-4 text-gray-400">61-90 Days</th>
+                        <th className="text-right py-3 px-4 text-gray-400">90+ Days</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {tableData.map((row: any, idx) => (
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4 text-white">{row.client}</td>
+                          <td className="text-right py-3 px-4 text-green-400">MYR {row.current.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">MYR {row['1-30'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-orange-400">MYR {row['31-60'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-red-400">MYR {row['61-90'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-red-600">MYR {row['90+'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-white font-semibold">MYR {row.total.toFixed(0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {selectedReport === 'client' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-gray-400">Client</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Invoices</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Invoiced</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Paid</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Outstanding</th>
+                        <th className="text-right py-3 px-4 text-gray-400">% of Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableData.map((row: any, idx) => (
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4 text-white">{row.client}</td>
+                          <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
+                          <td className="text-right py-3 px-4 text-white">MYR {row.invoiced.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400">MYR {row.paid.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">MYR {row.outstanding.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-blue-400">{row.percentage.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {selectedReport === 'tax' && (
+                <>
+                  <div className="w-full h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <XAxis dataKey="month" stroke="#999" />
+                        <YAxis stroke="#999" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                        <Legend />
+                        <Bar dataKey="income" fill="#10b981" name="Income Received" />
+                        <Line type="monotone" dataKey="cumulative" stroke="#3b82f6" name="Cumulative" />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left py-3 px-4 text-gray-400">Month</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Income</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Paid Invoices</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Cumulative</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableData.map((row: any, idx) => (
+                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-4 text-white">{row.month}</td>
+                            <td className="text-right py-3 px-4 text-green-400">MYR {row.income.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-gray-300">{row.paidCount}</td>
+                            <td className="text-right py-3 px-4 text-blue-400">MYR {row.cumulative.toFixed(0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {selectedReport === 'payments' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-gray-400">Date</th>
+                        <th className="text-left py-3 px-4 text-gray-400">Invoice</th>
+                        <th className="text-left py-3 px-4 text-gray-400">Client</th>
+                        <th className="text-right py-3 px-4 text-gray-400">Amount</th>
+                        <th className="text-left py-3 px-4 text-gray-400">Method</th>
+                        <th className="text-left py-3 px-4 text-gray-400">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableData.map((row: any, idx) => (
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4 text-gray-300">{row.date}</td>
+                          <td className="py-3 px-4 text-white">{row.invoiceNumber}</td>
+                          <td className="py-3 px-4 text-white">{row.client}</td>
+                          <td className="text-right py-3 px-4 text-green-400">MYR {row.amount.toFixed(0)}</td>
+                          <td className="py-3 px-4 text-gray-300">{row.method}</td>
+                          <td className="py-3 px-4 text-gray-300">{row.type}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardBody>
           </Card>
         ) : (
