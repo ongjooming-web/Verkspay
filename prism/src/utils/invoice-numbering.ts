@@ -9,26 +9,36 @@ export async function generateInvoiceNumber(
   supabase: any
 ): Promise<string> {
   let attempts = 0
-  const maxAttempts = 5
+  const maxAttempts = 10
 
   while (attempts < maxAttempts) {
     try {
-      // Get the user's highest invoice number
-      const { data: lastInvoice, error: fetchError } = await supabase
+      // Get ALL invoice numbers for this user (not just single)
+      const { data: invoices, error: fetchError } = await supabase
         .from('invoices')
         .select('invoice_number')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
+        .limit(100) // Get last 100 to find gaps
+
+      if (fetchError) {
+        throw fetchError
+      }
 
       let nextNum = 1
 
-      if (lastInvoice && lastInvoice.invoice_number) {
-        // Parse the number from "INV-0005" -> 5
-        const match = lastInvoice.invoice_number.match(/INV-(\d+)/)
-        if (match) {
-          nextNum = parseInt(match[1], 10) + 1
+      if (invoices && invoices.length > 0) {
+        // Parse all invoice numbers and find the highest
+        const numbers = invoices
+          .map((inv: any) => {
+            const match = inv.invoice_number?.match(/INV-(\d+)/)
+            return match ? parseInt(match[1], 10) : 0
+          })
+          .filter((num: number) => num > 0)
+          .sort((a: number, b: number) => b - a)
+
+        if (numbers.length > 0) {
+          nextNum = numbers[0] + 1 // Start from highest + 1
         }
       }
 
@@ -37,13 +47,33 @@ export async function generateInvoiceNumber(
       const paddedNum = nextNum.toString().padStart(padLength, '0')
       const invoiceNumber = `INV-${paddedNum}`
 
+      // Verify this number doesn't exist (to handle race conditions)
+      const { data: existing } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('invoice_number', invoiceNumber)
+        .single()
+
+      if (existing) {
+        // Number already exists, try next one
+        console.warn('[InvoiceNumbering] Invoice number already exists, retrying:', invoiceNumber)
+        attempts++
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 100))
+        continue
+      }
+
       console.log('[InvoiceNumbering] Generated number:', { userId, invoiceNumber, attempt: attempts + 1 })
       return invoiceNumber
-    } catch (error) {
+    } catch (error: any) {
+      // Only fail if NOT a "no rows" error (which is expected)
+      if (error?.code !== 'PGRST116') {
+        console.error('[InvoiceNumbering] Attempt', attempts + 1, '- Error:', error)
+      }
+      
       attempts++
-      console.error('[InvoiceNumbering] Attempt', attempts, '- Error:', error)
 
-      // If this was a unique constraint error and we have retries left, try again
+      // If we have retries left, try again
       if (attempts < maxAttempts) {
         // Small random delay to avoid thundering herd in race conditions
         await new Promise((resolve) => setTimeout(resolve, Math.random() * 100))
