@@ -20,6 +20,7 @@ export function Navigation() {
     { href: '/clients', label: 'Clients' },
     { href: '/invoices', label: 'Invoices' },
     { href: '/insights', label: '✨ Insights' },
+    { href: '/reports', label: '📊 Reports' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/proposals', label: 'Proposals' },
     { href: '/settings', label: 'Settings' },
