@@ -68,6 +68,14 @@ export default function ReportsPage() {
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
+  // Utility function to format dates as YYYY-MM-DD in local timezone
+  const formatDateToString = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   useEffect(() => {
     const initPage = async () => {
       try {
@@ -101,15 +109,9 @@ export default function ReportsPage() {
           setClients(clientsData)
         }
 
-        // Set default dates (This month)
-        const now = new Date()
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const fromDate = monthStart.toISOString().split('T')[0]
-        const toDate = now.toISOString().split('T')[0]
-        
-        setCustomFrom(fromDate)
-        setCustomTo(toDate)
+        // Set default dates (This month) - will be formatted properly via formatDateToString in a moment
         setDatePreset('this_month')
+        // The useEffect below will handle fetching once user is set
         
         console.log('[Reports] Page initialized with default dates:', { fromDate, toDate })
       } catch (err) {
@@ -122,11 +124,21 @@ export default function ReportsPage() {
     initPage()
   }, [router])
 
-  // Auto-fetch default report when user and dates are ready
+  // Auto-fetch default report when user loads (This month preset)
   useEffect(() => {
-    if (user && customFrom && customTo && selectedReport) {
-      console.log('[Reports] Auto-fetching default report on load:', { user: user.id, customFrom, customTo })
-      fetchReportData(selectedReport, customFrom, customTo, selectedClient)
+    if (user && selectedReport) {
+      // Calculate "this month" dates using local timezone
+      const now = new Date()
+      const from = new Date(now.getFullYear(), now.getMonth(), 1)
+      const to = new Date(now)
+      
+      const fromStr = formatDateToString(from)
+      const toStr = formatDateToString(to)
+      
+      console.log('[Reports] Auto-fetching default report on user load:', { fromStr, toStr, selectedReport })
+      setCustomFrom(fromStr)
+      setCustomTo(toStr)
+      fetchReportData(selectedReport, fromStr, toStr, 'all')
     }
   }, [user])
 
@@ -208,10 +220,11 @@ export default function ReportsPage() {
         break
     }
 
-    const fromStr = from.toISOString().split('T')[0]
-    const toStr = to.toISOString().split('T')[0]
+    // Use local timezone formatting, not UTC
+    const fromStr = formatDateToString(from)
+    const toStr = formatDateToString(to)
 
-    console.log('[Reports] Preset date range calculated:', { fromStr, toStr })
+    console.log('[Reports] Preset date range calculated:', { preset, fromStr, toStr, now: formatDateToString(now) })
 
     // Update the date inputs
     setCustomFrom(fromStr)
@@ -236,17 +249,22 @@ export default function ReportsPage() {
       }
 
       let invoices: any[] = []
+      
+      // Build base query
       let query = supabase
         .from('invoices')
         .select('*,clients:client_id(id,name,email)')
         .eq('user_id', user.id)
 
+      console.log('[Reports] Query filters - reportType:', reportType, 'from:', from, 'to:', to)
+
       // Apply date filter based on report type
       if (reportType === 'tax') {
         // Tax report uses paid_date (when money was actually received)
+        console.log('[Reports] Using paid_date filter for tax report')
         query = query
           .gte('paid_date', from)
-          .lte('paid_date', to + 'T23:59:59')
+          .lte('paid_date', to)
           .gt('amount_paid', 0) // Only include invoices with actual payment
       } else if (reportType === 'payments') {
         // Payments uses payment_records table, not invoices
@@ -287,20 +305,29 @@ export default function ReportsPage() {
         }
       } else {
         // Revenue, Aging, Client reports use created_at (when invoice was created)
+        console.log('[Reports] Using created_at filter for', reportType, 'report')
         query = query
           .gte('created_at', from)
-          .lte('created_at', to + 'T23:59:59')
+          .lte('created_at', to)
       }
 
       if (clientId && clientId !== 'all') {
+        console.log('[Reports] Filtering by client:', clientId)
         query = query.eq('client_id', clientId)
       }
 
-      const { data } = await query.order('created_at', { ascending: false })
+      const { data, error } = await query.order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('[Reports] Supabase error:', error)
+      }
 
       if (data) {
         invoices = data
-        console.log('[Reports] API response:', invoices.length, 'invoices')
+        console.log('[Reports] API response:', invoices.length, 'invoices found in date range', { from, to })
+        console.log('[Reports] Sample invoice dates:', invoices.slice(0, 3).map((inv: any) => ({ created_at: inv.created_at, paid_date: inv.paid_date })))
+      } else {
+        console.log('[Reports] No data returned from query')
       }
 
       // Process data based on report type
