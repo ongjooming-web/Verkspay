@@ -277,11 +277,11 @@ export default function NewProposal() {
               <select
                 value={formData.client_id}
                 onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass px-4 py-2 rounded-lg text-white bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               >
-                <option value="">Select a client...</option>
+                <option value="" className="bg-gray-900 text-white">Select a client...</option>
                 {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
+                  <option key={client.id} value={client.id} className="bg-gray-900 text-white">
                     {client.name}
                   </option>
                 ))}
@@ -431,12 +431,12 @@ export default function NewProposal() {
               <select
                 value={formData.payment_terms}
                 onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass px-4 py-2 rounded-lg text-white bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               >
-                <option>Due on Receipt</option>
-                <option>Net 15</option>
-                <option>Net 30</option>
-                <option>Net 60</option>
+                <option className="bg-gray-900 text-white">Due on Receipt</option>
+                <option className="bg-gray-900 text-white">Net 15</option>
+                <option className="bg-gray-900 text-white">Net 30</option>
+                <option className="bg-gray-900 text-white">Net 60</option>
               </select>
             </div>
 
