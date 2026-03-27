@@ -24,16 +24,21 @@ CREATE TABLE IF NOT EXISTS proposals (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Create index for user queries
-CREATE INDEX idx_proposals_user_id ON proposals(user_id);
-CREATE INDEX idx_proposals_client_id ON proposals(client_id);
-CREATE INDEX idx_proposals_status ON proposals(status);
-CREATE INDEX idx_proposals_created_at ON proposals(created_at);
+-- Create index for user queries (if not exists)
+CREATE INDEX IF NOT EXISTS idx_proposals_user_id ON proposals(user_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_client_id ON proposals(client_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_status ON proposals(status);
+CREATE INDEX IF NOT EXISTS idx_proposals_created_at ON proposals(created_at);
 
 -- Enable RLS
 ALTER TABLE proposals ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
+-- Create RLS policies (drop first if they exist)
+DROP POLICY IF EXISTS "Users can view their own proposals" ON proposals;
+DROP POLICY IF EXISTS "Users can insert their own proposals" ON proposals;
+DROP POLICY IF EXISTS "Users can update their own proposals" ON proposals;
+DROP POLICY IF EXISTS "Users can delete their own proposals" ON proposals;
+
 CREATE POLICY "Users can view their own proposals"
   ON proposals
   FOR SELECT
@@ -55,7 +60,8 @@ CREATE POLICY "Users can delete their own proposals"
   FOR DELETE
   USING (auth.uid() = user_id);
 
--- Create trigger for updated_at
+-- Create trigger for updated_at (drop first if exists)
+DROP TRIGGER IF EXISTS update_proposals_updated_at ON proposals;
 CREATE TRIGGER update_proposals_updated_at
   BEFORE UPDATE ON proposals
   FOR EACH ROW

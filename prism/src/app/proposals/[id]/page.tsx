@@ -47,6 +47,7 @@ export default function ProposalDetail() {
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
+  const [sending, setSending] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -91,6 +92,45 @@ export default function ProposalDetail() {
 
     fetchProposal()
   }, [proposalId, router])
+
+  const handleSendToClient = async () => {
+    if (!proposal || !user) return
+
+    setSending(true)
+    setMessage('')
+
+    try {
+      // Update proposal status to 'sent'
+      const { error } = await supabase
+        .from('proposals')
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString()
+        })
+        .eq('id', proposal.id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('[SendToClient] Error:', error)
+        setMessage('❌ Failed to send proposal')
+        setSending(false)
+        return
+      }
+
+      // Update local state
+      setProposal({ ...proposal, status: 'sent', sent_at: new Date().toISOString() })
+      setMessage('✅ Proposal sent to client!')
+
+      // In a real app, you'd send an email here
+      // For now, just update the status
+      console.log('[SendToClient] Proposal sent:', proposal.proposal_number)
+    } catch (err) {
+      console.error('[SendToClient] Error:', err)
+      setMessage('❌ An error occurred')
+    } finally {
+      setSending(false)
+    }
+  }
 
   const handleConvertToInvoice = async () => {
     if (!proposal || !user) return
@@ -348,11 +388,25 @@ export default function ProposalDetail() {
         <Card className="border-blue-500/30">
           <CardBody className="flex gap-3 flex-wrap">
             {proposal.status === 'draft' ? (
-              <Link href={`/proposals/${proposal.id}/edit`}>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">✏️ Edit</Button>
-              </Link>
+              <>
+                <Link href={`/proposals/${proposal.id}/edit`}>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">✏️ Edit</Button>
+                </Link>
+                <Button
+                  onClick={handleSendToClient}
+                  disabled={sending}
+                  className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                >
+                  {sending ? 'Sending...' : '📤 Send to Client'}
+                </Button>
+              </>
             ) : (
-              <Button disabled className="bg-gray-600 text-gray-400 cursor-not-allowed">✏️ Edit (draft only)</Button>
+              <>
+                <Button disabled className="bg-gray-600 text-gray-400 cursor-not-allowed">✏️ Edit (draft only)</Button>
+                {proposal.status === 'sent' && (
+                  <Button disabled className="bg-gray-600 text-gray-400 cursor-not-allowed">📤 Sent to Client</Button>
+                )}
+              </>
             )}
             {proposal.status === 'accepted' && (
               <Button
@@ -363,7 +417,7 @@ export default function ProposalDetail() {
                 {converting ? 'Creating...' : '📄 Convert to Invoice'}
               </Button>
             )}
-            {proposal.status !== 'accepted' && proposal.status !== 'declined' && (
+            {proposal.status !== 'accepted' && proposal.status !== 'declined' && proposal.status !== 'sent' && (
               <Button
                 onClick={handleConvertToInvoice}
                 disabled={converting}
