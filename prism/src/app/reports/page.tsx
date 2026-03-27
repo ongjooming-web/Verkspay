@@ -573,7 +573,7 @@ export default function ReportsPage() {
       filename: `${reportTitle.toLowerCase().replace(/\s+/g, '-')}-${getDateRange().from}-${getDateRange().to}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+      jsPDF: { orientation: 'portrait' as const, unit: 'mm' as const, format: 'a4' },
     }
 
     html2pdf().set(opt).from(htmlContent).save()
