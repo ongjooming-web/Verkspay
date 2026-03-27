@@ -29,7 +29,8 @@
     "@solana/wallet-adapter-react": "^0.15.33",
     "stripe": "^16.11.0",
     "pg": "^8.11.0",
-    "resend": "^3.0.0"
+    "resend": "^3.0.0",
+    "html2pdf.js": "^0.10.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
