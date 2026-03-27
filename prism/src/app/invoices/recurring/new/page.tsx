@@ -194,11 +194,11 @@ export default function NewRecurringInvoice() {
               <select
                 value={formData.client_id}
                 onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 appearance-none cursor-pointer"
               >
-                <option value="">Select a client...</option>
+                <option value="" className="bg-slate-900 text-white">Select a client...</option>
                 {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
+                  <option key={client.id} value={client.id} className="bg-slate-900 text-white">
                     {client.name}
                   </option>
                 ))}
@@ -211,13 +211,13 @@ export default function NewRecurringInvoice() {
                 <select
                   value={formData.frequency}
                   onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                  className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 appearance-none cursor-pointer"
                 >
-                  <option value="weekly">Weekly</option>
-                  <option value="biweekly">Bi-weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="yearly">Yearly</option>
+                  <option value="weekly" className="bg-slate-900 text-white">Weekly</option>
+                  <option value="biweekly" className="bg-slate-900 text-white">Bi-weekly</option>
+                  <option value="monthly" className="bg-slate-900 text-white">Monthly</option>
+                  <option value="quarterly" className="bg-slate-900 text-white">Quarterly</option>
+                  <option value="yearly" className="bg-slate-900 text-white">Yearly</option>
                 </select>
               </div>
 
@@ -226,12 +226,12 @@ export default function NewRecurringInvoice() {
                 <select
                   value={formData.payment_terms}
                   onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                  className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full glass px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 appearance-none cursor-pointer"
                 >
-                  <option>Due on Receipt</option>
-                  <option>Net 15</option>
-                  <option>Net 30</option>
-                  <option>Net 60</option>
+                  <option className="bg-slate-900 text-white">Due on Receipt</option>
+                  <option className="bg-slate-900 text-white">Net 15</option>
+                  <option className="bg-slate-900 text-white">Net 30</option>
+                  <option className="bg-slate-900 text-white">Net 60</option>
                 </select>
               </div>
             </div>
