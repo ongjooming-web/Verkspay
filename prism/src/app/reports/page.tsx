@@ -113,7 +113,7 @@ export default function ReportsPage() {
         setDatePreset('this_month')
         // The useEffect below will handle fetching once user is set
         
-        console.log('[Reports] Page initialized with default dates:', { fromDate, toDate })
+        console.log('[Reports] Page initialized, ready to fetch default report')
       } catch (err) {
         console.error('[Reports] Init error:', err)
       } finally {
