@@ -65,6 +65,8 @@ export default function ReportsPage() {
   const [summaryMetrics, setSummaryMetrics] = useState<SummaryMetrics | null>(null)
   const [chartData, setChartData] = useState<any[]>([])
   const [tableData, setTableData] = useState<any[]>([])
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
     const initPage = async () => {
@@ -156,11 +158,8 @@ export default function ReportsPage() {
 
   const handlePresetClick = (preset: string) => {
     setDatePreset(preset)
-    const range = getDateRange()
-    setCustomFrom(range.from)
-    setCustomTo(range.to)
-    // Automatically generate report with new dates
-    setTimeout(() => handleGenerateReport(), 100)
+    // Just update the date inputs - don't auto-generate
+    // User must click "Generate Report" manually
   }
 
   const handleGenerateReport = async () => {
@@ -495,6 +494,38 @@ export default function ReportsPage() {
     return report?.gated && (plan === 'trial' || plan === 'starter')
   }
 
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Toggle sort order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New column, default to asc
+      setSortColumn(column)
+      setSortOrder('asc')
+    }
+
+    // Sort the data
+    const sorted = [...tableData].sort((a, b) => {
+      const aVal = a[column] ?? ''
+      const bVal = b[column] ?? ''
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      const aStr = String(aVal).toLowerCase()
+      const bStr = String(bVal).toLowerCase()
+      return sortOrder === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr)
+    })
+
+    setTableData(sorted)
+  }
+
+  const getSortIndicator = (column: string) => {
+    if (sortColumn !== column) return ''
+    return sortOrder === 'asc' ? ' ↑' : ' ↓'
+  }
+
   const getReportTitle = () => {
     return REPORTS.find((r) => r.id === selectedReport)?.name || 'Report'
   }
@@ -697,11 +728,18 @@ export default function ReportsPage() {
             return (
               <button
                 key={report.id}
-                onClick={() => !isGated && setSelectedReport(report.id as ReportType)}
-                disabled={isGated}
+                onClick={() => {
+                  if (!isGated) {
+                    setSelectedReport(report.id as ReportType)
+                    // Clear previous report data when switching reports
+                    setChartData([])
+                    setTableData([])
+                  }
+                }}
+                disabled={false}
                 className={`p-4 rounded-lg text-center transition ${
                   isActive ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-800 border-gray-700 text-gray-300'
-                } ${isGated ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'} border`}
+                } ${isGated ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'} border`}
               >
                 <div className="text-2xl mb-2">{report.icon}</div>
                 <div className="font-semibold text-sm">{report.name}</div>
@@ -854,27 +892,27 @@ export default function ReportsPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-white/10">
-                          <th className="text-left py-3 px-4 text-gray-400">Invoice #</th>
-                          <th className="text-left py-3 px-4 text-gray-400">Date Issued</th>
-                          <th className="text-left py-3 px-4 text-gray-400">Client</th>
+                          <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('invoiceNumber')}>Invoice #{getSortIndicator('invoiceNumber')}</th>
+                          <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('dateIssued')}>Date Issued{getSortIndicator('dateIssued')}</th>
+                          <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('client')}>Client{getSortIndicator('client')}</th>
                           <th className="text-left py-3 px-4 text-gray-400">Description</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Amount</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Paid</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Outstanding</th>
-                          <th className="text-left py-3 px-4 text-gray-400">Status</th>
+                          <th className="text-right py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('amount')}>Amount{getSortIndicator('amount')}</th>
+                          <th className="text-right py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('paid')}>Paid{getSortIndicator('paid')}</th>
+                          <th className="text-right py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('outstanding')}>Outstanding{getSortIndicator('outstanding')}</th>
+                          <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('status')}>Status{getSortIndicator('status')}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {tableData.map((row: any, idx) => (
+                        {(tableData || []).map((row: any, idx) => (
                           <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                            <td className="py-3 px-4 text-white font-mono">{row.invoiceNumber}</td>
-                            <td className="py-3 px-4 text-gray-300">{row.dateIssued || row.month}</td>
-                            <td className="py-3 px-4 text-white">{row.client}</td>
-                            <td className="py-3 px-4 text-gray-300 truncate">{row.description}</td>
-                            <td className="text-right py-3 px-4 text-white">MYR {(row.amount || row.invoiced || 0).toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-green-400">MYR {(row.paid || row.collected || 0).toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-yellow-400">MYR {(row.outstanding || 0).toFixed(0)}</td>
-                            <td className="py-3 px-4 text-gray-300 text-xs">{row.status || row.count}</td>
+                            <td className="py-3 px-4 text-white font-mono">{row?.invoiceNumber || '-'}</td>
+                            <td className="py-3 px-4 text-gray-300">{row?.dateIssued || row?.month || '-'}</td>
+                            <td className="py-3 px-4 text-white">{row?.client || '-'}</td>
+                            <td className="py-3 px-4 text-gray-300 truncate">{row?.description || '-'}</td>
+                            <td className="text-right py-3 px-4 text-white">MYR {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-green-400">MYR {((row?.paid ?? row?.collected ?? 0) || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-yellow-400">MYR {((row?.outstanding ?? 0) || 0).toFixed(0)}</td>
+                            <td className="py-3 px-4 text-gray-300 text-xs">{row?.status || row?.count || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
