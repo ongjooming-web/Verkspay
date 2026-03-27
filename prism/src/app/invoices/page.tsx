@@ -373,9 +373,23 @@ export default function Invoices() {
       <div className="max-w-7xl mx-auto px-6 pb-12">
         {/* Header */}
         <div className="flex justify-between items-center mb-10 flex-col md:flex-row gap-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent">
-            📄 Invoices
-          </h1>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-3">
+              📄 Invoices
+            </h1>
+            <div className="flex gap-4">
+              <Link href="/invoices">
+                <button className="text-gray-400 hover:text-white text-sm font-medium pb-2 border-b-2 border-blue-500">
+                  All Invoices
+                </button>
+              </Link>
+              <Link href="/invoices/recurring">
+                <button className="text-gray-500 hover:text-gray-300 text-sm font-medium pb-2 border-b-2 border-transparent hover:border-blue-500/30 transition">
+                  🔄 Recurring
+                </button>
+              </Link>
+            </div>
+          </div>
           <Button 
             onClick={() => setShowForm(!showForm)}
             className={showForm ? 'bg-red-600/80 hover:bg-red-700/80' : ''}

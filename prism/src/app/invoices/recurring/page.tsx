@@ -181,8 +181,22 @@ export default function RecurringInvoicesPage() {
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-bold text-white">🔄 Recurring Invoices</h1>
+        <div className="flex justify-between items-center mb-10 flex-col md:flex-row gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-3">🔄 Recurring Invoices</h1>
+            <div className="flex gap-4">
+              <Link href="/invoices">
+                <button className="text-gray-500 hover:text-gray-300 text-sm font-medium pb-2 border-b-2 border-transparent hover:border-blue-500/30 transition">
+                  All Invoices
+                </button>
+              </Link>
+              <Link href="/invoices/recurring">
+                <button className="text-gray-400 hover:text-white text-sm font-medium pb-2 border-b-2 border-blue-500">
+                  🔄 Recurring
+                </button>
+              </Link>
+            </div>
+          </div>
           <Link href="/invoices/recurring/new">
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-lg">
               + Create Recurring
