@@ -544,32 +544,52 @@ export default function ReportsPage() {
 
   const processPaymentsReport = (invoices: any[]) => {
     // Show all invoices with payments in the date range
-    const paymentRows = invoices.map((inv) => ({
-      invoiceNumber: inv.invoice_number || 'N/A',
-      dateIssued: new Date(inv.created_at).toLocaleDateString('en-US', {
-        year: '2-digit',
-        month: '2-digit',
-        day: '2-digit',
-      }),
-      client: inv.clients?.name || 'Unknown',
-      amount: inv.amount || 0,
-      paid: inv.amount_paid || 0,
-      outstanding: inv.remaining_balance || 0,
-      status: inv.status || 'unknown',
-    }))
+    const paymentRows = invoices.map((inv) => {
+      // Determine payment type
+      const amount = inv.amount || 0
+      const amountPaid = inv.amount_paid || 0
+      let paymentType = '—'
+      
+      if (amountPaid > 0 && amount > 0) {
+        if (amountPaid === amount) {
+          paymentType = 'Full payment'
+        } else if (amountPaid < amount) {
+          paymentType = 'Partial payment'
+        }
+      }
+
+      return {
+        invoiceNumber: inv.invoice_number || 'N/A',
+        date: inv.paid_date
+          ? new Date(inv.paid_date).toLocaleDateString('en-US', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+            })
+          : new Date(inv.created_at).toLocaleDateString('en-US', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+            }),
+        client: inv.clients?.name || 'Unknown',
+        amount: amountPaid,
+        method: inv.payment_method || '—',
+        type: paymentType,
+      }
+    })
 
     setTableData(paymentRows)
     setChartData([])
 
     // Summary metrics
-    const totalPaid = paymentRows.reduce((sum, p) => sum + (p.paid || 0), 0)
-    const totalAmount = paymentRows.reduce((sum, p) => sum + (p.amount || 0), 0)
+    const totalPaid = paymentRows.reduce((sum, p) => sum + (p.amount || 0), 0)
+    const totalAmount = paymentRows.length
 
     setSummaryMetrics({
       totalRevenue: totalPaid,
       totalInvoiced: totalAmount,
-      collectionRate: totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0,
-      avgInvoiceSize: paymentRows.length > 0 ? totalPaid / paymentRows.length : 0,
+      collectionRate: totalAmount > 0 ? totalAmount : 0, // Count of paid invoices
+      avgInvoiceSize: totalAmount > 0 ? totalPaid / totalAmount : 0,
     })
 
     console.log('[Reports] Payments report processed:', paymentRows.length, 'paid invoices, total:', totalPaid)
@@ -1177,26 +1197,45 @@ export default function ReportsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="text-left py-3 px-4 text-gray-400">Date</th>
-                        <th className="text-left py-3 px-4 text-gray-400">Invoice</th>
-                        <th className="text-left py-3 px-4 text-gray-400">Client</th>
-                        <th className="text-right py-3 px-4 text-gray-400">Amount</th>
-                        <th className="text-left py-3 px-4 text-gray-400">Method</th>
-                        <th className="text-left py-3 px-4 text-gray-400">Type</th>
+                        <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('date')}>Date{getSortIndicator('date')}</th>
+                        <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('invoiceNumber')}>Invoice{getSortIndicator('invoiceNumber')}</th>
+                        <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('client')}>Client{getSortIndicator('client')}</th>
+                        <th className="text-right py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('amount')}>Amount{getSortIndicator('amount')}</th>
+                        <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('method')}>Method{getSortIndicator('method')}</th>
+                        <th className="text-left py-3 px-4 text-gray-400 cursor-pointer hover:text-blue-400" onClick={() => handleSort('type')}>Type{getSortIndicator('type')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {tableData.map((row: any, idx) => (
-                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-3 px-4 text-gray-300">{row.date}</td>
-                          <td className="py-3 px-4 text-white">{row.invoiceNumber}</td>
-                          <td className="py-3 px-4 text-white">{row.client}</td>
-                          <td className="text-right py-3 px-4 text-green-400">MYR {row.amount.toFixed(0)}</td>
-                          <td className="py-3 px-4 text-gray-300">{row.method}</td>
-                          <td className="py-3 px-4 text-gray-300">{row.type}</td>
+                        <tr key={idx} className={`border-b border-gray-700/50 transition ${
+                          idx % 2 === 0 ? 'bg-gray-900/20' : 'bg-gray-800/5'
+                        } hover:bg-gray-700/10`}>
+                          <td className="py-3 px-4 text-gray-300 text-sm">{row.date || '—'}</td>
+                          <td className="py-3 px-4 text-white font-mono text-sm">{row.invoiceNumber}</td>
+                          <td className="py-3 px-4 text-white text-sm font-medium">{row.client}</td>
+                          <td className="text-right py-3 px-4 text-green-400 text-sm font-medium">MYR {((row.amount || 0)).toFixed(0)}</td>
+                          <td className="py-3 px-4 text-gray-300 text-sm">{row.method}</td>
+                          <td className="py-3 px-4 text-sm">
+                            {row.type === 'Full payment' && <span className="text-green-400">✓ Full payment</span>}
+                            {row.type === 'Partial payment' && <span className="text-yellow-400">⊘ Partial payment</span>}
+                            {row.type === '—' && <span className="text-gray-500">—</span>}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
+                    {tableData && tableData.length > 0 && (
+                      <tfoot>
+                        <tr className="border-t-2 border-gray-600 bg-gray-900/50">
+                          <td colSpan={3} className="py-3 px-4 text-sm font-semibold text-white">
+                            Total ({tableData.length} payments)
+                          </td>
+                          <td className="text-right py-3 px-4 text-green-400 font-bold">
+                            MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)).toFixed(0)}
+                          </td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               )}
