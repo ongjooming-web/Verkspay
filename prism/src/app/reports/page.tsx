@@ -148,10 +148,19 @@ export default function ReportsPage() {
         break
     }
 
-    return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0],
-    }
+    const fromStr = from.toISOString().split('T')[0]
+    const toStr = to.toISOString().split('T')[0]
+
+    return { from: fromStr, to: toStr }
+  }
+
+  const handlePresetClick = (preset: string) => {
+    setDatePreset(preset)
+    const range = getDateRange()
+    setCustomFrom(range.from)
+    setCustomTo(range.to)
+    // Automatically generate report with new dates
+    setTimeout(() => handleGenerateReport(), 100)
   }
 
   const handleGenerateReport = async () => {
@@ -159,9 +168,17 @@ export default function ReportsPage() {
 
     setReportLoading(true)
     try {
-      const dateRange = getDateRange()
-      const from = customFrom || dateRange.from
-      const to = customTo || dateRange.to
+      // Use custom dates if provided, otherwise use preset range
+      let from = customFrom
+      let to = customTo
+
+      if (!from || !to) {
+        const dateRange = getDateRange()
+        from = from || dateRange.from
+        to = to || dateRange.to
+      }
+
+      console.log('[ReportsPage] Generating report with date range:', { from, to, selectedReport })
 
       // Validate date range
       if (new Date(from) > new Date(to)) {
@@ -266,6 +283,7 @@ export default function ReportsPage() {
 
   const processRevenueReport = (invoices: any[]) => {
     const byMonth: Record<string, any> = {}
+    const invoiceDetails: any[] = []
 
     invoices.forEach((inv) => {
       const date = new Date(inv.created_at)
@@ -285,11 +303,24 @@ export default function ReportsPage() {
       byMonth[monthKey].collected += inv.amount_paid || 0
       byMonth[monthKey].outstanding += inv.remaining_balance || 0
       byMonth[monthKey].count++
+
+      // Store invoice details for table
+      invoiceDetails.push({
+        invoiceNumber: inv.invoice_number || 'N/A',
+        dateIssued: new Date(inv.created_at).toLocaleDateString('en-US', { year: '2-digit', month: '2-digit', day: '2-digit' }),
+        client: inv.clients?.name || 'Unknown',
+        description: inv.description || '-',
+        amount: inv.amount || 0,
+        paid: inv.amount_paid || 0,
+        outstanding: inv.remaining_balance || 0,
+        status: inv.status || 'unknown',
+      })
     })
 
     const chartData = Object.values(byMonth)
     setChartData(chartData)
-    setTableData(chartData)
+    // For revenue report, show both summary AND invoice details
+    setTableData(invoiceDetails.length > 0 ? invoiceDetails : chartData)
 
     // Summary
     const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
@@ -298,10 +329,10 @@ export default function ReportsPage() {
     const avgInvoiceSize = invoices.length > 0 ? totalInvoiced / invoices.length : 0
 
     setSummaryMetrics({
-      totalRevenue: totalCollected,
-      totalInvoiced,
-      collectionRate,
-      avgInvoiceSize,
+      totalRevenue: totalCollected || 0,
+      totalInvoiced: totalInvoiced || 0,
+      collectionRate: collectionRate || 0,
+      avgInvoiceSize: avgInvoiceSize || 0,
     })
   }
 
@@ -687,7 +718,7 @@ export default function ReportsPage() {
               {DATE_PRESETS.map((preset) => (
                 <button
                   key={preset.value}
-                  onClick={() => setDatePreset(preset.value)}
+                  onClick={() => handlePresetClick(preset.value)}
                   className={`px-3 py-2 rounded text-sm font-medium transition ${
                     datePreset === preset.value
                       ? 'bg-blue-600 text-white'
@@ -769,28 +800,28 @@ export default function ReportsPage() {
             <Card>
               <CardBody>
                 <p className="text-gray-400 text-sm mb-1">Total revenue</p>
-                <p className="text-2xl font-bold text-green-400">MYR {summaryMetrics.totalRevenue.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-green-400">MYR {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
                 <p className="text-xs text-gray-500 mt-1">+3.5% vs last quarter</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody>
                 <p className="text-gray-400 text-sm mb-1">Total invoiced</p>
-                <p className="text-2xl font-bold text-white">MYR {summaryMetrics.totalInvoiced.toFixed(0)}</p>
-                <p className="text-xs text-gray-500 mt-1">{tableData.length} invoices</p>
+                <p className="text-2xl font-bold text-white">MYR {(summaryMetrics?.totalInvoiced || 0).toFixed(0)}</p>
+                <p className="text-xs text-gray-500 mt-1">{tableData?.length || 0} invoices</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody>
                 <p className="text-gray-400 text-sm mb-1">Collection rate</p>
-                <p className="text-2xl font-bold text-blue-400">{summaryMetrics.collectionRate.toFixed(0)}%</p>
+                <p className="text-2xl font-bold text-blue-400">{(summaryMetrics?.collectionRate || 0).toFixed(0)}%</p>
                 <p className="text-xs text-gray-500 mt-1">3% vs last quarter</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody>
                 <p className="text-gray-400 text-sm mb-1">Avg invoice size</p>
-                <p className="text-2xl font-bold text-purple-400">MYR {summaryMetrics.avgInvoiceSize.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-purple-400">MYR {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
                 <p className="text-xs text-gray-500 mt-1">+7% vs last quarter</p>
               </CardBody>
             </Card>
@@ -823,21 +854,27 @@ export default function ReportsPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-white/10">
-                          <th className="text-left py-3 px-4 text-gray-400">Month</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Invoiced</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Collected</th>
+                          <th className="text-left py-3 px-4 text-gray-400">Invoice #</th>
+                          <th className="text-left py-3 px-4 text-gray-400">Date Issued</th>
+                          <th className="text-left py-3 px-4 text-gray-400">Client</th>
+                          <th className="text-left py-3 px-4 text-gray-400">Description</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Amount</th>
+                          <th className="text-right py-3 px-4 text-gray-400">Paid</th>
                           <th className="text-right py-3 px-4 text-gray-400">Outstanding</th>
-                          <th className="text-right py-3 px-4 text-gray-400">Count</th>
+                          <th className="text-left py-3 px-4 text-gray-400">Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {tableData.map((row: any, idx) => (
                           <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                            <td className="py-3 px-4 text-white">{row.month}</td>
-                            <td className="text-right py-3 px-4 text-white">MYR {row.invoiced.toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-green-400">MYR {row.collected.toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-yellow-400">MYR {row.outstanding.toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
+                            <td className="py-3 px-4 text-white font-mono">{row.invoiceNumber}</td>
+                            <td className="py-3 px-4 text-gray-300">{row.dateIssued || row.month}</td>
+                            <td className="py-3 px-4 text-white">{row.client}</td>
+                            <td className="py-3 px-4 text-gray-300 truncate">{row.description}</td>
+                            <td className="text-right py-3 px-4 text-white">MYR {(row.amount || row.invoiced || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-green-400">MYR {(row.paid || row.collected || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-yellow-400">MYR {(row.outstanding || 0).toFixed(0)}</td>
+                            <td className="py-3 px-4 text-gray-300 text-xs">{row.status || row.count}</td>
                           </tr>
                         ))}
                       </tbody>
