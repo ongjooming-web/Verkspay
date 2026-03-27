@@ -73,22 +73,14 @@ export async function GET(request: NextRequest) {
     // 2. For each template, create invoice and update template
     for (const template of templates) {
       try {
-        // Generate invoice number for this user
-        let invoiceNumber: string
-        try {
-          invoiceNumber = await generateInvoiceNumber(template.user_id, supabase)
-        } catch (err) {
-          console.error(`[RecurringCron] Failed to generate number for template ${template.id}:`, err)
-          results.push({
-            success: false,
-            templateId: template.id,
-            invoiceNumber: 'ERROR',
-            clientId: template.client_id,
-            error: 'Failed to generate invoice number'
-          })
-          errors++
-          continue
-        }
+        // Generate a UNIQUE invoice number for recurring invoices using timestamp + template ID
+        // Format: REC-[timestamp]-[template-last-6-chars]
+        // This avoids collisions with regular invoices and ensures uniqueness per template
+        const timestamp = Date.now().toString().slice(-6) // Last 6 digits of timestamp
+        const templateSuffix = template.id.slice(-6) // Last 6 chars of template UUID
+        const invoiceNumber = `REC-${timestamp}-${templateSuffix}`
+
+        console.log(`[RecurringCron] Generated recurring invoice number for template ${template.id}:`, invoiceNumber)
 
         // Calculate due date based on payment terms
         const generatedDate = new Date(template.next_generate_date)
