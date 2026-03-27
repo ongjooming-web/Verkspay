@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Cell } from 'recharts'
 import Link from 'next/link'
-// @ts-ignore - html2pdf.js has no TypeScript types
-import html2pdf from 'html2pdf.js'
+
+// Dynamically import chart component (browser-only)
+const ReportsChart = dynamic(() => import('@/components/ReportsChart').then((mod) => mod.ReportsChart), {
+  ssr: false,
+})
+
+// Dynamically import html2pdf (browser-only)
+let html2pdf: any = null
+if (typeof window !== 'undefined') {
+  html2pdf = require('html2pdf.js').default
+}
 
 type ReportType = 'revenue' | 'aging' | 'client' | 'tax' | 'payments'
 
@@ -466,6 +475,11 @@ export default function ReportsPage() {
   }
 
   const exportToPDF = () => {
+    if (!html2pdf) {
+      console.error('PDF export not available')
+      return
+    }
+
     const reportTitle = getReportTitle()
     const dateRange = getDateRangeString()
 
@@ -803,18 +817,7 @@ export default function ReportsPage() {
               {selectedReport === 'revenue' && (
                 <>
                   <div className="w-full h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="month" stroke="#999" />
-                        <YAxis stroke="#999" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                        <Legend />
-                        <Bar dataKey="invoiced" fill="#3b82f6" name="Invoiced" />
-                        <Bar dataKey="collected" fill="#10b981" name="Collected" />
-                        <Bar dataKey="outstanding" fill="#f59e0b" name="Outstanding" />
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                    <ReportsChart type="revenue" data={chartData} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -906,17 +909,7 @@ export default function ReportsPage() {
               {selectedReport === 'tax' && (
                 <>
                   <div className="w-full h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="month" stroke="#999" />
-                        <YAxis stroke="#999" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                        <Legend />
-                        <Bar dataKey="income" fill="#10b981" name="Income Received" />
-                        <Line type="monotone" dataKey="cumulative" stroke="#3b82f6" name="Cumulative" />
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                    <ReportsChart type="tax" data={chartData} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
