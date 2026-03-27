@@ -164,6 +164,33 @@ export default function RecurringInvoicesPage() {
     }
   }
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this recurring invoice template permanently? All associated invoices will remain, but new ones will not be generated.')) {
+      return
+    }
+
+    setActionLoading(id)
+    try {
+      const { error } = await supabase
+        .from('recurring_invoices')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('[RecurringInvoices] Delete error:', error)
+      } else {
+        setRecurringInvoices(
+          recurringInvoices.filter((r) => r.id !== id)
+        )
+      }
+    } catch (err) {
+      console.error('[RecurringInvoices] Error:', err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
@@ -282,6 +309,14 @@ export default function RecurringInvoicesPage() {
                               className="text-red-400 hover:text-red-300 text-xs font-medium px-2 py-1 rounded hover:bg-red-500/10 transition disabled:opacity-50"
                             >
                               Cancel
+                            </button>
+                            <button
+                              onClick={() => handleDelete(recurring.id)}
+                              disabled={actionLoading === recurring.id}
+                              className="text-red-500 hover:text-red-400 text-xs font-medium px-2 py-1 rounded hover:bg-red-500/10 transition disabled:opacity-50"
+                              title="Delete this template permanently"
+                            >
+                              🗑 Delete
                             </button>
                           </div>
                         </td>
