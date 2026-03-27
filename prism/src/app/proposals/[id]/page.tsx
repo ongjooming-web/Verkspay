@@ -100,7 +100,34 @@ export default function ProposalDetail() {
     setMessage('')
 
     try {
-      // Update proposal status to 'sent'
+      // Get fresh session token
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData?.session?.access_token) {
+        setMessage('❌ Authentication error')
+        setSending(false)
+        return
+      }
+
+      // Send email via API
+      const emailResponse = await fetch('/api/proposals/send-email', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ proposalId: proposal.id })
+      })
+
+      const emailData = await emailResponse.json()
+
+      if (!emailResponse.ok) {
+        console.error('[SendToClient] Email error:', emailData)
+        setMessage(`❌ ${emailData.error || 'Failed to send proposal'}`)
+        setSending(false)
+        return
+      }
+
+      // Update proposal status to 'sent' in database
       const { error } = await supabase
         .from('proposals')
         .update({
@@ -111,22 +138,20 @@ export default function ProposalDetail() {
         .eq('user_id', user.id)
 
       if (error) {
-        console.error('[SendToClient] Error:', error)
-        setMessage('❌ Failed to send proposal')
+        console.error('[SendToClient] Status update error:', error)
+        setMessage('❌ Failed to update status')
         setSending(false)
         return
       }
 
       // Update local state
       setProposal({ ...proposal, status: 'sent', sent_at: new Date().toISOString() })
-      setMessage('✅ Proposal sent to client!')
+      setMessage(`✅ Proposal sent to ${emailData.email}!`)
 
-      // In a real app, you'd send an email here
-      // For now, just update the status
       console.log('[SendToClient] Proposal sent:', proposal.proposal_number)
     } catch (err) {
       console.error('[SendToClient] Error:', err)
-      setMessage('❌ An error occurred')
+      setMessage('❌ An error occurred while sending')
     } finally {
       setSending(false)
     }
