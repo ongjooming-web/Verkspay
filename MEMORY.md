@@ -125,6 +125,32 @@ Every new API route must have:
 
 ---
 
+## Prism: Recurring Invoices + WhatsApp (COMPLETE ✅)
+
+**Status:** All 5 prompts finished (2026-03-27)
+
+### Prompt Breakdown
+1. ✅ **Migration:** recurring_invoices table + RLS + indexes
+2. ✅ **CRUD UI:** List, create, edit, pause/resume/cancel
+3. ✅ **Cron:** Auto-generate invoice drafts on schedule
+4. ✅ **WhatsApp Buttons:** Send/remind via wa.me links
+5. ✅ **Cron Integration:** Store wa.me links in reminders_log
+
+### What's Ready to Deploy
+- Recurring invoice templates (with monthly/quarterly/yearly scheduling)
+- Auto-generation cron (daily 8 AM UTC)
+- WhatsApp integration (links only, no Business API needed)
+- Smart reminders (email + WhatsApp options)
+- Full UI with mobile support
+
+### Next Session
+- Deploy migration to Supabase prod
+- Test end-to-end with real invoice
+- Update pricing page (Pro+ gets recurring invoices)
+- Optional: Phase 4 (CRM)
+
+---
+
 ## Daily Standup
 
 Track what I'm doing each day here. Updates will flow into this.

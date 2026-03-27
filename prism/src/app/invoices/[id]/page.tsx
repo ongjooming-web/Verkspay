@@ -125,16 +125,21 @@ export default function InvoiceDetail() {
     }
 
     if (data) {
-      // Fetch client name
+      // Fetch client name and phone
       const { data: clientData } = await supabase
         .from('clients')
-        .select('name')
+        .select('name, phone_number, email')
         .eq('id', data.client_id)
         .single()
 
       const invoiceWithClient = {
         ...data,
-        client_name: clientData?.name || 'Unknown Client'
+        client_name: clientData?.name || 'Unknown Client',
+        clients: {
+          name: clientData?.name || 'Client',
+          email: clientData?.email || '',
+          phone: clientData?.phone_number || undefined
+        }
       }
       console.log('[InvoiceDetail] Invoice with client:', invoiceWithClient)
       setInvoice(invoiceWithClient)
