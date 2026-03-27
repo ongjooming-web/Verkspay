@@ -153,42 +153,99 @@ export default function ReportsPage() {
       const from = customFrom || dateRange.from
       const to = customTo || dateRange.to
 
-      // Fetch invoices for the date range
-      let query = supabase
-        .from('invoices')
-        .select('*, clients(id, name, email)')
-        .eq('user_id', user.id)
-        .gte('created_at', from)
-        .lte('created_at', to)
-
-      if (selectedClient !== 'all') {
-        query = query.eq('client_id', selectedClient)
-      }
-
-      const { data: invoices, error } = await query
-
-      if (error) {
-        console.error('[ReportsPage] Query error:', error)
+      // Validate date range
+      if (new Date(from) > new Date(to)) {
+        console.error('[ReportsPage] Invalid date range: from > to')
         return
       }
 
-      // Process data based on selected report
-      switch (selectedReport) {
-        case 'revenue':
-          processRevenueReport(invoices || [])
-          break
-        case 'aging':
-          processAgingReport(invoices || [])
-          break
-        case 'client':
-          processClientReport(invoices || [])
-          break
-        case 'tax':
-          processTaxReport(invoices || [])
-          break
-        case 'payments':
-          processPaymentReport(user.id)
-          break
+      // For Tax Report, use paid_date instead of created_at
+      if (selectedReport === 'tax') {
+        let query = supabase
+          .from('invoices')
+          .select('*, clients(id, name, email)')
+          .eq('user_id', user.id)
+          .gte('paid_date', from)
+          .lte('paid_date', to)
+          .gt('amount_paid', 0) // Only paid invoices
+
+        if (selectedClient !== 'all') {
+          query = query.eq('client_id', selectedClient)
+        }
+
+        const { data: invoices, error } = await query
+        if (error) {
+          console.error('[ReportsPage] Query error:', error)
+          return
+        }
+        processTaxReport(invoices || [])
+      }
+      // For Payment Report, fetch from payment_records with date filter
+      else if (selectedReport === 'payments') {
+        let query = supabase
+          .from('payment_records')
+          .select('*, invoices(invoice_number, amount, clients(name))')
+          .gte('created_at', from)
+          .lte('created_at', to)
+          .order('created_at', { ascending: false })
+
+        const { data: payments, error } = await query
+        if (error) {
+          console.error('[ReportsPage] Query error:', error)
+          return
+        }
+
+        const paymentData = (payments || []).map((p: any) => ({
+          date: new Date(p.created_at).toLocaleDateString(),
+          invoiceNumber: p.invoices?.invoice_number || 'N/A',
+          client: p.invoices?.clients?.name || 'Unknown',
+          amount: p.amount || 0,
+          method: p.payment_method || 'Unknown',
+          type: p.amount < (p.invoices?.amount || 0) ? 'Partial' : 'Full',
+        }))
+
+        setTableData(paymentData)
+
+        const totalAmount = paymentData.reduce((sum: number, p: any) => sum + p.amount, 0)
+        setSummaryMetrics({
+          totalRevenue: totalAmount,
+          totalInvoiced: paymentData.length,
+          collectionRate: paymentData.length,
+          avgInvoiceSize: paymentData.length > 0 ? totalAmount / paymentData.length : 0,
+        })
+      }
+      // For all other reports, use created_at (invoice creation date)
+      else {
+        let query = supabase
+          .from('invoices')
+          .select('*, clients(id, name, email)')
+          .eq('user_id', user.id)
+          .gte('created_at', from)
+          .lte('created_at', to)
+
+        if (selectedClient !== 'all') {
+          query = query.eq('client_id', selectedClient)
+        }
+
+        const { data: invoices, error } = await query
+
+        if (error) {
+          console.error('[ReportsPage] Query error:', error)
+          return
+        }
+
+        // Process data based on selected report
+        switch (selectedReport) {
+          case 'revenue':
+            processRevenueReport(invoices || [])
+            break
+          case 'aging':
+            processAgingReport(invoices || [])
+            break
+          case 'client':
+            processClientReport(invoices || [])
+            break
+        }
       }
     } catch (err) {
       console.error('[ReportsPage] Error:', err)
@@ -346,15 +403,14 @@ export default function ReportsPage() {
 
   const processTaxReport = (invoices: any[]) => {
     // Only count actual money received (amount_paid)
+    // Invoices are already filtered by paid_date range and amount_paid > 0
     const byMonth: Record<string, any> = {}
-    let yearGroups: Record<string, number> = {}
 
     invoices.forEach((inv) => {
-      if (!inv.paid_date || inv.amount_paid === 0) return
+      if (!inv.paid_date || !inv.amount_paid) return
 
       const date = new Date(inv.paid_date)
       const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
-      const year = date.getFullYear().toString()
 
       if (!byMonth[monthKey]) {
         byMonth[monthKey] = {
@@ -365,16 +421,11 @@ export default function ReportsPage() {
         }
       }
 
-      if (!yearGroups[year]) {
-        yearGroups[year] = 0
-      }
-
       byMonth[monthKey].income += inv.amount_paid
       byMonth[monthKey].paidCount++
-      yearGroups[year] += inv.amount_paid
     })
 
-    const chartData = Object.values(byMonth)
+    const chartData = Object.values(byMonth).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
     let cumulative = 0
     chartData.forEach((row: any) => {
       cumulative += row.income
@@ -391,50 +442,12 @@ export default function ReportsPage() {
     setSummaryMetrics({
       totalRevenue: totalIncome,
       totalInvoiced: totalPaidCount,
-      collectionRate: chartData.length, // months with payments
-      avgInvoiceSize: totalIncome / totalPaidCount,
+      collectionRate: chartData.length || 1, // months with payments
+      avgInvoiceSize: totalIncome / (totalPaidCount || 1),
     })
   }
 
-  const processPaymentReport = async (userId: string) => {
-    // Fetch payment records
-    const { data: payments } = await supabase
-      .from('payment_records')
-      .select('*, invoices(invoice_number, amount, clients(name))')
-      .order('created_at', { ascending: false })
-      .limit(100)
 
-    if (payments) {
-      const paymentData = payments.map((p: any) => ({
-        date: new Date(p.created_at).toLocaleDateString(),
-        invoiceNumber: p.invoices?.invoice_number || 'N/A',
-        client: p.invoices?.clients?.name || 'Unknown',
-        amount: p.amount || 0,
-        method: p.payment_method || 'Unknown',
-        type: p.amount < (p.invoices?.amount || 0) ? 'Partial' : 'Full',
-      }))
-
-      setTableData(paymentData)
-
-      // Summary
-      const totalAmount = paymentData.reduce((sum: number, p: any) => sum + p.amount, 0)
-      const methods = paymentData.reduce(
-        (acc: any, p: any) => {
-          acc[p.method] = (acc[p.method] || 0) + 1
-          return acc
-        },
-        {}
-      )
-      const mostCommon = Object.entries(methods).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'None'
-
-      setSummaryMetrics({
-        totalRevenue: totalAmount,
-        totalInvoiced: paymentData.length,
-        collectionRate: paymentData.length,
-        avgInvoiceSize: paymentData.length > 0 ? totalAmount / paymentData.length : 0,
-      })
-    }
-  }
 
   const isReportGated = () => {
     const report = REPORTS.find((r) => r.id === selectedReport)
