@@ -125,29 +125,130 @@ Every new API route must have:
 
 ---
 
-## Prism: Recurring Invoices + WhatsApp (COMPLETE ✅)
+## Prism: Complete Roadmap (March 27, 2026)
 
-**Status:** All 5 prompts finished (2026-03-27)
+### Mission
+Build the #1 **AI-powered invoicing platform** for freelancers and small businesses in Malaysia/SEA. Lead with AI intelligence, not just invoicing.
 
-### Prompt Breakdown
-1. ✅ **Migration:** recurring_invoices table + RLS + indexes
-2. ✅ **CRUD UI:** List, create, edit, pause/resume/cancel
-3. ✅ **Cron:** Auto-generate invoice drafts on schedule
-4. ✅ **WhatsApp Buttons:** Send/remind via wa.me links
-5. ✅ **Cron Integration:** Store wa.me links in reminders_log
+### COMPLETED PHASES
 
-### What's Ready to Deploy
-- Recurring invoice templates (with monthly/quarterly/yearly scheduling)
-- Auto-generation cron (daily 8 AM UTC)
-- WhatsApp integration (links only, no Business API needed)
-- Smart reminders (email + WhatsApp options)
-- Full UI with mobile support
+#### Phase 1: Core Platform ✅
+- Invoice creation + CRUD (INV-0001 sequential numbering)
+- Line items (JSONB: description, qty, rate, amount)
+- Payment terms (Due on Receipt, Net 15/30/60/90)
+- Multi-currency support (MYR default, inherited from profile)
+- Invoice status tracking (unpaid, paid, paid_partial, overdue)
+- PDF generation (professional HTML template)
+- Stripe Connect + Payment links (checkout sessions)
+- Partial payment tracking (manual + Stripe)
+- Smart email reminders (3, 7, 14 days overdue via Resend)
+- Client management (profiles, list, search, selection)
+- Dashboard (revenue cards, charts, activity feed)
+- Settings (business profile, currency, Stripe status)
 
-### Next Session
-- Deploy migration to Supabase prod
-- Test end-to-end with real invoice
-- Update pricing page (Pro+ gets recurring invoices)
-- Optional: Phase 4 (CRM)
+#### Phase 2A: AI Invoice Generator ✅
+- Suggestions API endpoint (/api/invoices/suggestions)
+- Auto-populate form when client selected
+- Suggest line items, rates, payment terms from history
+- "Suggested from history" panel with "+ Add" buttons
+- Confidence logic based on past invoice frequency
+- Silent failure (form works normally if API fails)
+
+#### Phase 3: AI Business Insights ✅
+- Data aggregation endpoint (revenue, invoices, clients, payments, trends)
+- Claude Haiku AI generation (summaries + recommendations)
+- Executive summary with revenue trend badge
+- Highlights (positive/warning/action) with color coding
+- Client health scores (good/attention/at_risk)
+- Actionable recommendations (3-5 per generation)
+- Rate limiting per plan (Trial: 10, Starter: 5, Pro: 30, Enterprise: unlimited)
+- Persist insights to database (latest_insights JSONB)
+- PDF download of insights report
+- Dashboard AI Insights widget
+
+#### Stripe Billing Lifecycle ✅
+- 15-day free trial (no free tier)
+- 3-tier pricing: Starter ($19/mo), Pro ($49/mo), Enterprise ($199/mo)
+- Annual billing with 20% discount
+- Stripe Checkout integration (6 price IDs)
+- Webhook handling (subscription lifecycle)
+- stripe_customer_id saved on profile (with fallback)
+- Plan updates on subscription change
+- Downgrade to trial on cancellation
+- Stripe Customer Portal (Manage Billing)
+- Master test account bypass (MASTER_TEST_EMAILS env var)
+
+#### Proposals MVP ✅
+- Proposals table + CRUD (PROP-0001 sequential numbering)
+- Create proposal form with line items
+- Proposal list page (status badges: draft/sent/viewed/accepted/declined)
+- Proposal detail/view page
+- Convert proposal to invoice (one-click)
+- Edit proposal (draft only)
+- Plan limits (Trial: 3/mo, Starter: 10/mo, Pro+: unlimited)
+- Dashboard proposal stats (pipeline value, win rate)
+
+#### Phase 2: Recurring Invoices + WhatsApp ✅
+- Recurring invoices table (frequency, schedule, status)
+- Template CRUD (create, edit, pause, resume, cancel, delete)
+- Sequential numbering (REC-0001 for templates, INV-XXXX for generated invoices)
+- Auto-generate invoice drafts via cron (daily 8 AM UTC)
+- Status management (active/paused/completed/cancelled)
+- WhatsApp integration (wa.me links for send/remind)
+- Phone number formatting + validation
+- Pre-filled reminder messages (days overdue included)
+- Reminders stored in reminders_log with whatsapp_link
+- WhatsApp buttons on invoice detail page
+- Works on desktop (WhatsApp Web) + mobile (app)
+
+### NEXT PHASES (NOT STARTED)
+
+#### Phase 4: AI-Powered Client Intelligence
+- Client health scoring (based on payment history, invoice frequency)
+- AI-generated client summaries (spending patterns, engagement)
+- Smart follow-up recommendations (overdue, inactive clients)
+- Client timeline + activity history
+- AI suggestions for client segmentation
+- **NOT** a deal pipeline/HubSpot-style CRM — AI focus only
+
+#### Phase 5: Enterprise Features (Later)
+- Team management (multiple users per workspace)
+- Role-based access (admin, accountant, viewer)
+- Audit logs + activity tracking
+- Custom branding + white-label option
+- API access for 3rd-party integrations
+- Multi-workspace support
+
+### Pricing (Locked)
+
+| Plan | Price | Invoices | AI Insights | Proposals | Recurring | Reminders |
+|------|-------|----------|-------------|-----------|-----------|-----------|
+| **Trial** | Free (15 days) | 20/mo | 10/mo | 3/mo | ❌ | Email only |
+| **Starter** | $19/mo | Unlimited | 5/mo | 10/mo | ❌ | Email + WhatsApp |
+| **Pro** | $49/mo | Unlimited | 30/mo | Unlimited | ✅ | Email + WhatsApp |
+| **Enterprise** | $199/mo | Unlimited | Unlimited | Unlimited | ✅ | Email + WhatsApp + Custom |
+
+### NOT In Scope
+
+❌ Deal pipeline / HubSpot-style CRM  
+❌ QuickBooks / Xero integrations (contradicts Prism's AI-first positioning)  
+❌ Expense tracking / full accounting  
+❌ SMS reminders (WhatsApp only)  
+❌ USDC on Base (using Stripe only, funded by revenue)
+
+### Current Status (March 27, 2026)
+
+✅ **All listed phases COMPLETE and deployed to Vercel**  
+⏳ **Ready for user validation** (target: 10-15 freelancers)  
+⏳ **Next: Monetization** (launch Stripe subscription)  
+⏳ **Then: Phase 4** (if user demand warrants AI client intelligence)
+
+### Key Metrics
+
+- **Target:** $500 MRR (prove model), then $100K MRR
+- **CAC:** TBD (validate with users first)
+- **Churn assumption:** <5% monthly (sticky product)
+- **Runway:** $1,000 capital = ~5 months runway at $200/mo burn
 
 ---
 
