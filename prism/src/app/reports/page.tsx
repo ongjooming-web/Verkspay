@@ -526,6 +526,28 @@ export default function ReportsPage() {
     return sortOrder === 'asc' ? ' ↑' : ' ↓'
   }
 
+  const getStatusBadge = (status: string) => {
+    const baseClass = 'px-2.5 py-1 rounded text-xs font-medium inline-block'
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return <span className={`${baseClass} bg-green-900/30 text-green-400 border border-green-700/50`}>Paid</span>
+      case 'unpaid':
+        return <span className={`${baseClass} bg-gray-700/30 text-gray-300 border border-gray-600/50`}>Unpaid</span>
+      case 'overdue':
+        return <span className={`${baseClass} bg-red-900/30 text-red-400 border border-red-700/50`}>Overdue</span>
+      case 'paid_partial':
+        return <span className={`${baseClass} bg-yellow-900/30 text-yellow-400 border border-yellow-700/50`}>Partial</span>
+      default:
+        return <span className={`${baseClass} bg-gray-700/30 text-gray-400`}>{status || '-'}</span>
+    }
+  }
+
+  const formatAmount = (amount: number, isOutstanding: boolean = false) => {
+    const value = amount || 0
+    const textColor = value > 0 ? (isOutstanding ? 'text-orange-400' : 'text-green-400') : 'text-gray-500'
+    return <span className={textColor}>MYR {value.toFixed(0)}</span>
+  }
+
   const getReportTitle = () => {
     return REPORTS.find((r) => r.id === selectedReport)?.name || 'Report'
   }
@@ -719,8 +741,8 @@ export default function ReportsPage() {
           <p className="text-gray-400">Generate and export business reports</p>
         </div>
 
-        {/* Report Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
+        {/* Report Tabs */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-12">
           {REPORTS.map((report) => {
             const isGated = report.gated && (plan === 'trial' || plan === 'starter')
             const isActive = selectedReport === report.id
@@ -737,9 +759,11 @@ export default function ReportsPage() {
                   }
                 }}
                 disabled={false}
-                className={`p-4 rounded-lg text-center transition ${
-                  isActive ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-800 border-gray-700 text-gray-300'
-                } ${isGated ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'} border`}
+                className={`p-4 rounded-lg text-center transition duration-200 ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-500 text-white shadow-lg' 
+                    : 'bg-gray-800/40 border border-gray-700/50 text-gray-400 hover:border-gray-600'
+                } ${isGated ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div className="text-2xl mb-2">{report.icon}</div>
                 <div className="font-semibold text-sm">{report.name}</div>
@@ -750,17 +774,17 @@ export default function ReportsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-8 border-blue-500/30">
+        <Card className="mb-10 border-gray-700/50">
           <CardBody className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-2">
               {DATE_PRESETS.map((preset) => (
                 <button
                   key={preset.value}
                   onClick={() => handlePresetClick(preset.value)}
-                  className={`px-3 py-2 rounded text-sm font-medium transition ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition ${
                     datePreset === preset.value
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-gray-800/50 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-gray-300'
                   }`}
                 >
                   {preset.label}
@@ -834,33 +858,47 @@ export default function ReportsPage() {
 
         {/* Summary Metrics */}
         {summaryMetrics && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardBody>
-                <p className="text-gray-400 text-sm mb-1">Total revenue</p>
-                <p className="text-2xl font-bold text-green-400">MYR {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
-                <p className="text-xs text-gray-500 mt-1">+3.5% vs last quarter</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardBody className="space-y-2">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Total Revenue</p>
+                <p className="text-3xl font-bold text-green-500">MYR {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
+                <p className="text-xs text-green-400 flex items-center gap-1">
+                  <span>↑</span> +3.5% vs last quarter
+                </p>
               </CardBody>
             </Card>
-            <Card>
-              <CardBody>
-                <p className="text-gray-400 text-sm mb-1">Total invoiced</p>
-                <p className="text-2xl font-bold text-white">MYR {(summaryMetrics?.totalInvoiced || 0).toFixed(0)}</p>
-                <p className="text-xs text-gray-500 mt-1">{tableData?.length || 0} invoices</p>
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardBody className="space-y-2">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Total Invoiced</p>
+                <p className="text-3xl font-bold text-white">MYR {(summaryMetrics?.totalInvoiced || 0).toFixed(0)}</p>
+                <p className="text-xs text-gray-400">{tableData?.length || 0} invoices</p>
               </CardBody>
             </Card>
-            <Card>
-              <CardBody>
-                <p className="text-gray-400 text-sm mb-1">Collection rate</p>
-                <p className="text-2xl font-bold text-blue-400">{(summaryMetrics?.collectionRate || 0).toFixed(0)}%</p>
-                <p className="text-xs text-gray-500 mt-1">3% vs last quarter</p>
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardBody className="space-y-2">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Collection Rate</p>
+                <p className={`text-3xl font-bold ${
+                  (summaryMetrics?.collectionRate || 0) >= 75 ? 'text-green-500' :
+                  (summaryMetrics?.collectionRate || 0) >= 50 ? 'text-yellow-500' :
+                  'text-red-500'
+                }`}>
+                  {(summaryMetrics?.collectionRate || 0).toFixed(0)}%
+                </p>
+                <p className={`text-xs flex items-center gap-1 ${
+                  (summaryMetrics?.collectionRate || 0) >= 50 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  <span>{(summaryMetrics?.collectionRate || 0) >= 50 ? '↑' : '↓'}</span> vs last quarter
+                </p>
               </CardBody>
             </Card>
-            <Card>
-              <CardBody>
-                <p className="text-gray-400 text-sm mb-1">Avg invoice size</p>
-                <p className="text-2xl font-bold text-purple-400">MYR {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
-                <p className="text-xs text-gray-500 mt-1">+7% vs last quarter</p>
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardBody className="space-y-2">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Avg Invoice Size</p>
+                <p className="text-3xl font-bold text-white">MYR {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
+                <p className="text-xs text-green-400 flex items-center gap-1">
+                  <span>↑</span> +7% vs last quarter
+                </p>
               </CardBody>
             </Card>
           </div>
@@ -880,7 +918,7 @@ export default function ReportsPage() {
             </CardBody>
           </Card>
         ) : tableData.length > 0 ? (
-          <Card className="border-blue-500/30">
+          <Card className="border-gray-700/50 mt-10">
             <CardBody className="space-y-8">
               {/* Render appropriate table based on report type */}
               {selectedReport === 'revenue' && (
@@ -904,18 +942,45 @@ export default function ReportsPage() {
                       </thead>
                       <tbody>
                         {(tableData || []).map((row: any, idx) => (
-                          <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                            <td className="py-3 px-4 text-white font-mono">{row?.invoiceNumber || '-'}</td>
-                            <td className="py-3 px-4 text-gray-300">{row?.dateIssued || row?.month || '-'}</td>
-                            <td className="py-3 px-4 text-white">{row?.client || '-'}</td>
-                            <td className="py-3 px-4 text-gray-300 truncate">{row?.description || '-'}</td>
-                            <td className="text-right py-3 px-4 text-white">MYR {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-green-400">MYR {((row?.paid ?? row?.collected ?? 0) || 0).toFixed(0)}</td>
-                            <td className="text-right py-3 px-4 text-yellow-400">MYR {((row?.outstanding ?? 0) || 0).toFixed(0)}</td>
-                            <td className="py-3 px-4 text-gray-300 text-xs">{row?.status || row?.count || '-'}</td>
+                          <tr key={idx} className={`border-b border-gray-700/50 transition ${
+                            idx % 2 === 0 ? 'bg-gray-900/20' : 'bg-gray-800/5'
+                          } hover:bg-gray-700/10`}>
+                            <td className="py-3 px-4 text-white font-mono text-sm">{row?.invoiceNumber || '-'}</td>
+                            <td className="py-3 px-4 text-gray-300 text-sm">{row?.dateIssued || row?.month || '-'}</td>
+                            <td className="py-3 px-4 text-white text-sm font-medium">{row?.client || '-'}</td>
+                            <td className="py-3 px-4 text-gray-400 truncate text-sm">{row?.description || '-'}</td>
+                            <td className="text-right py-3 px-4 text-white text-sm">MYR {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-sm">
+                              {formatAmount((row?.paid ?? row?.collected ?? 0) || 0, false)}
+                            </td>
+                            <td className="text-right py-3 px-4 text-sm">
+                              {formatAmount((row?.outstanding ?? 0) || 0, true)}
+                            </td>
+                            <td className="py-3 px-4 text-xs">
+                              {getStatusBadge(row?.status || row?.count)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
+                      {tableData && tableData.length > 0 && (
+                        <tfoot>
+                          <tr className="border-t-2 border-gray-600 bg-gray-900/50">
+                            <td colSpan={4} className="py-3 px-4 text-sm font-semibold text-white">
+                              Total ({tableData.length} rows)
+                            </td>
+                            <td className="text-right py-3 px-4 text-white font-bold">
+                              MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)).toFixed(0)}
+                            </td>
+                            <td className="text-right py-3 px-4 font-bold">
+                              <span className="text-green-400">MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0)).toFixed(0)}</span>
+                            </td>
+                            <td className="text-right py-3 px-4 font-bold">
+                              <span className="text-orange-400">MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0)).toFixed(0)}</span>
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      )}
                     </table>
                   </div>
                 </>
