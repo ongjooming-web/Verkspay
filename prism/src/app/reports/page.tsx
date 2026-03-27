@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Cell } from 'recharts'
 import Link from 'next/link'
+// @ts-ignore - html2pdf.js has no TypeScript types
 import html2pdf from 'html2pdf.js'
 
 type ReportType = 'revenue' | 'aging' | 'client' | 'tax' | 'payments'
