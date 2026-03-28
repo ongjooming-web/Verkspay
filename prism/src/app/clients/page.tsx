@@ -204,19 +204,19 @@ export default function ClientsPage() {
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">Clients</h1>
-          <div className="flex gap-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">Clients</h1>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               onClick={runAutoTagging}
               disabled={autoTagLoading}
-              className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+              className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm md:text-base px-3 md:px-4 py-2"
             >
-              {autoTagLoading ? '🔄 Tagging...' : '⚡ Auto-Tag Clients'}
+              {autoTagLoading ? '🔄 Tagging...' : '⚡ Auto-Tag'}
             </Button>
             <Button
               onClick={() => setShowForm(!showForm)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base px-3 md:px-4 py-2"
             >
               + Add Client
             </Button>
@@ -277,23 +277,23 @@ export default function ClientsPage() {
         {/* Filters */}
         <Card className="mb-8 border-gray-700/50">
           <CardBody>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {/* Search */}
               <div>
                 <input
                   type="text"
-                  placeholder="Search by name or email..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500 text-sm"
+                  className="w-full glass px-3 md:px-4 py-2 rounded-lg text-white placeholder-gray-500 text-sm"
                 />
               </div>
 
               {/* Filter Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Tags Filter */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+                {/* Tags Filter - Hidden on mobile, shown on larger screens */}
                 {tags.length > 0 && (
-                  <div>
+                  <div className="hidden sm:block">
                     <label className="text-xs text-gray-400 uppercase block mb-2">Tags</label>
                     <select
                       multiple
@@ -302,7 +302,7 @@ export default function ClientsPage() {
                         setSelectedTags(Array.from(e.target.selectedOptions, (option) => option.value))
                       }
                       className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
-                      style={{ minHeight: '100px' }}
+                      style={{ minHeight: '80px' }}
                     >
                       {tags.map((tag) => (
                         <option key={tag.id} value={tag.id}>
@@ -322,25 +322,25 @@ export default function ClientsPage() {
                     className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
                   >
                     <option value="all">All</option>
-                    <option value="healthy">Healthy (80+)</option>
-                    <option value="at_risk">At Risk (50-79)</option>
-                    <option value="needs_attention">Needs Attention (&lt;50)</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="at_risk">At Risk</option>
+                    <option value="needs_attention">Needs Attn</option>
                   </select>
                 </div>
 
                 {/* Sort By */}
                 <div>
-                  <label className="text-xs text-gray-400 uppercase block mb-2">Sort By</label>
+                  <label className="text-xs text-gray-400 uppercase block mb-2">Sort</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortBy)}
                     className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
                   >
-                    <option value="name">Name A-Z</option>
-                    <option value="revenue">Revenue (High-Low)</option>
-                    <option value="outstanding">Outstanding (High-Low)</option>
-                    <option value="last_invoice">Last Invoice (Recent)</option>
-                    <option value="health">Health Score (High-Low)</option>
+                    <option value="name">Name</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="outstanding">Outstanding</option>
+                    <option value="last_invoice">Last Invoice</option>
+                    <option value="health">Health</option>
                   </select>
                 </div>
               </div>
@@ -352,11 +352,11 @@ export default function ClientsPage() {
         {filteredClients.length === 0 ? (
           <Card className="border-gray-700/50">
             <CardBody>
-              <div className="text-center py-12">
-                <p className="text-gray-400 mb-4">No clients found</p>
+              <div className="text-center py-8 md:py-12">
+                <p className="text-gray-400 mb-4 text-sm md:text-base">No clients found</p>
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base"
                 >
                   Add First Client
                 </Button>
@@ -372,35 +372,35 @@ export default function ClientsPage() {
                 <Link key={client.id} href={`/clients/${client.id}`}>
                   <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
                     <CardBody>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-white mb-1">{client.name}</h3>
+                      <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base md:text-lg font-semibold text-white mb-1 truncate">{client.name}</h3>
                           {client.company && (
-                            <p className="text-gray-400 text-sm mb-2">{client.company}</p>
+                            <p className="text-gray-400 text-xs md:text-sm mb-2 truncate">{client.company}</p>
                           )}
-                          <div className="flex gap-4 text-sm text-gray-400">
-                            {client.email && <span>📧 {client.email}</span>}
-                            {client.phone && <span>📞 {client.phone}</span>}
+                          <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs md:text-sm text-gray-400">
+                            {client.email && <span className="truncate">📧 {client.email}</span>}
+                            {client.phone && <span className="truncate">📞 {client.phone}</span>}
                             {client.last_invoice_date && (
                               <span>📄 {getLastInvoiceText(client.last_invoice_date)}</span>
                             )}
                           </div>
                         </div>
 
-                        <div className="text-right space-y-2">
+                        <div className="text-right space-y-2 flex-shrink-0">
                           <div>
                             <p className="text-gray-400 text-xs uppercase">Revenue</p>
-                            <p className="text-xl font-bold text-green-400">
+                            <p className="text-lg md:text-xl font-bold text-green-400">
                               {formatCurrency(client.total_revenue || 0, currencyCode)}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-400 text-xs uppercase">Outstanding</p>
-                            <p className="text-lg font-semibold text-yellow-400">
+                            <p className="text-base md:text-lg font-semibold text-yellow-400">
                               {formatCurrency(client.total_outstanding || 0, currencyCode)}
                             </p>
                           </div>
-                          <div className={`px-3 py-1 rounded text-xs font-semibold ${healthBadge.color}`}>
+                          <div className={`px-2 md:px-3 py-1 rounded text-xs font-semibold whitespace-nowrap ${healthBadge.color}`}>
                             {healthBadge.label}
                           </div>
                         </div>

@@ -13,6 +13,7 @@ import { groupByCurrency } from '@/lib/currency-helper'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useCurrency } from '@/hooks/useCurrency'
 import { RevenueForecastWidget } from '@/components/RevenueForecastWidget'
+import { FollowUpsWidget } from '@/components/FollowUpsWidget'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 interface RecentActivity {
@@ -577,9 +578,14 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Revenue Forecast Widget */}
-        <div className="mb-10">
-          <RevenueForecastWidget />
+        {/* Revenue Forecast + Follow-ups Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          <div>
+            <RevenueForecastWidget />
+          </div>
+          <div>
+            <FollowUpsWidget />
+          </div>
         </div>
 
         {/* Charts Row 1 */}
