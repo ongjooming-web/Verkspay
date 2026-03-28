@@ -23,7 +23,7 @@ import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/genera
 // Wrapper component to safely render OnboardingTour without crashing the app
 function SafeOnboardingTour() {
   return (
-    <SafeWidgetWrapper fallbackMessage="">
+    <SafeWidgetWrapper title="Onboarding" fallbackMessage="">
       <OnboardingTour />
     </SafeWidgetWrapper>
   )
