@@ -55,8 +55,8 @@ export async function DELETE(req: NextRequest) {
     console.log('[account/delete] Auth successful. User:', userId, 'Email:', userEmail)
 
     // Verify email confirmation matches
-    if (email !== userEmail) {
-      console.warn('[account/delete] Email mismatch. Expected:', userEmail, 'Got:', email)
+    if (emailFromBody !== userEmail) {
+      console.warn('[account/delete] Email mismatch. Expected:', userEmail, 'Got:', emailFromBody)
       return NextResponse.json(
         { error: 'Email confirmation does not match' },
         { status: 400 }
