@@ -49,6 +49,10 @@ export default function ClientProfilePage() {
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingNoteContent, setEditingNoteContent] = useState('')
+  const [showIndustrySelector, setShowIndustrySelector] = useState(false)
+  const [selectedIndustry, setSelectedIndustry] = useState('')
+  const [customIndustry, setCustomIndustry] = useState('')
+  const [savingIndustry, setSavingIndustry] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,15 +119,6 @@ export default function ClientProfilePage() {
     )
   }
 
-  const getHealthScoreBadge = (score: number | null) => {
-    if (score === null) return { color: 'bg-gray-500/20 text-gray-400', label: 'Not Scored' }
-    if (score >= 80) return { color: 'bg-green-500/20 text-green-400', label: `Healthy (${score})` }
-    if (score >= 50) return { color: 'bg-yellow-500/20 text-yellow-400', label: `At Risk (${score})` }
-    return { color: 'bg-red-500/20 text-red-400', label: `Needs Attention (${score})` }
-  }
-
-  const healthBadge = getHealthScoreBadge(client?.health_score || null)
-
   const calculatePaymentSpeed = () => {
     if (invoices.length === 0) return null
     // Placeholder: actual calculation would need payment_records
@@ -166,6 +161,41 @@ export default function ClientProfilePage() {
     }
   }
 
+  const handleSaveIndustry = async () => {
+    if (!client) return
+
+    try {
+      setSavingIndustry(true)
+      const industry = selectedIndustry === 'Other' ? customIndustry : selectedIndustry
+
+      if (!industry) {
+        console.error('[ClientProfile] Industry is empty')
+        return
+      }
+
+      const { error } = await supabase
+        .from('clients')
+        .update({ industry })
+        .eq('id', clientId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('[ClientProfile] Error saving industry:', error)
+        return
+      }
+
+      // Update local state
+      setClient({ ...client, industry })
+      setShowIndustrySelector(false)
+      setSelectedIndustry('')
+      setCustomIndustry('')
+    } catch (err) {
+      console.error('[ClientProfile] Error saving industry:', err)
+    } finally {
+      setSavingIndustry(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <Navigation />
@@ -178,9 +208,9 @@ export default function ClientProfilePage() {
               <div>
                 <h1 className="text-4xl font-bold text-white mb-2">{client.name}</h1>
                 <p className="text-gray-400">{client.company || 'No company listed'}</p>
-              </div>
-              <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${healthBadge.color}`}>
-                {healthBadge.label}
+                {client.industry && (
+                  <p className="text-sm text-gray-400 mt-1">Industry: {client.industry}</p>
+                )}
               </div>
             </div>
 
@@ -227,8 +257,8 @@ export default function ClientProfilePage() {
           </CardHeader>
         </Card>
 
-        {/* Industry Nudge Banner */}
-        {!client.industry && (
+        {/* Industry Selector Banner */}
+        {!client.industry && !showIndustrySelector && (
           <Card className="mb-8 border-amber-500/30 bg-amber-500/5">
             <CardBody>
               <div className="flex items-start justify-between gap-4">
@@ -237,14 +267,80 @@ export default function ClientProfilePage() {
                   <p className="text-gray-400 text-sm">Industry classification helps AI provide better business recommendations and client segmentation.</p>
                 </div>
                 <button
-                  onClick={() => {
-                    // TODO: Open edit modal or navigate to edit page
-                    alert('Edit client feature coming soon')
-                  }}
+                  onClick={() => setShowIndustrySelector(true)}
                   className="text-amber-400 hover:text-amber-300 text-sm font-semibold whitespace-nowrap mt-1"
                 >
                   Add now →
                 </button>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Inline Industry Selector */}
+        {showIndustrySelector && !client.industry && (
+          <Card className="mb-8 border-blue-500/30 bg-blue-500/5">
+            <CardBody>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Select Industry</label>
+                  <select
+                    value={selectedIndustry}
+                    onChange={(e) => {
+                      setSelectedIndustry(e.target.value)
+                      if (e.target.value !== 'Other') {
+                        setCustomIndustry('')
+                      }
+                    }}
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white"
+                  >
+                    <option value="">-- Select an industry --</option>
+                    <option value="Technology">Technology</option>
+                    <option value="F&B / Hospitality">F&B / Hospitality</option>
+                    <option value="Education / Training">Education / Training</option>
+                    <option value="Retail / E-commerce">Retail / E-commerce</option>
+                    <option value="Marketing / Advertising">Marketing / Advertising</option>
+                    <option value="Design / Creative">Design / Creative</option>
+                    <option value="Construction / Property">Construction / Property</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Professional Services">Professional Services</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Other">Other (custom)</option>
+                  </select>
+                </div>
+
+                {selectedIndustry === 'Other' && (
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Enter custom industry</label>
+                    <input
+                      type="text"
+                      value={customIndustry}
+                      onChange={(e) => setCustomIndustry(e.target.value)}
+                      placeholder="e.g., Agriculture, Logistics"
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white placeholder-gray-600"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleSaveIndustry}
+                    disabled={!selectedIndustry || (selectedIndustry === 'Other' && !customIndustry) || savingIndustry}
+                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                  >
+                    {savingIndustry ? 'Saving...' : 'Save Industry'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowIndustrySelector(false)
+                      setSelectedIndustry('')
+                      setCustomIndustry('')
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </CardBody>
           </Card>
