@@ -27,16 +27,23 @@ export function useOnboarding() {
   const totalTasks = status?.total_tasks || 5
   const tourStep = status?.tour_step || 0
 
-  // Show tour only on first login (step 0, not completed) - use useMemo to ensure proper recalculation
+  // Show tour: ONLY if completed === false AND tour_step === 0 (one chance only)
+  // If user skips or completes tour once, it NEVER shows again
   const showTour = useMemo(() => {
     if (loading || !status) return false
-    return !status.completed && status.tour_step === 0
+    // Tour only shows if NOT completed and we're at step 0
+    return status.completed === false && status.tour_step === 0
   }, [loading, status])
 
-  // Show progress bar if tasks incomplete, not dismissed, and not completed
+  // Show progress bar: if NOT dismissed AND NOT completed
+  // If user dismisses, it stays hidden
+  // UNLESS all 5 tasks are completed (then show celebration briefly)
   const showProgress = useMemo(() => {
     if (loading || !status) return false
-    return !status.completed && !status.dismissed
+    // Hide if completed or dismissed
+    if (status.completed || status.dismissed) return false
+    // Show if any tasks incomplete
+    return status.completed_count < status.total_tasks
   }, [loading, status])
 
   const refresh = async () => {

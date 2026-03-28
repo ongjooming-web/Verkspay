@@ -56,7 +56,7 @@ const STEPS = [
 ]
 
 export function OnboardingTour() {
-  const { showTour, tourStep, updateTourStep, completeOnboarding } = useOnboarding()
+  const { showTour, tourStep, updateTourStep, completeOnboarding, status } = useOnboarding()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
@@ -64,7 +64,14 @@ export function OnboardingTour() {
     setMounted(true)
   }, [])
 
-  if (!mounted || !showTour) return null
+  // Don't render if:
+  // - Not mounted yet
+  // - Tour shouldn't show (completed or not at step 0)
+  // - Status not loaded yet
+  // - User already completed the tour (onboarding_completed === true)
+  if (!mounted || !showTour || !status || status.completed) {
+    return null
+  }
 
   const step = STEPS[tourStep]
   if (!step) return null
@@ -78,7 +85,8 @@ export function OnboardingTour() {
   }
 
   const handleSkip = async () => {
-    await updateTourStep(8)
+    // Skip = complete the tour forever
+    await completeOnboarding()
   }
 
   const handleNavigate = async (path: string) => {

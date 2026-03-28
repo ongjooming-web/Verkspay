@@ -31,20 +31,35 @@ export function OnboardingProgress() {
     })
   }, [loading, showProgress, completedCount, totalTasks, status, showCelebration])
 
+  // Show celebration if all tasks complete AND user previously dismissed bar
   useEffect(() => {
-    if (showProgress && completedCount === totalTasks && !showCelebration) {
-      console.log('[OnboardingProgress] All tasks complete, showing celebration')
+    if (status && completedCount === totalTasks && status.dismissed && !showCelebration) {
+      console.log('[OnboardingProgress] All tasks complete after dismissal, showing celebration')
       setShowCelebration(true)
       const timer = setTimeout(() => {
-        completeOnboarding()
+        setShowCelebration(false)
       }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [completedCount, totalTasks, showProgress, showCelebration, completeOnboarding])
+  }, [completedCount, totalTasks, status?.dismissed, showCelebration])
 
-  // Don't render while loading or if progress shouldn't show
-  if (loading || !showProgress || !status) {
-    console.log('[OnboardingProgress] Not rendering - loading:', loading, 'showProgress:', showProgress, 'status:', !!status)
+  // Don't render while loading or if status not loaded
+  if (loading || !status) {
+    return null
+  }
+
+  // Hide if tour is completed (onboarding_completed === true)
+  if (status.completed) {
+    return null
+  }
+
+  // Hide if dismissed AND not all tasks complete
+  if (status.dismissed && completedCount < totalTasks && !showCelebration) {
+    return null
+  }
+
+  // Don't show normal progress bar if all tasks complete
+  if (!showProgress && !showCelebration) {
     return null
   }
 
