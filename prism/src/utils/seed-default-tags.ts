@@ -1,11 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
 const DEFAULT_TAGS = [
-  { name: 'VIP', color: '#F59E0B' },         // amber
-  { name: 'Recurring', color: '#3B82F6' },   // blue
-  { name: 'Late Payer', color: '#EF4444' },  // red
-  { name: 'New', color: '#10B981' },         // green
-  { name: 'High Value', color: '#8B5CF6' }   // purple
+  { name: 'VIP', color: '#F59E0B', is_system: true },              // amber
+  { name: 'High Value', color: '#8B5CF6', is_system: true },       // purple
+  { name: 'Recurring', color: '#3B82F6', is_system: true },        // blue
+  { name: 'Late Payer', color: '#EF4444', is_system: true },       // red
+  { name: 'New', color: '#10B981', is_system: true },              // green
+  { name: 'At Risk', color: '#F97316', is_system: true },          // orange
+  { name: 'Inactive', color: '#6B7280', is_system: true }          // gray
 ]
 
 export async function seedDefaultTags(userId: string, supabase: SupabaseClient) {
@@ -32,7 +34,8 @@ export async function seedDefaultTags(userId: string, supabase: SupabaseClient) 
     const tagsToInsert = DEFAULT_TAGS.map((tag) => ({
       user_id: userId,
       name: tag.name,
-      color: tag.color
+      color: tag.color,
+      is_system: tag.is_system
     }))
 
     const { error: insertError } = await supabase
