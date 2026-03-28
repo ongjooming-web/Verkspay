@@ -23,11 +23,26 @@ export async function GET(request: NextRequest) {
     const userId = userData.user.id
 
     // Get profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('onboarding_completed, onboarding_step, onboarding_dismissed_at, company_name, stripe_customer_id, latest_insights')
       .eq('id', userId)
       .single()
+
+    if (profileError) {
+      console.error('[Onboarding Status] Profile error:', profileError)
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    console.log('[Onboarding Status] Profile data:', {
+      userId,
+      onboarding_completed: profile?.onboarding_completed,
+      onboarding_step: profile?.onboarding_step,
+      onboarding_dismissed_at: profile?.onboarding_dismissed_at,
+      company_name: profile?.company_name,
+      stripe_customer_id: profile?.stripe_customer_id,
+      latest_insights: !!profile?.latest_insights
+    })
 
     // Count clients
     const { count: clientCount } = await supabase
@@ -51,14 +66,18 @@ export async function GET(request: NextRequest) {
 
     const completedCount = Object.values(tasks).filter(Boolean).length
 
-    return NextResponse.json({
+    const response = {
       completed: profile?.onboarding_completed || false,
       dismissed: !!profile?.onboarding_dismissed_at,
       tour_step: profile?.onboarding_step || 0,
       tasks,
       completed_count: completedCount,
       total_tasks: 5,
-    })
+    }
+
+    console.log('[Onboarding Status] Returning response:', response)
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('[Onboarding] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

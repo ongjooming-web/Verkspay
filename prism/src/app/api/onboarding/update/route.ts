@@ -27,14 +27,21 @@ export async function PUT(request: NextRequest) {
     if (body.dismissed === true) updates.onboarding_dismissed_at = new Date().toISOString()
     if (body.completed === true) updates.onboarding_completed = true
 
+    console.log('[Onboarding Update] Request body:', body)
+    console.log('[Onboarding Update] Updates to apply:', updates)
+    console.log('[Onboarding Update] User ID:', userData.user.id)
+
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', userData.user.id)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+      console.error('[Onboarding Update] Error:', error)
+      return NextResponse.json({ error: 'Failed to update', details: error.message }, { status: 500 })
     }
+
+    console.log('[Onboarding Update] Successfully updated')
 
     return NextResponse.json({ success: true, ...updates })
   } catch (error) {
