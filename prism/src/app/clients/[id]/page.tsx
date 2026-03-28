@@ -11,6 +11,8 @@ import { useCurrency } from '@/hooks/useCurrency'
 import { useClientTags } from '@/hooks/useClientTags'
 import { useClientNotes } from '@/hooks/useClientNotes'
 import { useClientStats } from '@/hooks/useClientStats'
+import { useAISummary } from '@/hooks/useAISummary'
+import { useGrowthOpportunities } from '@/hooks/useGrowthOpportunities'
 import { formatCurrency } from '@/lib/countries'
 
 interface Client {
@@ -42,6 +44,8 @@ export default function ClientProfilePage() {
   const { tags } = useClientTags(clientId)
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
+  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, generateSummary } = useAISummary(clientId)
+  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, generateOpportunities } = useGrowthOpportunities(clientId)
 
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
@@ -447,19 +451,114 @@ export default function ClientProfilePage() {
               </div>
             )}
 
-            {/* AI Insights Tab (Placeholder) */}
+            {/* AI Insights Tab */}
             {activeTab === 'insights' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* AI Client Summary */}
                 <Card className="border-blue-500/30">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-white">📊 AI Client Summary</h3>
+                      <Button
+                        onClick={generateSummary}
+                        disabled={aiSummaryLoading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
+                      >
+                        {aiSummaryLoading ? 'Generating...' : 'Generate'}
+                      </Button>
+                    </div>
+                  </CardHeader>
                   <CardBody>
-                    <p className="text-blue-300 font-semibold mb-2">🔒 AI Client Summary</p>
-                    <p className="text-gray-400 text-sm">Available on Pro plan</p>
+                    {aiSummaryError && (
+                      <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
+                        <p className="text-red-400 text-sm">{aiSummaryError}</p>
+                      </div>
+                    )}
+
+                    {aiSummaryLoading && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                        <span className="text-gray-400 text-sm">Analyzing client data...</span>
+                      </div>
+                    )}
+
+                    {aiSummaryData && (
+                      <div className="prose prose-invert max-w-none text-sm space-y-4">
+                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
+                          {aiSummaryData.summary}
+                        </div>
+                        {aiSummaryData.suggested_tags && aiSummaryData.suggested_tags.length > 0 && (
+                          <div className="pt-4 border-t border-gray-700/50">
+                            <p className="text-xs uppercase text-gray-400 mb-2">Suggested Tags</p>
+                            <div className="flex flex-wrap gap-2">
+                              {aiSummaryData.suggested_tags.map((tag, idx) => (
+                                <span key={idx} className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium">
+                                  ✨ {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!aiSummaryData && !aiSummaryLoading && !aiSummaryError && (
+                      <p className="text-gray-400 text-sm">Click "Generate" to analyze this client with AI</p>
+                    )}
                   </CardBody>
                 </Card>
-                <Card className="border-blue-500/30">
+
+                {/* Growth Opportunities */}
+                <Card className="border-purple-500/30">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-white">💡 Growth Opportunities</h3>
+                      <Button
+                        onClick={generateOpportunities}
+                        disabled={growthOppLoading}
+                        className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
+                      >
+                        {growthOppLoading ? 'Generating...' : 'Generate'}
+                      </Button>
+                    </div>
+                  </CardHeader>
                   <CardBody>
-                    <p className="text-blue-300 font-semibold mb-2">💡 Growth Opportunities</p>
-                    <p className="text-gray-400 text-sm">Available on Enterprise plan</p>
+                    {growthOppError && (
+                      <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
+                        <p className="text-red-400 text-sm">{growthOppError}</p>
+                      </div>
+                    )}
+
+                    {growthOppLoading && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
+                        <span className="text-gray-400 text-sm">Analyzing growth potential...</span>
+                      </div>
+                    )}
+
+                    {growthOppData && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
+                          <div className="p-3 bg-gray-900/50 rounded">
+                            <p className="text-xs uppercase text-gray-400 mb-1">Engagement Score</p>
+                            <p className="text-3xl font-bold text-purple-400">{growthOppData.engagement_score}/100</p>
+                          </div>
+                          <div className="p-3 bg-gray-900/50 rounded">
+                            <p className="text-xs uppercase text-gray-400 mb-1">Monthly Average</p>
+                            <p className="text-2xl font-bold text-green-400">
+                              {formatCurrency(growthOppData.monthly_average, currencyCode)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed text-sm">
+                          {growthOppData.opportunities}
+                        </div>
+                      </div>
+                    )}
+
+                    {!growthOppData && !growthOppLoading && !growthOppError && (
+                      <p className="text-gray-400 text-sm">Click "Generate" to identify growth opportunities (Enterprise plan required)</p>
+                    )}
                   </CardBody>
                 </Card>
               </div>
