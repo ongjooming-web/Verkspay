@@ -18,30 +18,45 @@ export default function Login() {
   // Handle email confirmation callback
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // Check if there's a hash fragment with auth tokens
-      const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      const accessToken = hashParams.get('access_token')
-      const type = hashParams.get('type')
+      try {
+        // Check both hash and query parameters for auth tokens
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const queryParams = new URLSearchParams(window.location.search)
+        
+        const accessToken = hashParams.get('access_token') || queryParams.get('access_token')
+        const code = queryParams.get('code')
+        const type = hashParams.get('type') || queryParams.get('type')
 
-      if (accessToken && type === 'recovery') {
-        // Password recovery flow
-        console.log('Password recovery token detected')
-        return
-      }
+        console.log('[Login] Auth callback detected:', { accessToken: !!accessToken, code: !!code, type })
 
-      if (accessToken) {
-        // Email confirmation or OAuth callback
-        console.log('Auth token detected in URL, redirecting to dashboard')
-        // Supabase SDK automatically handles the token
-        // Wait a moment for Supabase to process the session
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 500)
+        if (accessToken && type === 'recovery') {
+          // Password recovery flow
+          console.log('[Login] Password recovery token detected')
+          return
+        }
+
+        if (accessToken) {
+          // Email confirmation or OAuth callback
+          console.log('[Login] Access token detected, redirecting to dashboard')
+          // Supabase SDK automatically handles the token from URL
+          // Wait a moment for Supabase to process the session
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1000)
+        } else if (code) {
+          // OAuth code flow - Supabase will exchange the code
+          console.log('[Login] Auth code detected, redirecting to dashboard')
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1000)
+        }
+      } catch (err) {
+        console.error('[Login] Error in auth callback:', err)
       }
     }
 
     handleAuthCallback()
-  }, [])
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
