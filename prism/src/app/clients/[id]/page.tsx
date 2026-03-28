@@ -23,6 +23,7 @@ interface Client {
   total_outstanding: number
   last_invoice_date: string | null
   invoice_count: number
+  health_score: number | null
 }
 
 export default function ClientProfilePage() {
