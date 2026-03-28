@@ -372,30 +372,28 @@ export default function Invoices() {
 
       <div className="max-w-7xl mx-auto px-6 pb-12">
         {/* Header */}
-        <div className="flex justify-between items-center mb-10 flex-col md:flex-row gap-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-3">
-              Invoices
-            </h1>
-            <div className="flex gap-4">
-              <Link href="/invoices">
-                <button className="text-gray-400 hover:text-white text-sm font-medium pb-2 border-b-2 border-blue-500">
-                  All Invoices
-                </button>
-              </Link>
-              <Link href="/invoices/recurring">
-                <button className="text-gray-500 hover:text-gray-300 text-sm font-medium pb-2 border-b-2 border-transparent hover:border-blue-500/30 transition">
-                  🔄 Recurring
-                </button>
-              </Link>
-            </div>
-          </div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">Invoices</h1>
           <Button 
             onClick={() => setShowForm(!showForm)}
             className={showForm ? 'bg-red-600/80 hover:bg-red-700/80' : ''}
           >
             {showForm ? '✕ Cancel' : '+ Create Invoice'}
           </Button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-6 mb-8 border-b border-gray-700">
+          <Link href="/invoices">
+            <button className="text-white font-medium pb-3 border-b-2 border-blue-500 hover:text-gray-300 transition">
+              All Invoices
+            </button>
+          </Link>
+          <Link href="/invoices/recurring">
+            <button className="text-gray-400 font-medium pb-3 border-b-2 border-transparent hover:text-white hover:border-blue-500/30 transition">
+              Recurring
+            </button>
+          </Link>
         </div>
 
         {/* Stats Cards */}
