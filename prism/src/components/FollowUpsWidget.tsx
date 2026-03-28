@@ -1,12 +1,18 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { useFollowUps } from '@/hooks/useFollowUps'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export function FollowUpsWidget() {
   const { followUps, loading, error, updateFollowUp } = useFollowUps()
+  const [expandAll, setExpandAll] = useState(false)
+  const [showTooltip, setShowTooltip] = useState<string | null>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   if (error && error.includes('Pro plan')) {
     return (
@@ -56,40 +62,44 @@ export function FollowUpsWidget() {
           <h3 className="text-lg font-bold text-white">📋 Follow-up Suggestions</h3>
         </CardHeader>
         <CardBody>
-          <p className="text-gray-400 text-sm">All caught up! No follow-ups needed right now.</p>
+          <p className="text-gray-400 text-sm">✓ All caught up! No follow-ups needed right now.</p>
         </CardBody>
       </Card>
     )
   }
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-500/20 text-red-400'
+        return 'bg-red-500'
       case 'medium':
-        return 'bg-yellow-500/20 text-yellow-400'
+        return 'bg-yellow-500'
       case 'low':
-        return 'bg-blue-500/20 text-blue-400'
+        return 'bg-gray-500'
       default:
-        return 'bg-gray-500/20 text-gray-400'
+        return 'bg-gray-500'
     }
   }
 
-  const getPriorityEmoji = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return '🔴'
-      case 'medium':
-        return '🟡'
-      case 'low':
-        return '🔵'
-      default:
-        return '⚪'
+  // Handle click outside tooltip
+  useEffect(() => {
+    if (!showTooltip) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        setShowTooltip(null)
+      }
     }
-  }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showTooltip])
+
+  const displayedFollowUps = expandAll ? followUps : followUps.slice(0, 5)
+  const hasMore = followUps.length > 5 && !expandAll
 
   return (
-    <Card className="border-blue-500/30">
+    <Card className="border-gray-700/50">
       <CardHeader>
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-bold text-white">📋 Follow-up Suggestions</h3>
@@ -99,50 +109,77 @@ export function FollowUpsWidget() {
         </div>
       </CardHeader>
       <CardBody>
-        <div className="space-y-2 md:space-y-3">
-          {followUps.slice(0, 10).map((followUp) => (
-            <div key={followUp.id} className="p-3 md:p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition">
-              <div className="flex flex-col gap-2 mb-3">
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm md:text-base truncate">
-                      {followUp.client_name}
-                    </p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded whitespace-nowrap font-semibold ${getPriorityBadge(followUp.priority)}`}>
-                    {getPriorityEmoji(followUp.priority)} {followUp.priority}
-                  </span>
+        <div className="divide-y divide-gray-700/50">
+          {displayedFollowUps.map((followUp) => (
+            <div
+              key={followUp.id}
+              className="py-3 px-4 flex items-center gap-3 hover:bg-white/5 transition group relative"
+            >
+              {/* Priority Dot */}
+              <div
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(followUp.priority)}`}
+                title={`Priority: ${followUp.priority}`}
+              />
+
+              {/* Client Name + Suggestion */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <button
+                    onClick={() => router.push(`/clients/${followUp.client_id}`)}
+                    className="font-semibold text-white hover:text-blue-400 transition truncate"
+                  >
+                    {followUp.client_name}
+                  </button>
+                  <p
+                    className="text-gray-400 text-sm truncate md:text-clip flex-1 cursor-help"
+                    onMouseEnter={() => setShowTooltip(followUp.id)}
+                    onMouseLeave={() => setShowTooltip(null)}
+                    onClick={() => setShowTooltip(showTooltip === followUp.id ? null : followUp.id)}
+                  >
+                    {followUp.suggestion}
+                  </p>
                 </div>
+
+                {/* Tooltip on hover/tap */}
+                {showTooltip === followUp.id && (
+                  <div
+                    ref={tooltipRef}
+                    className="absolute left-0 top-full mt-2 z-50 bg-gray-900 border border-gray-700 rounded-lg p-3 max-w-xs text-xs text-gray-300 shadow-lg"
+                  >
+                    {followUp.suggestion}
+                  </div>
+                )}
               </div>
 
-              <p className="text-gray-300 text-xs md:text-sm mb-3 leading-relaxed break-words">
-                {followUp.suggestion}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-2">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => updateFollowUp(followUp.id, 'actioned')}
-                  className="flex-1 px-3 py-2 text-xs md:text-sm bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition"
+                  className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-green-500 hover:bg-green-500/10 rounded transition"
+                  title="Mark as done"
                 >
-                  ✓ Done
+                  ✓
                 </button>
                 <button
                   onClick={() => updateFollowUp(followUp.id, 'dismissed')}
-                  className="flex-1 px-3 py-2 text-xs md:text-sm bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition"
+                  className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-500 hover:bg-gray-500/10 rounded transition"
+                  title="Dismiss"
                 >
-                  ✕ Dismiss
+                  ✕
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        {followUps.length > 10 && (
-          <Link href="/follow-ups" className="block mt-4">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-sm">
-              View All {followUps.length} Suggestions →
-            </Button>
-          </Link>
+        {/* View All button */}
+        {hasMore && (
+          <button
+            onClick={() => setExpandAll(true)}
+            className="w-full py-3 px-4 text-sm text-blue-400 hover:text-blue-300 transition mt-2"
+          >
+            View all {followUps.length} suggestions →
+          </button>
         )}
       </CardBody>
     </Card>
