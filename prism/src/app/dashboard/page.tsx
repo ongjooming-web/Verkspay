@@ -535,47 +535,10 @@ export default function Dashboard() {
                 )}
 
                 <div className="mb-4">
-                  {typeof insights === 'string' ? (
-                    <p className="text-gray-300 text-sm mb-3 line-clamp-3">{insights.substring(0, 200)}...</p>
-                  ) : insights && typeof insights === 'object' ? (
-                    <>
-                      <p className="text-gray-300 text-sm mb-3">
-                        {(insights as any).content || (insights as any).summary || 'AI Insights generated'}
-                      </p>
-                      {(insights as any).revenue_trend && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">Trend:</span>
-                          <span
-                            className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                              (insights as any).revenue_trend === 'growing'
-                                ? 'bg-green-500/20 text-green-400'
-                                : (insights as any).revenue_trend === 'stable'
-                                  ? 'bg-yellow-500/20 text-yellow-400'
-                                  : 'bg-red-500/20 text-red-400'
-                            }`}
-                          >
-                            {(insights as any).revenue_trend === 'growing' && '📈 Growing'}
-                            {(insights as any).revenue_trend === 'stable' && '➡️ Stable'}
-                            {(insights as any).revenue_trend === 'declining' && '📉 Declining'}
-                          </span>
-                        </div>
-                      )}
-                      {(insights as any).highlights && (insights as any).highlights.length > 0 && (
-                        <div className="mb-4 mt-4">
-                          <h3 className="text-sm font-semibold text-white mb-2">Top Highlights</h3>
-                          <div className="space-y-2">
-                            {(insights as any).highlights.slice(0, 2).map((h: any, idx: number) => (
-                              <div key={idx} className="flex gap-2 text-xs">
-                                <span className="flex-shrink-0">{h.type === 'positive' ? '✓' : h.type === 'warning' ? '⚠️' : '→'}</span>
-                                <span className="text-gray-400">{h.title}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                  {typeof insights === 'string' && insights ? (
+                    <p className="text-gray-300 text-sm mb-3 line-clamp-3">{insights.substring(0, 200).replace(/[#\-*_]/g, '')}...</p>
                   ) : (
-                    <p className="text-gray-400 text-sm">Click Generate to get insights</p>
+                    <p className="text-gray-400 text-sm">Click "Generate" to get AI-powered insights</p>
                   )}
                 </div>
 

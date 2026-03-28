@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { AiContentRenderer } from '@/components/AiContentRenderer'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 export default function InsightsPage() {
@@ -294,18 +295,9 @@ export default function InsightsPage() {
 
         {/* Results */}
         {insights && typeof insights === 'string' && (
-          <Card className="mb-6 border-blue-500/30">
-            <CardHeader>
-              <h2 className="text-2xl font-bold text-white">AI Business Insights</h2>
-            </CardHeader>
-            <CardBody>
-              <div className="prose prose-invert max-w-none">
-                <div className="text-gray-300 whitespace-pre-wrap break-words">
-                  {insights}
-                </div>
-              </div>
-            </CardBody>
-          </Card>
+          <div className="bg-gray-800/30 rounded-2xl border border-gray-700/50 p-8">
+            <AiContentRenderer content={insights} />
+          </div>
         )}
 
 
