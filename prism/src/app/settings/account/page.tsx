@@ -73,10 +73,23 @@ export default function AccountSettings() {
     setError('')
 
     try {
-      // Call delete account API
+      // Get current session to retrieve auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) {
+        setError('Not authenticated. Please log in again.')
+        setModal({ ...modal, isDeleting: false })
+        return
+      }
+
+      // Call delete account API with authorization token
       const response = await fetch('/api/account/delete', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ email: user.email })
       })
 
