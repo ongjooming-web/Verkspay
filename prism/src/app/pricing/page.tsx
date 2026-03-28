@@ -222,18 +222,26 @@ export default function PricingPage() {
               <Card
                 key={i}
                 className={`flex flex-col relative ${
-                  plan.highlighted
+                  userPlan === plan.button.action
+                    ? 'border-green-500 bg-green-500/10 ring-2 ring-green-500/30'
+                    : plan.highlighted
                     ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30 md:scale-105'
                     : 'border-white/10 bg-white/5 hover:border-white/20'
                 }`}
               >
-                {plan.badge && (
+                {userPlan === plan.button.action ? (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-green-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                      ✓ Your Current Plan
+                    </span>
+                  </div>
+                ) : plan.badge ? (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">
                       {plan.badge}
                     </span>
                   </div>
-                )}
+                ) : null}
 
                 <CardHeader className={plan.badge ? 'pt-8' : ''}>
                   <h3 className="text-2xl font-bold">{plan.name}</h3>
