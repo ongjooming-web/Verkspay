@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import PageLoader from '@/components/PageLoader'
 import Link from 'next/link'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/countries'
@@ -350,16 +351,7 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen relative z-10">
-        <div className="glass px-8 py-6 rounded-lg">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mb-4"></div>
-            <p className="text-gray-300">Loading your dashboard...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <PageLoader />
   }
 
   if (!user) {
