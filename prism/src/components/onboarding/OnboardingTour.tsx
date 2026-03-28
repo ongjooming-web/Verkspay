@@ -224,7 +224,7 @@ export function OnboardingTour() {
         <div className="w-full max-w-[360px] rounded-2xl border border-purple-500/30 bg-[#1A1A2E] p-6 shadow-2xl">
           {/* Step counter */}
           <div className="mb-4 text-xs text-gray-400">
-            Step {currentStep + 1} of {TOUR_STEPS.length}
+            Step {tourStep + 1} of {TOUR_STEPS.length}
           </div>
 
           {/* Title */}
