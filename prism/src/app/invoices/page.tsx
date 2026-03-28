@@ -375,7 +375,7 @@ export default function Invoices() {
         <div className="flex justify-between items-center mb-10 flex-col md:flex-row gap-4">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-3">
-              📄 Invoices
+              💰 Invoices
             </h1>
             <div className="flex gap-4">
               <Link href="/invoices">
