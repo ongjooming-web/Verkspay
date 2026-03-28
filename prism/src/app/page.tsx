@@ -247,24 +247,25 @@ export default function LandingPage() {
               },
               {
                 name: 'Enterprise',
-                price: '$199',
-                annualPrice: '$159',
+                price: '$89',
+                annualPrice: '$71',
                 period: '/mo',
                 desc: 'For agencies & growing teams',
                 features: [
                   'Everything in Pro',
                   'Unlimited AI Insights',
+                  'AI Client Summaries & Health Scores',
+                  'Smart Follow-up Suggestions',
                   'Revenue Forecasting',
                   'Receivables aging reports',
-                  'POS webhook integration',
-                  'Team management (5 users)',
+                  'All reports with PDF & CSV export',
+                  'Team management (3 users)',
                   'Custom branding',
-                  'API access & webhooks',
                   'Priority support'
                 ],
-                cta: 'Contact Us',
+                cta: 'Start Free Trial',
                 highlighted: false,
-                note: 'Built for agencies and growing teams that need advanced tools.'
+                note: 'Everything you need to manage clients and grow your agency.'
               }
             ].map((plan, i) => (
               <div

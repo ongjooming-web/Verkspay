@@ -141,27 +141,25 @@ export default function PricingPage() {
     },
     {
       name: 'Enterprise',
-      monthlyPrice: '$199',
-      annualPrice: '$159',
-      annualTotal: '$1,908',
+      monthlyPrice: '$89',
+      annualPrice: '$71',
+      annualTotal: '$852',
       period: '/mo',
       description: 'For agencies & growing teams',
       features: [
         'Everything in Pro',
         'Unlimited AI Insights',
+        'AI Client Summaries & Health Scores',
+        'Smart Follow-up Suggestions',
         'Revenue Forecasting',
         'Receivables aging reports',
-        'POS webhook integration',
-        'Team management (5 users)',
+        'All reports with PDF & CSV export',
+        'Team management (3 users)',
         'Custom branding',
-        'API access & webhooks',
-        'CRM: Contact Management',
-        'CRM: Deal Pipeline Tracking',
-        'CRM: Activity Logs & History',
         'Priority support'
       ],
-      note: 'Built for agencies and growing teams that need advanced tools.',
-      button: { text: 'Contact Us', action: 'enterprise' },
+      note: 'Everything you need to manage clients and grow your agency.',
+      button: { text: 'Start Free Trial', action: 'enterprise' },
       highlighted: false
     }
   ]
