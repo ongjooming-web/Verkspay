@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { autoTagAllClients } from '@/lib/auto-tag'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -98,6 +99,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[AggregateStats] Updated stats for', stats.length, 'clients')
+
+    // Trigger auto-tagging in background (fire-and-forget)
+    autoTagAllClients(userId).catch(err => {
+      console.error('[AggregateStats] Auto-tag background job failed:', err)
+    })
 
     return NextResponse.json({ updated: stats.length })
   } catch (err) {

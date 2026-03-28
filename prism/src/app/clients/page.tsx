@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useTags } from '@/hooks/useTags'
 import { useCurrency } from '@/hooks/useCurrency'
-import { useAutoTag } from '@/hooks/useAutoTag'
+
 
 interface Client {
   id: string
@@ -47,7 +47,6 @@ export default function ClientsPage() {
 
   const { tags } = useTags()
   const { currencyCode } = useCurrency()
-  const { loading: autoTagLoading, runAutoTagging } = useAutoTag()
 
   useEffect(() => {
     fetchClients()
@@ -207,13 +206,6 @@ export default function ClientsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white">Clients</h1>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button
-              onClick={runAutoTagging}
-              disabled={autoTagLoading}
-              className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm md:text-base px-3 md:px-4 py-2"
-            >
-              {autoTagLoading ? '🔄 Tagging...' : '⚡ Auto-Tag'}
-            </Button>
             <Button
               onClick={() => setShowForm(!showForm)}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base px-3 md:px-4 py-2"
