@@ -91,18 +91,25 @@ export async function GET(request: NextRequest) {
     }
 
     const count = proposalsData?.length || 0
-    const canCreate = count < limit
+    const canCreate = limit === Infinity || count < limit
 
     console.log('[CheckProposalLimit]', { userId, plan, limit, count, canCreate })
+
+    let message = ''
+    if (limit === Infinity) {
+      message = 'Unlimited proposals this month'
+    } else if (canCreate) {
+      message = `${limit - count} proposals remaining this month`
+    } else {
+      message = `You've reached your ${limit} proposal limit for this month. Upgrade to create more.`
+    }
 
     return NextResponse.json({
       canCreate,
       limit,
       count,
       plan,
-      message: canCreate
-        ? `${limit === Infinity ? 'Unlimited' : limit - count} proposals remaining this month`
-        : `You've reached your ${limit} proposal limit for this month. Upgrade to create more.`
+      message
     })
   } catch (err) {
     console.error('[CheckProposalLimit] Error:', err)

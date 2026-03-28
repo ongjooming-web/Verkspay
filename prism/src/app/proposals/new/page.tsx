@@ -79,6 +79,8 @@ export default function NewProposal() {
           })
 
           const data = await response.json()
+          console.log('[NewProposal] Limit check response:', data)
+          
           setLimitInfo(data)
           setCanCreate(data.canCreate)
 
@@ -229,7 +231,7 @@ export default function NewProposal() {
                     Your {limitInfo.plan} plan allows {limitInfo.limit} proposals per month.
                   </p>
                 </div>
-                <Link href="/settings" className="text-blue-400 hover:text-blue-300 text-sm font-medium whitespace-nowrap">
+                <Link href="/pricing" className="text-blue-400 hover:text-blue-300 text-sm font-medium whitespace-nowrap">
                   Upgrade →
                 </Link>
               </div>
@@ -238,10 +240,14 @@ export default function NewProposal() {
         )}
 
         {limitInfo && canCreate && (
-          <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
+          <Card className="mb-6 border-green-500/30 bg-green-500/5">
             <CardBody>
-              <p className="text-blue-300 text-sm">
-                ✓ {limitInfo.plan === 'master' ? 'Master account - Unlimited proposals' : `${limitInfo.limit - limitInfo.count} proposals remaining this month`}
+              <p className="text-green-300 text-sm">
+                ✓ {limitInfo.plan === 'master' 
+                  ? 'Master account - Unlimited proposals' 
+                  : limitInfo.limit === Infinity 
+                  ? 'Unlimited proposals this month' 
+                  : `${limitInfo.limit - limitInfo.count} proposals remaining this month`}
               </p>
             </CardBody>
           </Card>
