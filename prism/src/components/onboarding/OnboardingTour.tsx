@@ -76,141 +76,186 @@ export function OnboardingTour() {
   const step = STEPS[tourStep]
   if (!step) return null
 
-  const handleNext = async () => {
+  const handleNext = () => {
+    console.log('[Tour] Button clicked: Next, step:', tourStep)
     if (tourStep === STEPS.length - 1) {
-      await completeOnboarding()
+      completeOnboarding()
     } else {
-      await updateTourStep(tourStep + 1)
+      updateTourStep(tourStep + 1)
     }
   }
 
-  const handleSkip = async () => {
-    // Skip = complete the tour forever
-    await completeOnboarding()
+  const handleSkip = () => {
+    console.log('[Tour] Button clicked: Skip Tour, step:', tourStep)
+    completeOnboarding()
   }
 
-  const handleNavigate = async (path: string) => {
-    await updateTourStep(tourStep + 1)
+  const handleNavigate = (path: string, label: string) => {
+    console.log('[Tour] Button clicked:', label, 'step:', tourStep, 'navigating to:', path)
+    updateTourStep(tourStep + 1)
     router.push(path)
+  }
+
+  const handleLetsGo = () => {
+    console.log('[Tour] Button clicked: Let\'s Go, step:', tourStep)
+    updateTourStep(1)
+  }
+
+  const handleGotIt = () => {
+    console.log('[Tour] Button clicked: Got it!, step:', tourStep)
+    updateTourStep(tourStep + 1)
+  }
+
+  const handleStartUsing = () => {
+    console.log('[Tour] Button clicked: Start Using Prism, step:', tourStep)
+    completeOnboarding()
+  }
+
+  const handleLater = () => {
+    console.log('[Tour] Button clicked: I\'ll do this later, step:', tourStep)
+    updateTourStep(tourStep + 1)
   }
 
   return (
     <>
-      {/* Overlay */}
-      <div className="fixed inset-0 z-[1000] bg-black/60" />
+      {/* Overlay — blocks page interaction but not button clicks within tour */}
+      <div className="fixed inset-0 z-[9998] bg-black/60 pointer-events-auto" />
 
-      {/* Tooltip */}
+      {/* Tour content container — positioned above overlay, all clicks go through */}
       <div
-        className={`fixed z-[1001] ${
+        className={`fixed z-[9999] pointer-events-auto ${
           step.centered
             ? 'inset-0 flex items-center justify-center p-4'
-            : 'top-32 left-1/2 transform -translate-x-1/2'
+            : 'top-32 left-1/2 transform -translate-x-1/2 max-w-[90vw] w-full max-w-[400px] px-4'
         }`}
       >
-        <div className="w-full max-w-[400px] rounded-2xl bg-[#1A1A2E] border border-purple-500/30 p-8 shadow-2xl">
+        {/* Modal card */}
+        <div className="w-full max-w-[400px] rounded-2xl bg-[#1A1A2E] border border-purple-500/30 p-6 sm:p-8 shadow-2xl">
+          {/* Step counter */}
           <div className="mb-4 text-xs text-gray-400">
             Step {tourStep + 1} of {STEPS.length}
           </div>
 
-          <h2 className="mb-3 text-xl font-bold text-white">{step.title}</h2>
+          {/* Title */}
+          <h2 className="mb-3 text-lg sm:text-xl font-bold text-white">{step.title}</h2>
 
+          {/* Description */}
           <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
 
+          {/* Buttons container */}
           <div className="flex flex-col gap-3">
+            {/* Step 0: Welcome */}
             {tourStep === 0 && (
               <>
                 <button
-                  onClick={handleNext}
-                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                  type="button"
+                  onClick={handleLetsGo}
+                  className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
                 >
                   Let's Go
                 </button>
                 <button
+                  type="button"
                   onClick={handleSkip}
-                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                  className="w-full min-h-[44px] px-4 py-3 text-gray-400 hover:text-gray-300 active:text-gray-200 bg-transparent text-sm font-medium transition duration-150"
                 >
                   Skip Tour
                 </button>
               </>
             )}
 
+            {/* Step 3: Go to Settings */}
             {tourStep === 3 && (
               <>
                 <button
-                  onClick={() => handleNavigate('/settings')}
-                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                  type="button"
+                  onClick={() => handleNavigate('/settings', 'Go to Settings')}
+                  className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
                 >
                   Go to Settings
                 </button>
                 <button
-                  onClick={handleNext}
-                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                  type="button"
+                  onClick={handleLater}
+                  className="w-full min-h-[44px] px-4 py-3 text-gray-400 hover:text-gray-300 active:text-gray-200 bg-transparent text-sm font-medium transition duration-150"
                 >
                   I'll do this later →
                 </button>
               </>
             )}
 
+            {/* Step 4: Go to Clients */}
             {tourStep === 4 && (
               <>
                 <button
-                  onClick={() => handleNavigate('/clients')}
-                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                  type="button"
+                  onClick={() => handleNavigate('/clients', 'Go to Clients')}
+                  className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
                 >
                   Go to Clients
                 </button>
                 <button
+                  type="button"
                   onClick={handleNext}
-                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                  className="w-full min-h-[44px] px-4 py-3 text-gray-400 hover:text-gray-300 active:text-gray-200 bg-transparent text-sm font-medium transition duration-150"
                 >
                   Next
                 </button>
               </>
             )}
 
+            {/* Step 5: Go to Invoices */}
             {tourStep === 5 && (
               <>
                 <button
-                  onClick={() => handleNavigate('/invoices')}
-                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                  type="button"
+                  onClick={() => handleNavigate('/invoices', 'Go to Invoices')}
+                  className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
                 >
                   Go to Invoices
                 </button>
                 <button
+                  type="button"
                   onClick={handleNext}
-                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                  className="w-full min-h-[44px] px-4 py-3 text-gray-400 hover:text-gray-300 active:text-gray-200 bg-transparent text-sm font-medium transition duration-150"
                 >
                   Next
                 </button>
               </>
             )}
 
+            {/* Step 6: Got it! */}
             {tourStep === 6 && (
               <button
-                onClick={handleNext}
-                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                type="button"
+                onClick={handleGotIt}
+                className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
               >
                 Got it!
               </button>
             )}
 
+            {/* Step 7: Start Using Prism */}
             {tourStep === 7 && (
               <button
-                onClick={handleNext}
-                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                type="button"
+                onClick={handleStartUsing}
+                className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
               >
                 Start Using Prism
               </button>
             )}
 
-            {![0, 3, 4, 5, 6, 7].includes(tourStep) && (
+            {/* Steps 1, 2: Default Next button */}
+            {tourStep === 1 || tourStep === 2 ? (
               <button
+                type="button"
                 onClick={handleNext}
-                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
               >
                 Next
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
