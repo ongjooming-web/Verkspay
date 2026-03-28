@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 export interface OnboardingStatus {
   completed: boolean
@@ -27,10 +27,17 @@ export function useOnboarding() {
   const totalTasks = status?.total_tasks || 5
   const tourStep = status?.tour_step || 0
 
-  // Show tour only on first login (step 0, not completed) - and only if authenticated
-  const showTour = status !== null && tourStep === 0 && !isComplete
-  // Show progress bar if tasks incomplete, not dismissed, and not completed - and only if authenticated
-  const showProgress = status !== null && !isComplete && !isDismissed
+  // Show tour only on first login (step 0, not completed) - use useMemo to ensure proper recalculation
+  const showTour = useMemo(() => {
+    if (loading || !status) return false
+    return !status.completed && status.tour_step === 0
+  }, [loading, status])
+
+  // Show progress bar if tasks incomplete, not dismissed, and not completed
+  const showProgress = useMemo(() => {
+    if (loading || !status) return false
+    return !status.completed && !status.dismissed
+  }, [loading, status])
 
   const refresh = async () => {
     try {

@@ -17,6 +17,7 @@ import { RevenueForecastWidget } from '@/components/RevenueForecastWidget'
 import { FollowUpsWidget } from '@/components/FollowUpsWidget'
 import { SafeWidgetWrapper } from '@/components/SafeWidgetWrapper'
 import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 interface RecentActivity {
@@ -828,6 +829,9 @@ export default function Dashboard() {
           <p>© 2026 Prism</p>
         </footer>
       </div>
+
+      {/* Onboarding Tour - Only on authenticated pages */}
+      <OnboardingTour />
     </div>
   )
 }
