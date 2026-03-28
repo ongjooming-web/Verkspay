@@ -95,8 +95,16 @@ export default function AccountSettings() {
 
       const data = await response.json()
 
+      console.log('[Settings] Delete account response:', {
+        status: response.status,
+        ok: response.ok,
+        data
+      })
+
       if (!response.ok) {
-        setError(data.error || 'Failed to delete account')
+        const errorMsg = data.error || `Failed to delete account (${response.status})`
+        console.error('[Settings] Delete failed:', errorMsg)
+        setError(errorMsg)
         setModal({ ...modal, isDeleting: false })
         return
       }

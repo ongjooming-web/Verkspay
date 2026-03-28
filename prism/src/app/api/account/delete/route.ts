@@ -5,9 +5,14 @@ import { sendEmail } from '@/lib/resend'
 
 export async function DELETE(req: NextRequest) {
   try {
+    console.log('[account/delete] DELETE request received')
+    console.log('[account/delete] Auth header:', req.headers.get('authorization') ? 'Present' : 'Missing')
+
     const { email } = await req.json()
+    console.log('[account/delete] Email from body:', email)
 
     if (!email) {
+      console.log('[account/delete] Email missing from request body')
       return NextResponse.json(
         { error: 'Email confirmation is required' },
         { status: 400 }
@@ -15,17 +20,28 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Verify auth
+    console.log('[account/delete] Verifying auth...')
     const { user, error: authError } = await requireAuth(req)
+    
     if (authError) {
       console.error('[account/delete] Auth error:', authError)
       return NextResponse.json(
-        { error: authError.message },
-        { status: authError.status }
+        { error: `Auth failed: ${authError.message}` },
+        { status: authError.status || 401 }
+      )
+    }
+
+    if (!user) {
+      console.error('[account/delete] User object is null after auth')
+      return NextResponse.json(
+        { error: 'User not found after authentication' },
+        { status: 401 }
       )
     }
 
     const userId = user.id
     const userEmail = user.email
+    console.log('[account/delete] Auth successful. User:', userId, 'Email:', userEmail)
 
     // Verify email confirmation matches
     if (email !== userEmail) {
