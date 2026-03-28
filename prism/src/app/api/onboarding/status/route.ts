@@ -3,18 +3,23 @@ import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[Onboarding Status] Request received')
     const supabase = getSupabaseServer()
     
     // Get the auth token from the request header
     const authHeader = request.headers.get('authorization')
+    console.log('[Onboarding Status] Auth header present:', !!authHeader)
     const token = authHeader?.replace('Bearer ', '')
 
     // Verify the user
+    console.log('[Onboarding Status] Verifying user with token:', !!token)
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
+    console.log('[Onboarding Status] Auth result:', { userExists: !!user, error: authError?.message })
+    
     if (authError || !user) {
-      console.log('[Onboarding Status] Auth error:', authError)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.log('[Onboarding Status] Auth error:', authError?.message)
+      return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
     }
 
     // Fetch profile
