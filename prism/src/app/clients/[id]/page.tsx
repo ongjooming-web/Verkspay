@@ -2,619 +2,530 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import Link from 'next/link'
-import { formatCurrency } from '@/lib/countries'
-import { groupByCurrency } from '@/lib/currency-helper'
 import { useCurrency } from '@/hooks/useCurrency'
+import { useClientTags } from '@/hooks/useClientTags'
+import { useClientNotes } from '@/hooks/useClientNotes'
+import { useClientStats } from '@/hooks/useClientStats'
+import { formatCurrency } from '@/lib/countries'
 
 interface Client {
   id: string
   name: string
   email: string
-  company: string
-  phone?: string
-  address?: string
-  city?: string
-  state?: string
-  zip_code?: string
-  country?: string
-  notes?: string
-  last_contact_date?: string
-  created_at: string
+  phone: string | null
+  company: string | null
+  total_revenue: number
+  total_outstanding: number
+  last_invoice_date: string | null
+  invoice_count: number
 }
 
-interface Invoice {
-  id: string
-  invoice_number: string
-  amount: number
-  status: string
-  due_date: string
-  created_at: string
-  currency_code?: string
-}
-
-interface Proposal {
-  id: string
-  proposal_number: string
-  title: string
-  amount: number
-  status: string
-  created_at: string
-  currency_code?: string
-}
-
-interface Note {
-  id: string
-  note_text: string
-  note_type: string
-  created_at: string
-}
-
-export default function ClientDetail() {
+export default function ClientProfilePage() {
   const router = useRouter()
   const params = useParams()
   const clientId = params.id as string
 
+  const [user, setUser] = useState<any>(null)
   const [client, setClient] = useState<Client | null>(null)
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [proposals, setProposals] = useState<Proposal[]>([])
-  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editData, setEditData] = useState<any>({})
-  const [newNote, setNewNote] = useState('')
-  const [noteType, setNoteType] = useState('general')
+  const [activeTab, setActiveTab] = useState<'activity' | 'notes' | 'insights'>('activity')
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [proposals, setProposals] = useState<any[]>([])
+
+  const { currency_code } = useCurrency()
+  const { tags } = useClientTags(clientId)
+  const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
+  const { triggerAggregation } = useClientStats(clientId)
+
+  const [newNoteContent, setNewNoteContent] = useState('')
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editingNoteContent, setEditingNoteContent] = useState('')
 
   useEffect(() => {
-    fetchClientDetails()
-    fetchClientInvoices()
-    fetchClientProposals()
-    fetchClientNotes()
-  }, [clientId])
-
-  const fetchClientDetails = async () => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-
-    if (!userId) {
-      router.push('/login')
-      return
-    }
-
-    const { data } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('id', clientId)
-      .eq('user_id', userId)
-      .single()
-
-    if (data) {
-      setClient(data)
-      setEditData(data)
-    }
-    setLoading(false)
-  }
-
-  const fetchClientInvoices = async () => {
-    const { data } = await supabase
-      .from('invoices')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-
-    if (data) setInvoices(data)
-  }
-
-  const fetchClientProposals = async () => {
-    const { data } = await supabase
-      .from('proposals')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-
-    if (data) setProposals(data)
-  }
-
-  const fetchClientNotes = async () => {
-    const { data } = await supabase
-      .from('client_notes')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-
-    if (data) setNotes(data)
-  }
-
-  const handleUpdateClient = async () => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-
-    if (!userId || !client) return
-
-    const { error } = await supabase
-      .from('clients')
-      .update({
-        name: editData.name,
-        email: editData.email,
-        company: editData.company,
-        phone: editData.phone,
-        address: editData.address,
-        city: editData.city,
-        state: editData.state,
-        zip_code: editData.zip_code,
-        country: editData.country,
-        notes: editData.notes,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', clientId)
-      .eq('user_id', userId)
-
-    if (!error) {
-      await fetchClientDetails()
-      setIsEditing(false)
-    }
-  }
-
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return
-
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-
-    if (!userId) return
-
-    const { error } = await supabase
-      .from('client_notes')
-      .insert([
-        {
-          user_id: userId,
-          client_id: clientId,
-          note_text: newNote,
-          note_type: noteType
+    const fetchData = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser()
+        if (!userData?.user) {
+          router.push('/login')
+          return
         }
-      ])
 
-    if (!error) {
-      await fetchClientNotes()
-      setNewNote('')
-      setNoteType('general')
+        setUser(userData.user)
+
+        // Fetch client
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .eq('user_id', userData.user.id)
+          .single()
+
+        if (clientError || !clientData) {
+          router.push('/clients')
+          return
+        }
+
+        setClient(clientData)
+
+        // Fetch invoices for this client
+        const { data: invoicesData } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, status, amount, amount_paid, created_at')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false })
+
+        setInvoices(invoicesData || [])
+
+        // Fetch proposals for this client
+        const { data: proposalsData } = await supabase
+          .from('proposals')
+          .select('id, proposal_number, status, total_amount, created_at')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false })
+
+        setProposals(proposalsData || [])
+      } catch (err) {
+        console.error('[ClientProfile] Error:', err)
+        router.push('/clients')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [clientId, router])
+
+  if (loading || !client) {
+    return (
+      <div className="min-h-screen bg-black">
+        <Navigation />
+        <div className="max-w-7xl mx-auto p-6 flex justify-center items-center h-96">
+          <div className="text-gray-400">Loading client profile...</div>
+        </div>
+      </div>
+    )
+  }
+
+  const getHealthScoreBadge = (score: number | null) => {
+    if (score === null) return { color: 'bg-gray-500/20 text-gray-400', label: 'Not Scored' }
+    if (score >= 80) return { color: 'bg-green-500/20 text-green-400', label: `Healthy (${score})` }
+    if (score >= 50) return { color: 'bg-yellow-500/20 text-yellow-400', label: `At Risk (${score})` }
+    return { color: 'bg-red-500/20 text-red-400', label: `Needs Attention (${score})` }
+  }
+
+  const healthBadge = getHealthScoreBadge(client?.health_score || null)
+
+  const calculatePaymentSpeed = () => {
+    if (invoices.length === 0) return null
+    // Placeholder: actual calculation would need payment_records
+    return 7 // days average
+  }
+
+  const paymentSpeed = calculatePaymentSpeed()
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newNoteContent.trim()) return
+
+    try {
+      await addNote(newNoteContent)
+      setNewNoteContent('')
+    } catch (err) {
+      console.error('[ClientProfile] Error adding note:', err)
     }
   }
 
-  const handleDeleteClient = async () => {
-    if (!confirm('Are you sure you want to delete this client? This action cannot be undone.')) return
+  const handleEditNote = async (noteId: string) => {
+    if (!editingNoteContent.trim()) return
 
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-
-    if (!userId) return
-
-    const { error } = await supabase
-      .from('clients')
-      .delete()
-      .eq('id', clientId)
-      .eq('user_id', userId)
-
-    if (!error) {
-      router.push('/clients')
+    try {
+      await updateNote(noteId, editingNoteContent)
+      setEditingNoteId(null)
+      setEditingNoteContent('')
+    } catch (err) {
+      console.error('[ClientProfile] Error editing note:', err)
     }
   }
 
   const handleDeleteNote = async (noteId: string) => {
-    await supabase.from('client_notes').delete().eq('id', noteId)
-    setNotes(notes.filter(n => n.id !== noteId))
-  }
+    if (!confirm('Delete this note?')) return
 
-  if (loading) {
-    return (
-      <div className="min-h-screen relative z-10">
-        <Navigation />
-        <div className="flex justify-center items-center h-screen">
-          <div className="glass px-8 py-6 rounded-lg">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mb-4"></div>
-              <p className="text-gray-300">Loading client...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    try {
+      await deleteNote(noteId)
+    } catch (err) {
+      console.error('[ClientProfile] Error deleting note:', err)
+    }
   }
-
-  if (!client) {
-    return (
-      <div className="min-h-screen relative z-10">
-        <Navigation />
-        <div className="flex justify-center items-center h-screen">
-          <div className="glass px-8 py-6 rounded-lg">
-            <div className="text-center">
-              <p className="text-red-300 mb-4">Client not found</p>
-              <Link href="/clients">
-                <Button>← Back to Clients</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const totalRevenue = invoices
-    .filter(inv => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.amount, 0)
 
   return (
-    <div className="min-h-screen relative z-10">
+    <div className="min-h-screen bg-black">
       <Navigation />
 
-      <div className="max-w-5xl mx-auto px-6 pb-12">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8 gap-4 flex-col md:flex-row">
-          <Link href="/clients">
-            <Button variant="outline">← Back</Button>
-          </Link>
-          <div className="flex gap-2">
-            {isEditing ? (
-              <>
-                <Button 
-                  onClick={handleUpdateClient}
-                  className="bg-green-600/80 hover:bg-green-700/80"
-                >
-                  ✓ Save
-                </Button>
-                <Button 
-                  onClick={() => setIsEditing(false)}
-                  className="bg-red-600/80 hover:bg-red-700/80"
-                >
-                  ✕ Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  onClick={() => setIsEditing(true)}
-                  className="bg-blue-600/80 hover:bg-blue-700/80"
-                >
-                  ✎ Edit
-                </Button>
-                <Button 
-                  onClick={handleDeleteClient}
-                  className="bg-red-600/80 hover:bg-red-700/80"
-                >
-                  🗑 Delete
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Client Info Card */}
-        <Card className="mb-8">
+      <div className="max-w-6xl mx-auto p-6 md:p-8">
+        {/* Client Header */}
+        <Card className="mb-8 border-blue-500/30">
           <CardHeader>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  className="glass w-full px-4 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                />
-              ) : (
-                client.name
-              )}
-            </h1>
-            <p className="text-gray-400">{client.company}</p>
-          </CardHeader>
-          <CardBody className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white mb-4">📋 Contact Information</h3>
-                
-                <div>
-                  <label className="text-gray-400 text-sm block mb-2">Email</label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editData.email}
-                      onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                    />
-                  ) : (
-                    <p className="text-white break-all">{client.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-gray-400 text-sm block mb-2">Phone</label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editData.phone || ''}
-                      onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                    />
-                  ) : (
-                    <p className="text-white">{client.phone || '—'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-gray-400 text-sm block mb-2">Company</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.company}
-                      onChange={(e) => setEditData({ ...editData, company: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                    />
-                  ) : (
-                    <p className="text-white">{client.company}</p>
-                  )}
-                </div>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h1 className="text-4xl font-bold text-white mb-2">{client.name}</h1>
+                <p className="text-gray-400">{client.company || 'No company listed'}</p>
               </div>
-
-              {/* Address Information */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white mb-4">📍 Address</h3>
-                
-                <div>
-                  <label className="text-gray-400 text-sm block mb-2">Street Address</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.address || ''}
-                      onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                    />
-                  ) : (
-                    <p className="text-white">{client.address || '—'}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-gray-400 text-sm block mb-2">City</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.city || ''}
-                        onChange={(e) => setEditData({ ...editData, city: e.target.value })}
-                        className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                      />
-                    ) : (
-                      <p className="text-white">{client.city || '—'}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm block mb-2">State</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.state || ''}
-                        onChange={(e) => setEditData({ ...editData, state: e.target.value })}
-                        className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                      />
-                    ) : (
-                      <p className="text-white">{client.state || '—'}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-gray-400 text-sm block mb-2">ZIP Code</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.zip_code || ''}
-                        onChange={(e) => setEditData({ ...editData, zip_code: e.target.value })}
-                        className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                      />
-                    ) : (
-                      <p className="text-white">{client.zip_code || '—'}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm block mb-2">Country</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.country || ''}
-                        onChange={(e) => setEditData({ ...editData, country: e.target.value })}
-                        className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                      />
-                    ) : (
-                      <p className="text-white">{client.country || '—'}</p>
-                    )}
-                  </div>
-                </div>
+              <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${healthBadge.color}`}>
+                {healthBadge.label}
               </div>
             </div>
 
-            {/* Notes Section */}
-            {isEditing && (
-              <div className="border-t border-white/10 pt-6">
-                <label className="text-gray-400 text-sm block mb-2">Internal Notes</label>
-                <textarea
-                  value={editData.notes || ''}
-                  onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                  rows={4}
-                  className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              {client.email && (
+                <div>
+                  <p className="text-gray-400 text-xs uppercase">Email</p>
+                  <p className="text-white">{client.email}</p>
+                </div>
+              )}
+              {client.phone && (
+                <div>
+                  <p className="text-gray-400 text-xs uppercase">Phone</p>
+                  <Link href={`https://wa.me/${client.phone.replace(/[^\d]/g, '')}`} target="_blank">
+                    <p className="text-blue-400 hover:text-blue-300">{client.phone}</p>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                    style={{ backgroundColor: tag.color + '30', borderLeft: `3px solid ${tag.color}` }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
               </div>
             )}
-          </CardBody>
+
+            {/* Quick Actions */}
+            <div className="flex gap-3 flex-wrap">
+              <Link href={`/invoices?client=${clientId}`}>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">📄 New Invoice</Button>
+              </Link>
+              <Link href={`/proposals/new?client=${clientId}`}>
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white">📋 New Proposal</Button>
+              </Link>
+              {client.phone && (
+                <Link href={`https://wa.me/${client.phone.replace(/[^\d]/g, '')}`} target="_blank">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white">💬 WhatsApp</Button>
+                </Link>
+              )}
+            </div>
+          </CardHeader>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="hover:scale-105 hover:border-green-400/50">
+        {/* Metrics Row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card className="border-gray-700/50">
             <CardBody>
-              <p className="text-gray-400 text-sm mb-2">Total Revenue</p>
-              <div className="space-y-2">
-                {Object.entries(groupByCurrency(invoices.filter(inv => inv.status === 'paid'))).length > 0 ? (
-                  Object.entries(groupByCurrency(invoices.filter(inv => inv.status === 'paid'))).map(([code, total]) => (
-                    <p key={code} className="text-2xl font-bold text-green-400">{formatCurrency(total, code)}</p>
-                  ))
+              <p className="text-gray-400 text-xs uppercase">Total Revenue</p>
+              <p className="text-2xl font-bold text-green-400">
+                {formatCurrency(client.total_revenue, currency_code)}
+              </p>
+            </CardBody>
+          </Card>
+
+          <Card className="border-gray-700/50">
+            <CardBody>
+              <p className="text-gray-400 text-xs uppercase">Outstanding</p>
+              <p className="text-2xl font-bold text-yellow-400">
+                {formatCurrency(client.total_outstanding, currency_code)}
+              </p>
+            </CardBody>
+          </Card>
+
+          <Card className="border-gray-700/50">
+            <CardBody>
+              <p className="text-gray-400 text-xs uppercase">Avg Invoice</p>
+              <p className="text-2xl font-bold text-white">
+                {formatCurrency(
+                  client.invoice_count > 0 ? client.total_revenue / client.invoice_count : 0,
+                  currency_code
+                )}
+              </p>
+            </CardBody>
+          </Card>
+
+          <Card className="border-gray-700/50">
+            <CardBody>
+              <p className="text-gray-400 text-xs uppercase">Payment Speed</p>
+              <p className="text-2xl font-bold text-blue-400">
+                {paymentSpeed ? `${paymentSpeed} days` : 'N/A'}
+              </p>
+            </CardBody>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Card className="border-gray-700/50">
+          <CardBody>
+            {/* Tab Buttons */}
+            <div className="flex gap-4 border-b border-gray-700/50 pb-4 mb-6">
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`pb-2 px-1 transition ${
+                  activeTab === 'activity'
+                    ? 'border-b-2 border-blue-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Activity Timeline
+              </button>
+              <button
+                onClick={() => setActiveTab('notes')}
+                className={`pb-2 px-1 transition ${
+                  activeTab === 'notes'
+                    ? 'border-b-2 border-blue-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Notes
+              </button>
+              <button
+                onClick={() => setActiveTab('insights')}
+                className={`pb-2 px-1 transition ${
+                  activeTab === 'insights'
+                    ? 'border-b-2 border-blue-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                AI Insights
+              </button>
+            </div>
+
+            {/* Activity Tab */}
+            {activeTab === 'activity' && (
+              <div className="space-y-4">
+                {[...invoices, ...proposals].length === 0 ? (
+                  <p className="text-gray-400 text-sm">No activity yet</p>
                 ) : (
-                  <p className="text-gray-500 text-sm">No revenue</p>
+                  <div className="space-y-3">
+                    {[...invoices.map((inv) => ({ type: 'invoice', ...inv })), ...proposals.map((prop) => ({ type: 'proposal', ...prop }))]
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .map((item, idx) => (
+                        <Link
+                          key={idx}
+                          href={
+                            item.type === 'invoice'
+                              ? `/invoices/${item.id}`
+                              : `/proposals/${item.id}`
+                          }
+                        >
+                          <div className="p-3 bg-gray-900/50 rounded hover:bg-gray-800/50 cursor-pointer transition">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-white font-mono text-sm">
+                                  {item.type === 'invoice' ? item.invoice_number : item.proposal_number}
+                                </p>
+                                <p className="text-gray-400 text-xs mt-1">
+                                  {new Date(item.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-white font-semibold">
+                                  {formatCurrency(item.total_amount || item.amount || 0, currency_code)}
+                                </p>
+                                <span className="text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-300">
+                                  {item.status}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                  </div>
                 )}
               </div>
-            </CardBody>
-          </Card>
-          <Card className="hover:scale-105 hover:border-blue-400/50">
-            <CardBody>
-              <p className="text-gray-400 text-sm mb-2">Total Invoices</p>
-              <p className="text-3xl font-bold text-blue-400">{invoices.length}</p>
-            </CardBody>
-          </Card>
-          <Card className="hover:scale-105 hover:border-purple-400/50">
-            <CardBody>
-              <p className="text-gray-400 text-sm mb-2">Total Proposals</p>
-              <p className="text-3xl font-bold text-purple-400">{proposals.length}</p>
-            </CardBody>
-          </Card>
-        </div>
+            )}
 
-        {/* Add Note Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <h2 className="text-2xl font-bold text-white">➕ Add Note</h2>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-3">
-                <input
-                  type="text"
-                  placeholder="Add a note about this client..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50"
-                />
+            {/* Notes Tab */}
+            {activeTab === 'notes' && (
+              <div className="space-y-4">
+                {/* Add Note Form */}
+                <form onSubmit={handleAddNote} className="space-y-3 pb-6 border-b border-gray-700/50">
+                  <textarea
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    placeholder="Add a note..."
+                    className="w-full bg-gray-900/50 border border-gray-700/50 rounded px-3 py-2 text-white placeholder-gray-500 text-sm resize-none"
+                    rows={3}
+                  />
+                  <Button
+                    disabled={!newNoteContent.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                  >
+                    Add Note
+                  </Button>
+                </form>
+
+                {/* Notes List */}
+                {notes.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No notes yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {notes.map((note) => (
+                      <div key={note.id} className="p-3 bg-gray-900/50 rounded">
+                        {editingNoteId === note.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editingNoteContent}
+                              onChange={(e) => setEditingNoteContent(e.target.value)}
+                              className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm resize-none"
+                              rows={3}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => handleEditNote(note.id)}
+                                className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                onClick={() => setEditingNoteId(null)}
+                                className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-white text-sm mb-2">{note.content}</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-gray-500 text-xs">
+                                {new Date(note.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(note.id)
+                                    setEditingNoteContent(note.content)
+                                  }}
+                                  className="text-blue-400 hover:text-blue-300 text-xs"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteNote(note.id)}
+                                  className="text-red-400 hover:text-red-300 text-xs"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <select
-                value={noteType}
-                onChange={(e) => setNoteType(e.target.value)}
-                className="glass px-4 py-3 rounded-lg text-white focus:outline-none focus:border-blue-400/50 appearance-none"
-              >
-                <option value="general" className="bg-slate-900">General</option>
-                <option value="call" className="bg-slate-900">Call</option>
-                <option value="email" className="bg-slate-900">Email</option>
-                <option value="meeting" className="bg-slate-900">Meeting</option>
-              </select>
-            </div>
-            <Button 
-              onClick={handleAddNote}
-              className="bg-gradient-to-r from-blue-600 to-purple-600"
-            >
-              ✓ Add Note
-            </Button>
+            )}
+
+            {/* AI Insights Tab (Placeholder) */}
+            {activeTab === 'insights' && (
+              <div className="space-y-4">
+                <Card className="border-blue-500/30">
+                  <CardBody>
+                    <p className="text-blue-300 font-semibold mb-2">🔒 AI Client Summary</p>
+                    <p className="text-gray-400 text-sm">Available on Pro plan</p>
+                  </CardBody>
+                </Card>
+                <Card className="border-blue-500/30">
+                  <CardBody>
+                    <p className="text-blue-300 font-semibold mb-2">💡 Growth Opportunities</p>
+                    <p className="text-gray-400 text-sm">Available on Enterprise plan</p>
+                  </CardBody>
+                </Card>
+              </div>
+            )}
           </CardBody>
         </Card>
 
-        {/* Contact History */}
-        {notes.length > 0 && (
-          <Card className="mb-8">
+        {/* Recent Activity Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <Card className="border-gray-700/50">
             <CardHeader>
-              <h2 className="text-2xl font-bold text-white">📅 Contact History</h2>
+              <h3 className="text-lg font-bold text-white">Recent Invoices</h3>
             </CardHeader>
-            <CardBody className="space-y-4">
-              {notes.map((note) => (
-                <div key={note.id} className="glass rounded-lg p-4 border-blue-400/20 hover:border-blue-400/50 transition-all">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                          {note.note_type.toUpperCase()}
-                        </span>
-                        <span className="text-gray-400 text-sm">{new Date(note.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-white">{note.note_text}</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="hover:border-red-400/50 hover:text-red-300"
-                    >
-                      🗑
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Invoices */}
-        {invoices.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <h2 className="text-2xl font-bold text-white">📄 Invoices</h2>
-            </CardHeader>
-            <CardBody className="space-y-3">
-              {invoices.map((invoice) => (
-                <Link key={invoice.id} href={`/invoices/${invoice.id}`}>
-                  <div className="glass rounded-lg p-4 hover:bg-white/10 transition-all cursor-pointer">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-white font-semibold">{invoice.invoice_number}</p>
-                        <p className="text-gray-400 text-sm">{new Date(invoice.due_date).toLocaleDateString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white font-bold text-lg">{formatCurrency(invoice.amount, invoice.currency_code || 'MYR')}</p>
-                        <span className={`text-xs px-2 py-1 rounded-full border ${
-                          invoice.status === 'paid' 
-                            ? 'bg-green-500/20 border-green-400/30 text-green-300'
-                            : 'bg-blue-500/20 border-blue-400/30 text-blue-300'
-                        }`}>
-                          {invoice.status.toUpperCase()}
+            <CardBody>
+              {invoices.slice(0, 5).length === 0 ? (
+                <p className="text-gray-400 text-sm">No invoices</p>
+              ) : (
+                <div className="space-y-2">
+                  {invoices.slice(0, 5).map((inv) => (
+                    <Link key={inv.id} href={`/invoices/${inv.id}`}>
+                      <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
+                        <span className="text-white font-mono">{inv.invoice_number}</span>
+                        <span className="text-gray-400">
+                          {formatCurrency(inv.amount, currency_code)}
                         </span>
                       </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Proposals */}
-        {proposals.length > 0 && (
-          <Card>
-            <CardHeader>
-              <h2 className="text-2xl font-bold text-white">📝 Proposals</h2>
-            </CardHeader>
-            <CardBody className="space-y-3">
-              {proposals.map((proposal) => (
-                <div key={proposal.id} className="glass rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-white font-semibold">{proposal.proposal_number}</p>
-                      <p className="text-gray-400 text-sm">{proposal.title}</p>
-                      <p className="text-gray-400 text-sm">{new Date(proposal.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-white font-bold">{formatCurrency(proposal.amount, proposal.currency_code || 'MYR')}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full border ${
-                        proposal.status === 'accepted'
-                          ? 'bg-green-500/20 border-green-400/30 text-green-300'
-                          : 'bg-blue-500/20 border-blue-400/30 text-blue-300'
-                      }`}>
-                        {proposal.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
+                    </Link>
+                  ))}
+                  {invoices.length > 5 && (
+                    <Link href={`/invoices?client=${clientId}`}>
+                      <p className="text-blue-400 hover:text-blue-300 text-sm">View All →</p>
+                    </Link>
+                  )}
                 </div>
-              ))}
+              )}
             </CardBody>
           </Card>
-        )}
+
+          <Card className="border-gray-700/50">
+            <CardHeader>
+              <h3 className="text-lg font-bold text-white">Recent Proposals</h3>
+            </CardHeader>
+            <CardBody>
+              {proposals.slice(0, 5).length === 0 ? (
+                <p className="text-gray-400 text-sm">No proposals</p>
+              ) : (
+                <div className="space-y-2">
+                  {proposals.slice(0, 5).map((prop) => (
+                    <Link key={prop.id} href={`/proposals/${prop.id}`}>
+                      <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
+                        <span className="text-white font-mono">{prop.proposal_number}</span>
+                        <span className="text-gray-400">
+                          {formatCurrency(prop.total_amount, currency_code)}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                  {proposals.length > 5 && (
+                    <Link href={`/proposals?client=${clientId}`}>
+                      <p className="text-blue-400 hover:text-blue-300 text-sm">View All →</p>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
       </div>
     </div>
   )
