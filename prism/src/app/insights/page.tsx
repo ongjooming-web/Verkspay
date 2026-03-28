@@ -213,7 +213,7 @@ export default function InsightsPage() {
             {usage && (
               <div className="text-sm text-gray-400">
                 <span className="text-white font-semibold">{usage.used}</span> of{' '}
-                <span className="text-white font-semibold">{usage.limit === 999999 ? '∞' : usage.limit}</span> used this month
+                <span className="text-white font-semibold">{usage.limit === 100 && usage.plan === 'enterprise' ? usage.limit : usage.limit}</span> used this month
               </div>
             )}
           </div>

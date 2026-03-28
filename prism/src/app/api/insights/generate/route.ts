@@ -36,7 +36,7 @@ const PLAN_LIMITS: Record<string, number> = {
   trial: 10,
   starter: 5,
   pro: 30,
-  enterprise: 999999, // unlimited
+  enterprise: 100,
 }
 
 async function fetchInsightsData(userId: string, token: string): Promise<InsightsData> {

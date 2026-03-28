@@ -9,9 +9,9 @@ const supabase = createClient(
 
 const PLAN_LIMITS: Record<string, number> = {
   trial: 10,
-  starter: 10,
+  starter: 5,
   pro: 30,
-  enterprise: 999999,
+  enterprise: 100,
 }
 
 export async function GET(request: NextRequest) {

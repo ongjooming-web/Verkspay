@@ -334,21 +334,44 @@ export async function GET(request: NextRequest) {
     const accountAgeDays = Math.round((now.getTime() - new Date(oldestInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24))
 
     // Top 5 clients by revenue (fetch full data with industry)
-    const { data: allClients } = await supabase
-      .from('clients')
-      .select('id, name, company, industry, total_revenue, invoice_count, last_invoice_date')
-      .eq('user_id', userId)
-      .order('total_revenue', { ascending: false })
-      .limit(5)
+    console.log('[Insights] Step 1: Fetching top 5 clients...')
+    let allClients: any[] = []
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, company, industry, total_revenue, invoice_count, last_invoice_date')
+        .eq('user_id', userId)
+        .order('total_revenue', { ascending: false })
+        .limit(5)
+
+      if (error) {
+        console.warn('[Insights] Warning fetching clients with industry:', error.message)
+        // Fallback: fetch without industry field
+        const { data: fallbackData } = await supabase
+          .from('clients')
+          .select('id, name, company, total_revenue, invoice_count, last_invoice_date')
+          .eq('user_id', userId)
+          .order('total_revenue', { ascending: false })
+          .limit(5)
+        allClients = fallbackData || []
+      } else {
+        allClients = data || []
+      }
+    } catch (err) {
+      console.error('[Insights] Error fetching clients:', err)
+      allClients = []
+    }
+
+    console.log('[Insights] Step 2: Fetched', allClients.length, 'top clients')
 
     const topClients = (allClients || []).map((c: any) => ({
       client_id: c.id,
-      client_name: c.name,
+      client_name: c.name || 'Unknown',
       company: c.company || '',
       industry: c.industry || null,
       total_revenue: c.total_revenue || 0,
       invoice_count: c.invoice_count || 0,
-      last_invoice_date: c.last_invoice_date,
+      last_invoice_date: c.last_invoice_date || null,
     }))
 
     // Revenue concentration (top 3 percentage)
@@ -357,11 +380,25 @@ export async function GET(request: NextRequest) {
     const revenueConcentration = totalClientRevenue > 0 ? Math.round((top3Revenue / totalClientRevenue) * 100) : 0
 
     // Industry breakdown
-    const { data: clientsWithIndustry } = await supabase
-      .from('clients')
-      .select('industry')
-      .eq('user_id', userId)
-      .not('industry', 'is', null)
+    console.log('[Insights] Step 3: Building industry breakdown...')
+    let clientsWithIndustry: any[] = []
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('industry')
+        .eq('user_id', userId)
+        .not('industry', 'is', null)
+
+      if (error) {
+        console.warn('[Insights] Warning fetching industry data:', error.message)
+        clientsWithIndustry = []
+      } else {
+        clientsWithIndustry = data || []
+      }
+    } catch (err) {
+      console.error('[Insights] Error fetching industry data:', err)
+      clientsWithIndustry = []
+    }
 
     const industryMap = new Map<string, number>()
     clientsWithIndustry?.forEach((c: any) => {
@@ -372,45 +409,55 @@ export async function GET(request: NextRequest) {
     const industries = Array.from(industryMap.entries())
       .map(([industry, count]) => ({ industry, count }))
       .sort((a, b) => b.count - a.count)
+    
+    console.log('[Insights] Step 4: Built industry breakdown with', industries.length, 'industries')
 
+    console.log('[Insights] Step 5: Building final response...')
+    
     const insightsData: InsightsData = {
       revenue: {
-        total_paid: totalPaid,
-        total_pending: totalPending,
-        total_overdue: totalOverdue,
-        currency_code: currency,
+        total_paid: totalPaid || 0,
+        total_pending: totalPending || 0,
+        total_overdue: totalOverdue || 0,
+        currency_code: currency || 'USD',
       },
       invoices: {
-        total_count: invoices.length,
-        paid_count: paidInvoices.length,
-        pending_count: pendingInvoices.length,
-        overdue_count: overDueInvoices.length,
-        draft_count: draftInvoices.length,
+        total_count: invoices.length || 0,
+        paid_count: paidInvoices.length || 0,
+        pending_count: pendingInvoices.length || 0,
+        overdue_count: overDueInvoices.length || 0,
+        draft_count: draftInvoices.length || 0,
         average_amount: amounts.length > 0 ? Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length) : 0,
-        largest_invoice: Math.max(...amounts),
+        largest_invoice: amounts.length > 0 ? Math.max(...amounts) : 0,
         smallest_invoice: amounts.filter((a) => a > 0).length > 0 ? Math.min(...amounts.filter((a) => a > 0)) : 0,
       },
-      clients,
+      clients: clients || [],
       payments: {
-        on_time_count: onTimeCount,
-        late_count: lateCount,
+        on_time_count: onTimeCount || 0,
+        late_count: lateCount || 0,
         average_days_to_payment: averagePaymentDays,
-        payment_methods: Array.from(methodMap.entries()).map(([method, count]) => ({ method, count })),
+        payment_methods: Array.from(methodMap.entries()).map(([method, count]) => ({ method, count })) || [],
       },
-      monthly_revenue: monthlyRevenue,
-      top_clients: topClients,
-      revenue_concentration: { top_3_percentage: revenueConcentration },
-      industries,
-      account_age_days: accountAgeDays,
+      monthly_revenue: monthlyRevenue || [],
+      top_clients: topClients || [],
+      revenue_concentration: { top_3_percentage: revenueConcentration || 0 },
+      industries: industries || [],
+      account_age_days: accountAgeDays || 0,
       data_generated_at: now.toISOString(),
     }
 
-    console.log('[Insights] Data aggregation complete:', { userId, invoiceCount: invoices.length })
+    console.log('[Insights] Data aggregation complete:', { 
+      userId, 
+      invoiceCount: invoices.length,
+      clientCount: clients.length,
+      industriesCount: industries.length 
+    })
     return NextResponse.json(insightsData)
   } catch (error) {
-    console.error('[Insights] Data error:', error)
+    console.error('[Insights] Data error:', error instanceof Error ? error.message : error)
+    console.error('[Insights] Full error stack:', error)
     return NextResponse.json(
-      { error: 'Failed to aggregate business data' },
+      { error: 'Failed to aggregate business data', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
