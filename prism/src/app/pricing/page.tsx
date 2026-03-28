@@ -96,12 +96,12 @@ export default function PricingPage() {
         'Up to 20 invoices/month',
         '10 payment links/month',
         'Stripe payments',
-        'Smart reminders',
+        'Smart Reminders',
         'Smart Invoice Creation (auto-fill from history)',
-        'WhatsApp invoice sharing',
-        '5 AI Insights/month',
+        'WhatsApp sharing & reminders',
         'Client management',
-        'Flexible payment terms (Net 30/60/90, Due on Receipt)',
+        '5 AI Business Insights/month',
+        'Reports with PDF & CSV export',
         'Email support'
       ],
       button: { text: 'Start Free Trial', action: 'starter' },
@@ -116,23 +116,16 @@ export default function PricingPage() {
       description: 'For growing freelancers',
       badge: 'Most Popular',
       features: [
-        'Unlimited invoices',
-        'Unlimited payment links',
-        'Stripe payments',
-        'Smart reminders',
+        '**Everything in Starter, plus:**',
+        'Unlimited invoices & payment links',
         'Partial payments',
-        'Recurring invoices',
-        'Auto-generate invoice drafts on schedule',
-        'WhatsApp invoice sharing',
-        'WhatsApp payment reminders',
-        'Smart Invoice Creation (auto-fill from history)',
+        'Recurring invoices (auto-generated on schedule)',
         'Proposals & Contracts',
-        '30 AI Insights/month',
-        'AI Business Recommendations',
-        'AI Client Summaries & Health Scores',
+        '30 AI Business Insights/month',
+        'AI Client Summaries (10/month)',
+        'AI Growth Opportunities (5/month)',
         'Smart Follow-up Suggestions',
-        'Advanced reporting',
-        'Flexible payment terms (Net 30/60/90, Due on Receipt)',
+        'Advanced reporting with PDF & CSV export',
         'Priority email support'
       ],
       comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for freelancers.',
@@ -147,13 +140,12 @@ export default function PricingPage() {
       period: '/mo',
       description: 'For agencies & growing teams',
       features: [
-        'Everything in Pro',
-        'Unlimited AI Insights',
-        'AI Client Summaries & Health Scores',
-        'Smart Follow-up Suggestions',
+        '**Everything in Pro, plus:**',
+        '100 AI Business Insights/month',
+        '100 AI Client Summaries/month',
+        '100 AI Growth Opportunities/month',
         'Revenue Forecasting',
         'Receivables aging reports',
-        'All reports with PDF & CSV export',
         'Team management (3 users)',
         'Custom branding',
         'Priority support'
@@ -262,12 +254,19 @@ export default function PricingPage() {
 
                 <CardBody className="flex-1 flex flex-col">
                   <ul className="space-y-3 mb-6 flex-1">
-                    {plan.features.map((feature, j) => (
-                      <li key={j} className="flex items-start gap-3">
-                        <span className="text-blue-400 mt-1 flex-shrink-0">✓</span>
-                        <span className="text-gray-300 text-sm">{feature}</span>
-                      </li>
-                    ))}
+                    {plan.features.map((feature, j) => {
+                      const isBold = feature.startsWith('**') && feature.endsWith('**')
+                      const displayText = isBold ? feature.slice(2, -2) : feature
+                      
+                      return (
+                        <li key={j} className={`flex items-start gap-3 ${isBold ? 'mt-2' : ''}`}>
+                          {!isBold && <span className="text-blue-400 mt-1 flex-shrink-0">✓</span>}
+                          <span className={`text-sm ${isBold ? 'font-semibold text-gray-200' : 'text-gray-300'}`}>
+                            {displayText}
+                          </span>
+                        </li>
+                      )
+                    })}
                   </ul>
 
                   {plan.comparison && (
