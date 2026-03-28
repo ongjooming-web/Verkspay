@@ -6,12 +6,23 @@ import { sendEmail } from '@/lib/resend'
 export async function DELETE(req: NextRequest) {
   try {
     console.log('[account/delete] DELETE request received')
-    console.log('[account/delete] Auth header:', req.headers.get('authorization') ? 'Present' : 'Missing')
+    const authHeader = req.headers.get('authorization')
+    console.log('[account/delete] Auth header:', authHeader ? 'Present' : 'Missing')
 
-    const { email } = await req.json()
-    console.log('[account/delete] Email from body:', email)
+    let emailFromBody: string | null = null
+    try {
+      const body = await req.json()
+      emailFromBody = body.email
+      console.log('[account/delete] Email from body:', emailFromBody)
+    } catch (parseErr) {
+      console.error('[account/delete] Failed to parse request body:', parseErr)
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
 
-    if (!email) {
+    if (!emailFromBody) {
       console.log('[account/delete] Email missing from request body')
       return NextResponse.json(
         { error: 'Email confirmation is required' },
@@ -26,7 +37,7 @@ export async function DELETE(req: NextRequest) {
     if (authError) {
       console.error('[account/delete] Auth error:', authError)
       return NextResponse.json(
-        { error: `Auth failed: ${authError.message}` },
+        { error: `Authentication failed: ${authError.message}` },
         { status: authError.status || 401 }
       )
     }

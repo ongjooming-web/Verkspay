@@ -74,11 +74,24 @@ export default function AccountSettings() {
 
     try {
       // Get current session to retrieve auth token
+      console.log('[Settings] Getting auth session for account deletion...')
+      
+      // Refresh session first to ensure token is fresh
+      await supabase.auth.refreshSession()
+      
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
 
+      console.log('[Settings] Session retrieved:', {
+        hasSession: !!session,
+        hasToken: !!token,
+        userEmail: session?.user?.email
+      })
+
       if (!token) {
-        setError('Not authenticated. Please log in again.')
+        const errorMsg = 'Not authenticated. Please log in again.'
+        console.error('[Settings] Delete failed: no token found')
+        setError(errorMsg)
         setModal({ ...modal, isDeleting: false })
         return
       }
@@ -102,8 +115,22 @@ export default function AccountSettings() {
       })
 
       if (!response.ok) {
-        const errorMsg = data.error || `Failed to delete account (${response.status})`
-        console.error('[Settings] Delete failed:', errorMsg)
+        let errorMsg = data.error || `Failed to delete account (${response.status})`
+        
+        // Provide more helpful error messages
+        if (response.status === 401) {
+          errorMsg = 'Authentication failed. Please log in again.'
+        } else if (response.status === 403) {
+          errorMsg = 'You do not have permission to delete this account.'
+        } else if (response.status === 404) {
+          errorMsg = 'Account not found.'
+        }
+        
+        console.error('[Settings] Delete failed:', {
+          status: response.status,
+          error: errorMsg,
+          details: data
+        })
         setError(errorMsg)
         setModal({ ...modal, isDeleting: false })
         return
