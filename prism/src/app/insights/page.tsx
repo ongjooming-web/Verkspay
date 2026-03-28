@@ -179,6 +179,19 @@ export default function InsightsPage() {
           <p className="text-gray-400">AI-powered analysis of your business data</p>
         </div>
 
+        {/* Tip Banner */}
+        <Card className="mb-8 border-blue-500/30 bg-blue-500/5">
+          <CardBody>
+            <div className="flex items-start gap-3">
+              <div className="text-blue-400 text-xl mt-0.5">💡</div>
+              <div>
+                <p className="text-blue-300 font-semibold text-sm mb-1">Pro Tip: Add industry to your clients</p>
+                <p className="text-gray-400 text-sm">Including industry information helps AI provide better insights, spot opportunities across sectors, and identify industry-specific trends.</p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
         {/* Action Bar */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">

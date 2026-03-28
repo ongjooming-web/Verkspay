@@ -20,6 +20,7 @@ interface Client {
   email: string
   phone: string | null
   company: string | null
+  industry: string | null
   total_revenue: number
   total_outstanding: number
   last_invoice_date: string | null
@@ -225,6 +226,29 @@ export default function ClientProfilePage() {
             </div>
           </CardHeader>
         </Card>
+
+        {/* Industry Nudge Banner */}
+        {!client.industry && (
+          <Card className="mb-8 border-amber-500/30 bg-amber-500/5">
+            <CardBody>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-amber-400 font-semibold mb-1">📊 Add industry to unlock insights</p>
+                  <p className="text-gray-400 text-sm">Industry classification helps AI provide better business recommendations and client segmentation.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    // TODO: Open edit modal or navigate to edit page
+                    alert('Edit client feature coming soon')
+                  }}
+                  className="text-amber-400 hover:text-amber-300 text-sm font-semibold whitespace-nowrap mt-1"
+                >
+                  Add now →
+                </button>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
         {/* Metrics Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
