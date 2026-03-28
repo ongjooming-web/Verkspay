@@ -120,7 +120,7 @@ export default function Dashboard() {
         // Fetch invoices with detailed data
         const { data: invoicesData } = await supabase
           .from('invoices')
-          .select('amount, status, created_at, id, due_date, currency_code, amount_paid, remaining_balance')
+          .select('amount, invoice_number, status, created_at, id, due_date, currency_code, amount_paid, remaining_balance')
           .eq('user_id', userId)
 
         // Fetch proposals count
