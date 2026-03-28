@@ -1,0 +1,114 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+export interface OnboardingStatus {
+  completed: boolean
+  dismissed: boolean
+  tasks: {
+    business_profile: boolean
+    stripe_connected: boolean
+    first_client: boolean
+    first_invoice: boolean
+    ai_insights: boolean
+  }
+  completed_count: number
+  total_tasks: number
+  tour_step: number
+}
+
+export function useOnboarding() {
+  const [status, setStatus] = useState<OnboardingStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const isComplete = status?.completed || false
+  const isDismissed = status?.dismissed || false
+  const completedCount = status?.completed_count || 0
+  const totalTasks = status?.total_tasks || 5
+  const tourStep = status?.tour_step || 0
+
+  // Show tour only on first login (step 0, not completed)
+  const showTour = tourStep === 0 && !isComplete
+  // Show progress bar if tasks incomplete, not dismissed, and not completed
+  const showProgress = !isComplete && !isDismissed
+
+  const refresh = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/onboarding/status')
+      if (res.ok) {
+        const data = await res.json()
+        setStatus(data)
+      }
+    } catch (err) {
+      console.error('[useOnboarding] Error fetching status:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateTourStep = async (step: number) => {
+    try {
+      const res = await fetch('/api/onboarding/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tour_step: step })
+      })
+      if (res.ok) {
+        await refresh()
+      }
+    } catch (err) {
+      console.error('[useOnboarding] Error updating tour step:', err)
+    }
+  }
+
+  const dismissProgress = async () => {
+    try {
+      const res = await fetch('/api/onboarding/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dismissed: true })
+      })
+      if (res.ok) {
+        await refresh()
+      }
+    } catch (err) {
+      console.error('[useOnboarding] Error dismissing progress:', err)
+    }
+  }
+
+  const completeOnboarding = async () => {
+    try {
+      const res = await fetch('/api/onboarding/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: true })
+      })
+      if (res.ok) {
+        await refresh()
+      }
+    } catch (err) {
+      console.error('[useOnboarding] Error completing onboarding:', err)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+  }, [])
+
+  return {
+    status,
+    loading,
+    isComplete,
+    isDismissed,
+    completedCount,
+    totalTasks,
+    tourStep,
+    showTour,
+    showProgress,
+    updateTourStep,
+    dismissProgress,
+    completeOnboarding,
+    refresh
+  }
+}

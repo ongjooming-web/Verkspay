@@ -27,7 +27,7 @@ export function Navigation() {
   ]
 
   return (
-    <nav className="glass sticky top-0 z-50 mb-8">
+    <nav className="glass sticky top-0 z-50 mb-8" data-onboarding="nav">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
         {/* Desktop & Mobile Header */}
         <div className="flex justify-between items-center">
@@ -39,15 +39,24 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex gap-8 items-center">
-            {navLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-300 hover:text-blue-400 transition-colors font-medium text-sm"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map(link => {
+              let onboardingAttr = undefined
+              if (link.href === '/clients') onboardingAttr = 'nav-clients'
+              if (link.href === '/invoices') onboardingAttr = 'nav-invoices'
+              if (link.href === '/settings') onboardingAttr = 'nav-settings'
+              if (link.href === '/insights') onboardingAttr = 'nav-insights'
+              
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-gray-300 hover:text-blue-400 transition-colors font-medium text-sm"
+                  data-onboarding={onboardingAttr}
+                >
+                  {link.label}
+                </Link>
+              )
+            })}
             <Button variant="outline" size="sm" onClick={handleLogout} className="ml-4">
               Logout
             </Button>

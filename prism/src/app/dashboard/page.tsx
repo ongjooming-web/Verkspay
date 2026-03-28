@@ -16,6 +16,7 @@ import { useCurrency } from '@/hooks/useCurrency'
 import { RevenueForecastWidget } from '@/components/RevenueForecastWidget'
 import { FollowUpsWidget } from '@/components/FollowUpsWidget'
 import { SafeWidgetWrapper } from '@/components/SafeWidgetWrapper'
+import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 interface RecentActivity {
@@ -386,6 +387,9 @@ export default function Dashboard() {
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-6 pb-12">
+        {/* Onboarding Progress Bar */}
+        <OnboardingProgress />
+
         {error && (
           <div className="mb-6 glass border-red-500/50 bg-red-500/10 text-red-300 px-4 py-3 rounded-lg">
             {error}
@@ -420,7 +424,7 @@ export default function Dashboard() {
         )}
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10" data-onboarding="metrics-cards">
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
