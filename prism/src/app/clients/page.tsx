@@ -7,308 +7,400 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
-import { groupByCurrency } from '@/lib/currency-helper'
+import { useTags } from '@/hooks/useTags'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface Client {
   id: string
   name: string
   email: string
-  company: string
-  phone?: string
+  company: string | null
+  phone?: string | null
   created_at: string
-  invoiceCount?: number
-  proposalCount?: number
-  totalRevenue?: number
-  currency_code?: string
+  total_revenue: number
+  total_outstanding: number
+  last_invoice_date: string | null
+  invoice_count: number
+  health_score: number | null
 }
 
-export default function Clients() {
+type SortBy = 'name' | 'revenue' | 'outstanding' | 'last_invoice' | 'health'
+
+export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
+  const [filteredClients, setFilteredClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [healthFilter, setHealthFilter] = useState<'all' | 'healthy' | 'at_risk' | 'needs_attention'>('all')
+  const [sortBy, setSortBy] = useState<SortBy>('name')
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     company: '',
-    phone: '',
+    phone: ''
   })
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+
+  const { tags } = useTags()
+  const { currency_code } = useCurrency()
 
   useEffect(() => {
     fetchClients()
   }, [])
 
+  useEffect(() => {
+    applyFilters()
+  }, [clients, searchTerm, selectedTags, healthFilter, sortBy])
+
   const fetchClients = async () => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData?.user?.id
 
-    if (!userId) {
+      if (!userId) {
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (data) {
+        setClients(data as Client[])
+      }
+    } catch (err) {
+      console.error('[ClientsList] Error fetching clients:', err)
+    } finally {
       setLoading(false)
-      return
     }
+  }
 
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+  const applyFilters = () => {
+    let filtered = [...clients]
 
-    if (data) {
-      const clientsWithStats = await Promise.all(
-        data.map(async (client) => {
-          const { data: invoices } = await supabase
-            .from('invoices')
-            .select('amount')
-            .eq('client_id', client.id)
-
-          const { data: proposals } = await supabase
-            .from('proposals')
-            .select('id')
-            .eq('client_id', client.id)
-
-          const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
-          const invoiceCount = invoices?.length || 0
-          const proposalCount = proposals?.length || 0
-
-          return {
-            ...client,
-            invoiceCount,
-            proposalCount,
-            totalRevenue
-          }
-        })
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(
+        (c) =>
+          c.name.toLowerCase().includes(term) ||
+          c.email.toLowerCase().includes(term)
       )
-      setClients(clientsWithStats)
     }
-    setLoading(false)
+
+    // Tag filter
+    if (selectedTags.length > 0) {
+      // This would need a JOIN with client_tag_assignments in a real implementation
+      // For now, we'll just show a placeholder
+    }
+
+    // Health filter
+    if (healthFilter !== 'all') {
+      filtered = filtered.filter((c) => {
+        const score = c.health_score
+        if (score === null) return false
+        if (healthFilter === 'healthy') return score >= 80
+        if (healthFilter === 'at_risk') return score >= 50 && score < 80
+        if (healthFilter === 'needs_attention') return score < 50
+        return true
+      })
+    }
+
+    // Sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name)
+        case 'revenue':
+          return (b.total_revenue || 0) - (a.total_revenue || 0)
+        case 'outstanding':
+          return (b.total_outstanding || 0) - (a.total_outstanding || 0)
+        case 'last_invoice':
+          const dateA = a.last_invoice_date ? new Date(a.last_invoice_date).getTime() : 0
+          const dateB = b.last_invoice_date ? new Date(b.last_invoice_date).getTime() : 0
+          return dateB - dateA
+        case 'health':
+          return (b.health_score || 0) - (a.health_score || 0)
+        default:
+          return 0
+      }
+    })
+
+    setFilteredClients(filtered)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData?.user?.id
 
-    if (!userId) return
+      if (!userId) return
 
-    const { data, error } = await supabase
-      .from('clients')
-      .insert([
-        {
-          user_id: userId,
-          name: formData.name,
-          email: formData.email,
-          company: formData.company,
-          phone: formData.phone,
-        },
-      ])
-      .select()
+      const { error } = await supabase
+        .from('clients')
+        .insert([
+          {
+            user_id: userId,
+            name: formData.name,
+            email: formData.email,
+            company: formData.company || null,
+            phone: formData.phone || null
+          }
+        ])
 
-    if (data) {
-      setClients([{ ...data[0], invoiceCount: 0, proposalCount: 0, totalRevenue: 0 }, ...clients])
-      setFormData({ name: '', email: '', company: '', phone: '' })
-      setShowForm(false)
+      if (!error) {
+        setFormData({ name: '', email: '', company: '', phone: '' })
+        setShowForm(false)
+        fetchClients()
+      }
+    } catch (err) {
+      console.error('[ClientsList] Error adding client:', err)
     }
   }
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (!confirm('Delete this client? This action cannot be undone.')) return
-    
-    await supabase.from('clients').delete().eq('id', id)
-    setClients(clients.filter(c => c.id !== id))
+  const getHealthBadge = (score: number | null) => {
+    if (score === null) return { color: 'bg-gray-500/20 text-gray-400', label: 'Not Scored' }
+    if (score >= 80) return { color: 'bg-green-500/20 text-green-400', label: 'Healthy' }
+    if (score >= 50) return { color: 'bg-yellow-500/20 text-yellow-400', label: 'At Risk' }
+    return { color: 'bg-red-500/20 text-red-400', label: 'Needs Attention' }
   }
 
-  // Filter clients
-  const filtered = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const getLastInvoiceText = (date: string | null) => {
+    if (!date) return 'Never'
+    const now = new Date()
+    const invoiceDate = new Date(date)
+    const days = Math.floor((now.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24))
+    if (days === 0) return 'Today'
+    if (days === 1) return 'Yesterday'
+    if (days < 7) return `${days} days ago`
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`
+    return `${Math.floor(days / 30)} months ago`
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black">
+        <Navigation />
+        <div className="max-w-7xl mx-auto p-6 flex justify-center items-center h-96">
+          <div className="text-gray-400">Loading clients...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen relative z-10">
+    <div className="min-h-screen bg-black">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-6 pb-12">
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-10 flex-col md:flex-row gap-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent">
-            👥 Clients
-          </h1>
-          <Button 
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-white">Clients</h1>
+          <Button
             onClick={() => setShowForm(!showForm)}
-            className={showForm ? 'bg-red-600/80 hover:bg-red-700/80' : ''}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {showForm ? '✕ Cancel' : '+ Add Client'}
+            + Add Client
           </Button>
         </div>
 
-        {/* Create Form */}
+        {/* Add Client Form */}
         {showForm && (
-          <Card className="mb-8 animate-in fade-in slide-in-from-top-4">
-            <CardHeader>
-              <h2 className="text-xl font-bold text-white">Add New Client</h2>
-            </CardHeader>
+          <Card className="mb-8 border-blue-500/30">
             <CardBody>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Client Name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Email *</label>
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Company *</label>
-                    <input
-                      type="text"
-                      placeholder="Company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      required
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Phone</label>
-                    <input
-                      type="tel"
-                      placeholder="Phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                  </div>
+              <form onSubmit={handleAddClient} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Client Name *"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                />
+                <div className="flex gap-3">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    Add Client
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="bg-gray-600 hover:bg-gray-700 text-white"
+                  >
+                    Cancel
+                  </Button>
                 </div>
-                <Button type="submit" variant="primary">
-                  ✓ Create Client
-                </Button>
               </form>
             </CardBody>
           </Card>
         )}
 
-        {/* Search */}
-        <Card className="mb-8">
+        {/* Filters */}
+        <Card className="mb-8 border-gray-700/50">
           <CardBody>
-            <input
-              type="text"
-              placeholder="Search clients by name, email, or company..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="glass w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/30"
-            />
+            <div className="space-y-4">
+              {/* Search */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500 text-sm"
+                />
+              </div>
+
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Tags Filter */}
+                {tags.length > 0 && (
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase block mb-2">Tags</label>
+                    <select
+                      multiple
+                      value={selectedTags}
+                      onChange={(e) =>
+                        setSelectedTags(Array.from(e.target.selectedOptions, (option) => option.value))
+                      }
+                      className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
+                      style={{ minHeight: '100px' }}
+                    >
+                      {tags.map((tag) => (
+                        <option key={tag.id} value={tag.id}>
+                          {tag.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Health Filter */}
+                <div>
+                  <label className="text-xs text-gray-400 uppercase block mb-2">Health</label>
+                  <select
+                    value={healthFilter}
+                    onChange={(e) => setHealthFilter(e.target.value as typeof healthFilter)}
+                    className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
+                  >
+                    <option value="all">All</option>
+                    <option value="healthy">Healthy (80+)</option>
+                    <option value="at_risk">At Risk (50-79)</option>
+                    <option value="needs_attention">Needs Attention (&lt;50)</option>
+                  </select>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="text-xs text-gray-400 uppercase block mb-2">Sort By</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
+                    className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
+                  >
+                    <option value="name">Name A-Z</option>
+                    <option value="revenue">Revenue (High-Low)</option>
+                    <option value="outstanding">Outstanding (High-Low)</option>
+                    <option value="last_invoice">Last Invoice (Recent)</option>
+                    <option value="health">Health Score (High-Low)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </CardBody>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Card className="hover:scale-105 hover:border-blue-400/50">
+        {/* Client List */}
+        {filteredClients.length === 0 ? (
+          <Card className="border-gray-700/50">
             <CardBody>
-              <p className="text-gray-400 text-sm mb-2">Total Clients</p>
-              <p className="text-4xl font-bold text-blue-400">{clients.length}</p>
+              <div className="text-center py-12">
+                <p className="text-gray-400 mb-4">No clients found</p>
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Add First Client
+                </Button>
+              </div>
             </CardBody>
           </Card>
-          <Card className="hover:scale-105 hover:border-green-400/50">
-            <CardBody>
-              <p className="text-gray-400 text-sm mb-2">Total Revenue</p>
-              <p className="text-4xl font-bold text-green-400">
-                {formatCurrency(clients.reduce((sum, c) => sum + (c.totalRevenue || 0), 0), 'MYR')}
-              </p>
-            </CardBody>
-          </Card>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredClients.map((client) => {
+              const healthBadge = getHealthBadge(client.health_score)
 
-        {/* Clients List */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="glass px-8 py-12 rounded-lg text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mb-4"></div>
-              <p className="text-gray-300">Loading clients...</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <Card>
-              <CardBody>
-                <p className="text-gray-400 text-center py-12 text-lg">
-                  {showForm ? 'Create your first client above' : 'No clients found'}
-                </p>
-              </CardBody>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((client, idx) => (
+              return (
                 <Link key={client.id} href={`/clients/${client.id}`}>
-                  <Card 
-                    className="group hover:shadow-lg hover:border-blue-400/50 hover:scale-105 cursor-pointer h-full"
-                    style={{ animationDelay: `${idx * 50}ms` }}
-                  >
-                    <CardHeader className="border-b border-white/10">
-                      <h3 className="font-bold text-lg text-white group-hover:text-blue-300 transition-colors">
-                        {client.name}
-                      </h3>
-                      <p className="text-gray-400 text-sm mt-1">{client.company}</p>
-                    </CardHeader>
-                    <CardBody className="space-y-3">
-                      <div>
-                        <p className="text-gray-400 text-xs">Email</p>
-                        <p className="text-gray-200 text-sm font-mono break-all">{client.email}</p>
-                      </div>
-                      {client.phone && (
-                        <div>
-                          <p className="text-gray-400 text-xs">Phone</p>
-                          <p className="text-gray-200 text-sm">{client.phone}</p>
-                        </div>
-                      )}
-                      <div className="pt-3 border-t border-white/10 space-y-2">
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <p className="text-gray-400 text-xs">Invoices</p>
-                            <p className="text-blue-300 font-bold">{client.invoiceCount || 0}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 text-xs">Proposals</p>
-                            <p className="text-purple-300 font-bold">{client.proposalCount || 0}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 text-xs">Revenue</p>
-                            <p className="text-green-300 font-bold text-sm">{formatCurrency(client.totalRevenue || 0, client.currency_code || 'MYR')}</p>
+                  <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
+                    <CardBody>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-white mb-1">{client.name}</h3>
+                          {client.company && (
+                            <p className="text-gray-400 text-sm mb-2">{client.company}</p>
+                          )}
+                          <div className="flex gap-4 text-sm text-gray-400">
+                            {client.email && <span>📧 {client.email}</span>}
+                            {client.phone && <span>📞 {client.phone}</span>}
+                            {client.last_invoice_date && (
+                              <span>📄 {getLastInvoiceText(client.last_invoice_date)}</span>
+                            )}
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => handleDelete(client.id, e)}
-                          className="w-full hover:border-red-400/50 hover:text-red-300"
-                        >
-                          🗑 Delete
-                        </Button>
+
+                        <div className="text-right space-y-2">
+                          <div>
+                            <p className="text-gray-400 text-xs uppercase">Revenue</p>
+                            <p className="text-xl font-bold text-green-400">
+                              {formatCurrency(client.total_revenue || 0, currency_code)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 text-xs uppercase">Outstanding</p>
+                            <p className="text-lg font-semibold text-yellow-400">
+                              {formatCurrency(client.total_outstanding || 0, currency_code)}
+                            </p>
+                          </div>
+                          <div className={`px-3 py-1 rounded text-xs font-semibold ${healthBadge.color}`}>
+                            {healthBadge.label}
+                          </div>
+                        </div>
                       </div>
                     </CardBody>
                   </Card>
                 </Link>
-              ))}
-            </div>
-          )}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
