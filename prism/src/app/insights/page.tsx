@@ -175,7 +175,7 @@ export default function InsightsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-2">
-            ✨ Business Insights
+            Business Insights
           </h1>
           <p className="text-gray-400">AI-powered analysis of your business data</p>
         </div>

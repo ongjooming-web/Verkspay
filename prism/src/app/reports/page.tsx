@@ -853,7 +853,7 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent mb-2">
-            📈 Reports
+            Reports
           </h1>
           <p className="text-gray-400">Generate and export business reports</p>
         </div>

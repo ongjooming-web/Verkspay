@@ -232,7 +232,7 @@ export default function Settings() {
       <div className="max-w-4xl mx-auto px-6 pb-12">
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-400 bg-clip-text text-transparent">
-            ⚙️ Settings
+            Settings
           </h1>
           <Link href="/settings/account" className="text-blue-400 hover:text-blue-300 text-sm font-medium transition">
             Account & Privacy →
