@@ -32,8 +32,8 @@ export function Navigation() {
         {/* Desktop & Mobile Header */}
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Prism Logo" className="h-10 w-10" />
+          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <img src="/logo.svg" alt="Prism Logo" className="h-12 w-12" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Prism</span>
           </Link>
 
