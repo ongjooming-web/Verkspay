@@ -14,6 +14,7 @@ export function useGrowthOpportunities(clientId: string) {
   const [data, setData] = useState<GrowthOpportunitiesResponse | null>(null)
   const [isFresh, setIsFresh] = useState(false)
   const [remaining, setRemaining] = useState<number | null>(null)
+  const [isLocked, setIsLocked] = useState(false)
 
   // Load cached opportunities on mount
   useEffect(() => {
@@ -63,6 +64,7 @@ export function useGrowthOpportunities(clientId: string) {
         setLoading(false)
       } catch (err) {
         console.error('[useGrowthOpportunities] Error loading cached opportunities:', err)
+        setError(null) // Don't show error during initial load
         setLoading(false)
       }
     }
@@ -74,6 +76,7 @@ export function useGrowthOpportunities(clientId: string) {
     try {
       setLoading(true)
       setError(null)
+      setIsLocked(false)
 
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData?.session) {
@@ -91,15 +94,19 @@ export function useGrowthOpportunities(clientId: string) {
       })
 
       if (response.status === 403) {
-        const errorData = await response.json()
-        setError(errorData.error)
+        // Gracefully handle plan gating
+        setIsLocked(true)
+        setError(null) // Don't show error message for locked features
+        setData(null)
         setLoading(false)
+        console.log('[useGrowthOpportunities] Feature locked (requires Enterprise plan)')
         return
       }
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Failed to generate opportunities')
+        setData(null)
         setLoading(false)
         return
       }
@@ -111,7 +118,9 @@ export function useGrowthOpportunities(clientId: string) {
       console.log('[useGrowthOpportunities] Generated opportunities for client', clientId)
     } catch (err) {
       console.error('[useGrowthOpportunities] Error:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError('Something went wrong. Please try again.')
+      setData(null)
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -123,6 +132,7 @@ export function useGrowthOpportunities(clientId: string) {
     error,
     isFresh,
     remaining,
+    isLocked,
     generateOpportunities
   }
 }

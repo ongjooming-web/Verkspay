@@ -13,6 +13,7 @@ export function useAISummary(clientId: string) {
   const [data, setData] = useState<AISummaryResponse | null>(null)
   const [isFresh, setIsFresh] = useState(false)
   const [remaining, setRemaining] = useState<number | null>(null)
+  const [isLocked, setIsLocked] = useState(false)
 
   // Load cached summary on mount
   useEffect(() => {
@@ -66,6 +67,7 @@ export function useAISummary(clientId: string) {
         setLoading(false)
       } catch (err) {
         console.error('[useAISummary] Error loading cached summary:', err)
+        setError(null) // Don't show error during initial load
         setLoading(false)
       }
     }
@@ -77,6 +79,7 @@ export function useAISummary(clientId: string) {
     try {
       setLoading(true)
       setError(null)
+      setIsLocked(false)
 
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData?.session) {
@@ -94,15 +97,19 @@ export function useAISummary(clientId: string) {
       })
 
       if (response.status === 403) {
-        const errorData = await response.json()
-        setError(errorData.error)
+        // Gracefully handle plan gating
+        setIsLocked(true)
+        setError(null) // Don't show error message for locked features
+        setData(null)
         setLoading(false)
+        console.log('[useAISummary] Feature locked (requires Pro plan or higher)')
         return
       }
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Failed to generate summary')
+        setData(null)
         setLoading(false)
         return
       }
@@ -114,7 +121,9 @@ export function useAISummary(clientId: string) {
       console.log('[useAISummary] Generated summary for client', clientId)
     } catch (err) {
       console.error('[useAISummary] Error:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError('Something went wrong. Please try again.')
+      setData(null)
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -126,6 +135,7 @@ export function useAISummary(clientId: string) {
     error,
     isFresh,
     remaining,
+    isLocked,
     generateSummary
   }
 }

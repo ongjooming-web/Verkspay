@@ -8,21 +8,25 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export function FollowUpsWidget() {
-  const { followUps, loading, error, updateFollowUp } = useFollowUps()
+  const { followUps, loading, error, updateFollowUp, isLocked } = useFollowUps()
   const [expandAll, setExpandAll] = useState(false)
   const [showTooltip, setShowTooltip] = useState<string | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
-  if (error && error.includes('Pro plan')) {
+  // Locked state (Pro+ only)
+  if (isLocked) {
     return (
       <Card className="border-gray-700/50">
         <CardHeader>
           <h3 className="text-lg font-bold text-white">📋 Follow-up Suggestions</h3>
         </CardHeader>
         <CardBody>
+          <p className="text-gray-400 text-sm mb-4">
+            Get smart follow-up suggestions based on client payment patterns and activity.
+          </p>
           <p className="text-gray-400 text-sm">
-            Follow-up suggestions require <span className="font-semibold text-blue-400">Pro plan</span> or higher
+            This feature requires <span className="font-semibold text-blue-400">Pro plan</span> or higher
           </p>
         </CardBody>
       </Card>

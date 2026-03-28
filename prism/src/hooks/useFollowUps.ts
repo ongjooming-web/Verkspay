@@ -16,15 +16,19 @@ export function useFollowUps() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [count, setCount] = useState(0)
+  const [isLocked, setIsLocked] = useState(false)
 
   const fetchFollowUps = async () => {
     try {
       setLoading(true)
       setError(null)
+      setIsLocked(false)
 
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData?.session) {
         setError('Not authenticated')
+        setFollowUps([])
+        setCount(0)
         setLoading(false)
         return
       }
@@ -36,16 +40,21 @@ export function useFollowUps() {
       })
 
       if (response.status === 403) {
-        setError('Follow-up suggestions require Pro plan or higher')
+        // Gracefully handle plan gating
+        setIsLocked(true)
+        setError(null) // Don't show error message for locked features
         setFollowUps([])
         setCount(0)
         setLoading(false)
+        console.log('[useFollowUps] Feature locked (requires Pro plan)')
         return
       }
 
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.error || 'Failed to fetch follow-ups')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || 'Failed to fetch follow-ups')
+        setFollowUps([])
+        setCount(0)
         setLoading(false)
         return
       }
@@ -57,7 +66,9 @@ export function useFollowUps() {
       console.log('[useFollowUps] Fetched', data.follow_ups?.length, 'follow-ups')
     } catch (err) {
       console.error('[useFollowUps] Error:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError('Something went wrong. Please try again.')
+      setFollowUps([])
+      setCount(0)
     } finally {
       setLoading(false)
     }
@@ -127,6 +138,7 @@ export function useFollowUps() {
     loading,
     error,
     count,
+    isLocked,
     fetchFollowUps,
     getCount,
     updateFollowUp

@@ -46,8 +46,8 @@ export default function ClientProfilePage() {
   const { tags } = useClientTags(clientId)
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
-  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, isFresh: aiSummaryIsFresh, remaining: aiSummaryRemaining, generateSummary } = useAISummary(clientId)
-  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, isFresh: growthOppIsFresh, remaining: growthOppRemaining, generateOpportunities } = useGrowthOpportunities(clientId)
+  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, isFresh: aiSummaryIsFresh, remaining: aiSummaryRemaining, isLocked: aiSummaryIsLocked, generateSummary } = useAISummary(clientId)
+  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, isFresh: growthOppIsFresh, remaining: growthOppRemaining, isLocked: growthOppIsLocked, generateOpportunities } = useGrowthOpportunities(clientId)
 
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
@@ -477,20 +477,31 @@ export default function ClientProfilePage() {
                     </div>
                   </CardHeader>
                   <CardBody>
-                    {aiSummaryError && (
+                    {aiSummaryIsLocked && (
+                      <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-700/50">
+                        <p className="text-gray-400 text-sm mb-3">
+                          AI Client Summaries require <span className="font-semibold text-blue-400">Pro plan</span> or higher
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          Get AI-powered insights about your client's payment patterns, engagement, and business health.
+                        </p>
+                      </div>
+                    )}
+
+                    {!aiSummaryIsLocked && aiSummaryError && (
                       <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
                         <p className="text-red-400 text-sm">{aiSummaryError}</p>
                       </div>
                     )}
 
-                    {aiSummaryLoading && (
+                    {!aiSummaryIsLocked && aiSummaryLoading && (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
                         <span className="text-gray-400 text-sm">Analyzing client data...</span>
                       </div>
                     )}
 
-                    {aiSummaryData && (
+                    {!aiSummaryIsLocked && aiSummaryData && (
                       <div className="space-y-4">
                         <ReactMarkdown className="prose prose-invert max-w-none text-sm prose-headings:text-gray-200 prose-headings:font-semibold prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-gray-100">
                           {aiSummaryData.summary}
@@ -498,7 +509,7 @@ export default function ClientProfilePage() {
                       </div>
                     )}
 
-                    {!aiSummaryData && !aiSummaryLoading && !aiSummaryError && (
+                    {!aiSummaryIsLocked && !aiSummaryData && !aiSummaryLoading && !aiSummaryError && (
                       <p className="text-gray-400 text-sm">Click "Generate" to analyze this client with AI</p>
                     )}
                   </CardBody>
@@ -531,20 +542,31 @@ export default function ClientProfilePage() {
                     </div>
                   </CardHeader>
                   <CardBody>
-                    {growthOppError && (
+                    {growthOppIsLocked && (
+                      <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-700/50">
+                        <p className="text-gray-400 text-sm mb-3">
+                          Growth Opportunities require <span className="font-semibold text-purple-400">Enterprise plan</span>
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          Discover expansion opportunities, identify at-risk accounts, and optimize client relationships.
+                        </p>
+                      </div>
+                    )}
+
+                    {!growthOppIsLocked && growthOppError && (
                       <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
                         <p className="text-red-400 text-sm">{growthOppError}</p>
                       </div>
                     )}
 
-                    {growthOppLoading && (
+                    {!growthOppIsLocked && growthOppLoading && (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
                         <span className="text-gray-400 text-sm">Analyzing growth potential...</span>
                       </div>
                     )}
 
-                    {growthOppData && (
+                    {!growthOppIsLocked && growthOppData && (
                       <div className="space-y-4">
                         {growthOppData.engagement_score > 0 && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
@@ -566,8 +588,8 @@ export default function ClientProfilePage() {
                       </div>
                     )}
 
-                    {!growthOppData && !growthOppLoading && !growthOppError && (
-                      <p className="text-gray-400 text-sm">Click "Generate" to identify growth opportunities (Enterprise plan required)</p>
+                    {!growthOppIsLocked && !growthOppData && !growthOppLoading && !growthOppError && (
+                      <p className="text-gray-400 text-sm">Click "Generate" to identify growth opportunities</p>
                     )}
                   </CardBody>
                 </Card>
