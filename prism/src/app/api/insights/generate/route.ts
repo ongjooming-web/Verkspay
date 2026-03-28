@@ -7,24 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export type ClaudeInsights = {
-  summary: string
-  highlights: {
-    type: 'positive' | 'warning' | 'action'
-    title: string
-    description: string
-  }[]
-  client_insights: {
-    client_name: string
-    health: 'good' | 'attention' | 'at_risk'
-    note: string
-  }[]
-  recommendations: string[]
-  revenue_trend: 'growing' | 'stable' | 'declining'
-}
+export type ClaudeInsights = string // Markdown text from Claude
 
 export type InsightsResponse = {
-  insights: ClaudeInsights
+  insights: ClaudeInsights // Markdown string
   usage: {
     used: number
     limit: number
@@ -58,7 +44,7 @@ async function fetchInsightsData(userId: string, token: string): Promise<Insight
   return response.json()
 }
 
-async function callClaudeAPI(insightsData: InsightsData): Promise<ClaudeInsights> {
+async function callClaudeAPI(insightsData: InsightsData): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY not configured')
@@ -174,18 +160,10 @@ ${allClientsStr}`
     throw new Error('No response from Claude')
   }
 
-  // Strip markdown code blocks if present
-  const jsonStr = content
-    .replace(/^```json\n?/, '')
-    .replace(/\n?```$/, '')
-    .trim()
-
-  try {
-    return JSON.parse(jsonStr)
-  } catch (e) {
-    console.error('[Insights] Failed to parse Claude response:', jsonStr)
-    throw new Error('Invalid JSON from Claude')
-  }
+  console.log('[Insights] Claude returned markdown content, length:', content.length)
+  
+  // Return the markdown text as-is (Claude returns markdown, not JSON)
+  return content
 }
 
 export async function POST(request: NextRequest) {
