@@ -14,6 +14,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { useCurrency } from '@/hooks/useCurrency'
 import { RevenueForecastWidget } from '@/components/RevenueForecastWidget'
 import { FollowUpsWidget } from '@/components/FollowUpsWidget'
+import { SafeWidgetWrapper } from '@/components/SafeWidgetWrapper'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
 interface RecentActivity {
@@ -582,12 +583,16 @@ export default function Dashboard() {
 
         {/* Revenue Forecast */}
         <div className="mb-10">
-          <RevenueForecastWidget />
+          <SafeWidgetWrapper title="📊 Revenue Forecast" fallbackMessage="Revenue forecasting requires Enterprise plan or is temporarily unavailable">
+            <RevenueForecastWidget />
+          </SafeWidgetWrapper>
         </div>
 
         {/* Follow-up Suggestions - Full Width */}
         <div className="mb-10">
-          <FollowUpsWidget />
+          <SafeWidgetWrapper title="📋 Follow-up Suggestions" fallbackMessage="Follow-up suggestions require Pro plan or are temporarily unavailable">
+            <FollowUpsWidget />
+          </SafeWidgetWrapper>
         </div>
 
         {/* Charts Row 1 */}
