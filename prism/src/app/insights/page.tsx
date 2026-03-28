@@ -293,125 +293,19 @@ export default function InsightsPage() {
         )}
 
         {/* Results */}
-        {insights && (
-          <>
-            {/* Executive Summary */}
-            <Card className="mb-6 border-blue-500/30">
-              <CardHeader>
-                <h2 className="text-2xl font-bold text-white">Executive Summary</h2>
-              </CardHeader>
-              <CardBody>
-                <p className="text-gray-300 mb-4">{insights.summary}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Revenue Trend:</span>
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                      insights.revenue_trend === 'growing'
-                        ? 'bg-green-500/20 text-green-400'
-                        : insights.revenue_trend === 'stable'
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-red-500/20 text-red-400'
-                    }`}
-                  >
-                    {insights.revenue_trend === 'growing' && '📈 Growing'}
-                    {insights.revenue_trend === 'stable' && '➡️ Stable'}
-                    {insights.revenue_trend === 'declining' && '📉 Declining'}
-                  </span>
+        {insights && typeof insights === 'string' && (
+          <Card className="mb-6 border-blue-500/30">
+            <CardHeader>
+              <h2 className="text-2xl font-bold text-white">AI Business Insights</h2>
+            </CardHeader>
+            <CardBody>
+              <div className="prose prose-invert max-w-none">
+                <div className="text-gray-300 whitespace-pre-wrap break-words">
+                  {insights}
                 </div>
-              </CardBody>
-            </Card>
-
-            {/* Highlights */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Highlights</h2>
-              <div className="grid gap-4">
-                {insights.highlights.map((highlight, idx) => {
-                  const borderColor =
-                    highlight.type === 'positive'
-                      ? 'border-green-500/50'
-                      : highlight.type === 'warning'
-                        ? 'border-yellow-500/50'
-                        : 'border-orange-500/50'
-                  const icon =
-                    highlight.type === 'positive'
-                      ? '✓'
-                      : highlight.type === 'warning'
-                        ? '⚠️'
-                        : '→'
-
-                  return (
-                    <Card key={idx} className={`border-l-4 ${borderColor}`}>
-                      <CardBody>
-                        <div className="flex gap-3">
-                          <div className="text-lg flex-shrink-0">{icon}</div>
-                          <div>
-                            <h3 className="text-white font-semibold mb-1">{highlight.title}</h3>
-                            <p className="text-gray-400">{highlight.description}</p>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  )
-                })}
               </div>
-            </div>
-
-            {/* Client Health */}
-            {insights.client_insights.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-4">Client Health</h2>
-                <Card className="border-blue-500/30">
-                  <CardBody>
-                    <div className="space-y-3">
-                      {insights.client_insights.map((client, idx) => {
-                        const healthColor =
-                          client.health === 'good'
-                            ? 'bg-green-500/20 text-green-400'
-                            : client.health === 'attention'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-red-500/20 text-red-400'
-                        const healthDot =
-                          client.health === 'good' ? '🟢' : client.health === 'attention' ? '🟡' : '🔴'
-
-                        return (
-                          <div key={idx} className="flex items-start justify-between p-3 rounded bg-gray-900/50">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{healthDot}</span>
-                                <h3 className="text-white font-semibold">{client.client_name}</h3>
-                              </div>
-                              <p className="text-gray-400 text-sm mt-1">{client.note}</p>
-                            </div>
-                            <span className={`text-xs font-semibold px-2 py-1 rounded ${healthColor}`}>
-                              {client.health}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardBody>
-                </Card>
-              </div>
-            )}
-
-            {/* Recommendations */}
-            {insights.recommendations.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-4">Recommendations</h2>
-                <Card className="border-blue-500/30">
-                  <CardBody>
-                    <ol className="space-y-3 list-decimal list-inside">
-                      {insights.recommendations.map((rec, idx) => (
-                        <li key={idx} className="text-gray-300">
-                          {rec}
-                        </li>
-                      ))}
-                    </ol>
-                  </CardBody>
-                </Card>
-              </div>
-            )}
-          </>
+            </CardBody>
+          </Card>
         )}
 
 
