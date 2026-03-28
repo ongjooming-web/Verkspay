@@ -137,8 +137,9 @@ export default function ClientsPage() {
 
     // Tag filter
     if (selectedTags.length > 0) {
-      // This would need a JOIN with client_tag_assignments in a real implementation
-      // For now, we'll just show a placeholder
+      filtered = filtered.filter((c) =>
+        c.tags && c.tags.some((tag) => selectedTags.includes(tag.id))
+      )
     }
 
     // Sorting
@@ -302,19 +303,22 @@ export default function ClientsPage() {
 
               {/* Filter Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                {/* Tags Filter - Hidden on mobile, shown on larger screens */}
+                {/* Tags Filter Dropdown */}
                 {tags.length > 0 && (
-                  <div className="hidden sm:block">
+                  <div>
                     <label className="text-xs text-gray-400 uppercase block mb-2">Tags</label>
                     <select
-                      multiple
-                      value={selectedTags}
-                      onChange={(e) =>
-                        setSelectedTags(Array.from(e.target.selectedOptions, (option) => option.value))
-                      }
+                      value={selectedTags[0] || ''}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setSelectedTags([e.target.value])
+                        } else {
+                          setSelectedTags([])
+                        }
+                      }}
                       className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
-                      style={{ minHeight: '80px' }}
                     >
+                      <option value="">All Tags</option>
                       {tags.map((tag) => (
                         <option key={tag.id} value={tag.id}>
                           {tag.name}
@@ -366,35 +370,37 @@ export default function ClientsPage() {
                   <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
                     <CardBody>
                       <div className="space-y-3">
-                        {/* Name + Company */}
-                        <div>
-                          <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
-                          {client.company && (
-                            <p className="text-gray-400 text-xs md:text-sm truncate">{client.company}</p>
-                          )}
-                        </div>
-
-                        {/* Tags Row */}
-                        {client.tags && client.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {client.tags.slice(0, 3).map((tag) => (
-                              <span
-                                key={tag.id}
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap"
-                                style={{ backgroundColor: tag.color + '30', color: tag.color }}
-                              >
-                                {tag.is_auto && tag.is_system && <span>⚡</span>}
-                                {tag.is_auto && !tag.is_system && <span>✨</span>}
-                                {tag.name}
-                              </span>
-                            ))}
-                            {client.tags.length > 3 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-400 whitespace-nowrap">
-                                +{client.tags.length - 3} more
-                              </span>
+                        {/* Name + Company + Tags (top row with tags on right) */}
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
+                            {client.company && (
+                              <p className="text-gray-400 text-xs md:text-sm truncate">{client.company}</p>
                             )}
                           </div>
-                        )}
+
+                          {/* Tags on the right */}
+                          {client.tags && client.tags.length > 0 && (
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                              {client.tags.slice(0, 2).map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap"
+                                  style={{ backgroundColor: tag.color + '30', color: tag.color }}
+                                >
+                                  {tag.is_auto && tag.is_system && <span>⚡</span>}
+                                  {tag.is_auto && !tag.is_system && <span>✨</span>}
+                                  <span className="truncate max-w-[80px]">{tag.name}</span>
+                                </span>
+                              ))}
+                              {client.tags.length > 2 && (
+                                <span className="text-xs text-gray-400 whitespace-nowrap">
+                                  +{client.tags.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
 
                         {/* Contact Info - Grid Layout */}
                         <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
