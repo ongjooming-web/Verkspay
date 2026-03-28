@@ -688,7 +688,12 @@ export default function ReportsPage() {
             </div>
             <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px;">
               <p style="color: #9ca3af; font-size: 12px; margin: 0;">Total Invoiced</p>
-              <p style="color: #1f2937; font-size: 20px; font-weight: bold; margin: 5px 0;">${summaryMetrics.totalInvoiced.toFixed(0)}</p>
+              <p style="color: #1f2937; font-size: 20px; font-weight: bold; margin: 5px 0;">
+                ${selectedReport === 'revenue' || selectedReport === 'aging' 
+                  ? 'MYR ' + summaryMetrics.totalInvoiced.toFixed(0)
+                  : summaryMetrics.totalInvoiced.toFixed(0)
+                }
+              </p>
             </div>
             <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px;">
               <p style="color: #9ca3af; font-size: 12px; margin: 0;">Collection Rate</p>
@@ -991,8 +996,18 @@ export default function ReportsPage() {
             <Card className="bg-gray-900/50 border-gray-800">
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Total Invoiced</p>
-                <p className="text-3xl font-bold text-white">{(summaryMetrics?.totalInvoiced || 0).toFixed(0)}</p>
-                <p className="text-xs text-gray-400">{tableData?.length || 0} invoices</p>
+                <p className="text-3xl font-bold text-white">
+                  {selectedReport === 'revenue' || selectedReport === 'aging' 
+                    ? `MYR ${(summaryMetrics?.totalInvoiced || 0).toFixed(0)}`
+                    : (summaryMetrics?.totalInvoiced || 0).toFixed(0)
+                  }
+                </p>
+                <p className="text-xs text-gray-400">
+                  {selectedReport === 'revenue' || selectedReport === 'aging' 
+                    ? `${tableData?.length || 0} invoices`
+                    : `${tableData?.length || 0} items`
+                  }
+                </p>
               </CardBody>
             </Card>
             <Card className="bg-gray-900/50 border-gray-800">
