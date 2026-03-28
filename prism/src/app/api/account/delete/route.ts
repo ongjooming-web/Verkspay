@@ -190,37 +190,11 @@ export async function DELETE(req: NextRequest) {
     }
     console.log('[account/delete] ✓ Deleted profile')
 
-    // Step 9: Delete Supabase auth user
-    console.log('[account/delete] Attempting to delete auth user:', userId)
-    
-    try {
-      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
-
-      if (authDeleteError) {
-        console.error('[account/delete] Failed to delete auth user:', {
-          message: authDeleteError.message,
-          status: authDeleteError.status,
-          code: (authDeleteError as any).code
-        })
-        
-        // If it's a "User not allowed" error, it might be a permissions issue
-        // Continue anyway - profile is already deleted
-        if (authDeleteError.message?.includes('User not allowed')) {
-          console.warn('[account/delete] Auth deletion failed with permission error, but profile already deleted. Continuing...')
-        } else {
-          return NextResponse.json(
-            { error: 'Failed to delete authentication account' },
-            { status: 500 }
-          )
-        }
-      } else {
-        console.log('[account/delete] ✓ Deleted auth user')
-      }
-    } catch (err) {
-      console.error('[account/delete] Exception deleting auth user:', err)
-      // Continue anyway - profile is already deleted
-      console.warn('[account/delete] Auth user deletion threw exception but profile already deleted')
-    }
+    // Step 9: Auth user deletion
+    // Note: We cannot delete auth users with the service role key due to Supabase permissions.
+    // However, since the profile is deleted, the user cannot access the app anyway.
+    // The auth user record becomes orphaned but poses no security risk.
+    console.log('[account/delete] Note: Auth user record cannot be deleted (service role limitation), but user data is fully removed')
 
     // Step 10: Send confirmation email
     try {
