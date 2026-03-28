@@ -472,7 +472,7 @@ export default function ClientProfilePage() {
                         )}
                         <Button
                           onClick={generateSummary}
-                          disabled={aiSummaryLoading || (aiSummaryData && aiSummaryIsFresh)}
+                          disabled={aiSummaryLoading || (aiSummaryData && (aiSummaryIsFresh ?? false))}
                           className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
                         >
                           {aiSummaryLoading ? 'Generating...' : 'Generate'}
@@ -538,7 +538,7 @@ export default function ClientProfilePage() {
                         )}
                         <Button
                           onClick={generateOpportunities}
-                          disabled={growthOppLoading || (growthOppData && growthOppIsFresh)}
+                          disabled={growthOppLoading || (growthOppData && (growthOppIsFresh ?? false))}
                           className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
                         >
                           {growthOppLoading ? 'Generating...' : 'Generate'}
