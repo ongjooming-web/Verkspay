@@ -37,7 +37,7 @@ export default function ClientProfilePage() {
   const [invoices, setInvoices] = useState<any[]>([])
   const [proposals, setProposals] = useState<any[]>([])
 
-  const { currency_code } = useCurrency()
+  const { currencyCode } = useCurrency()
   const { tags } = useClientTags(clientId)
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
@@ -235,7 +235,7 @@ export default function ClientProfilePage() {
             <CardBody>
               <p className="text-gray-400 text-xs uppercase">Total Revenue</p>
               <p className="text-2xl font-bold text-green-400">
-                {formatCurrency(client.total_revenue, currency_code)}
+                {formatCurrency(client.total_revenue, currencyCode)}
               </p>
             </CardBody>
           </Card>
@@ -244,7 +244,7 @@ export default function ClientProfilePage() {
             <CardBody>
               <p className="text-gray-400 text-xs uppercase">Outstanding</p>
               <p className="text-2xl font-bold text-yellow-400">
-                {formatCurrency(client.total_outstanding, currency_code)}
+                {formatCurrency(client.total_outstanding, currencyCode)}
               </p>
             </CardBody>
           </Card>
@@ -255,7 +255,7 @@ export default function ClientProfilePage() {
               <p className="text-2xl font-bold text-white">
                 {formatCurrency(
                   client.invoice_count > 0 ? client.total_revenue / client.invoice_count : 0,
-                  currency_code
+                  currencyCode
                 )}
               </p>
             </CardBody>
@@ -342,7 +342,7 @@ export default function ClientProfilePage() {
                               </div>
                               <div className="text-right">
                                 <p className="text-white font-semibold">
-                                  {formatCurrency(item.total_amount || item.amount || 0, currency_code)}
+                                  {formatCurrency(item.total_amount || item.amount || 0, currencyCode)}
                                 </p>
                                 <span className="text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-300">
                                   {item.status}
@@ -482,7 +482,7 @@ export default function ClientProfilePage() {
                       <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
                         <span className="text-white font-mono">{inv.invoice_number}</span>
                         <span className="text-gray-400">
-                          {formatCurrency(inv.amount, currency_code)}
+                          {formatCurrency(inv.amount, currencyCode)}
                         </span>
                       </div>
                     </Link>
@@ -511,7 +511,7 @@ export default function ClientProfilePage() {
                       <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
                         <span className="text-white font-mono">{prop.proposal_number}</span>
                         <span className="text-gray-400">
-                          {formatCurrency(prop.total_amount, currency_code)}
+                          {formatCurrency(prop.total_amount, currencyCode)}
                         </span>
                       </div>
                     </Link>

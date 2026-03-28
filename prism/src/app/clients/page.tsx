@@ -45,7 +45,7 @@ export default function ClientsPage() {
   })
 
   const { tags } = useTags()
-  const { currency_code } = useCurrency()
+  const { currencyCode } = useCurrency()
 
   useEffect(() => {
     fetchClients()
@@ -380,13 +380,13 @@ export default function ClientsPage() {
                           <div>
                             <p className="text-gray-400 text-xs uppercase">Revenue</p>
                             <p className="text-xl font-bold text-green-400">
-                              {formatCurrency(client.total_revenue || 0, currency_code)}
+                              {formatCurrency(client.total_revenue || 0, currencyCode)}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-400 text-xs uppercase">Outstanding</p>
                             <p className="text-lg font-semibold text-yellow-400">
-                              {formatCurrency(client.total_outstanding || 0, currency_code)}
+                              {formatCurrency(client.total_outstanding || 0, currencyCode)}
                             </p>
                           </div>
                           <div className={`px-3 py-1 rounded text-xs font-semibold ${healthBadge.color}`}>
