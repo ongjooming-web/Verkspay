@@ -62,7 +62,7 @@ export default function ClientsPage() {
 
   useEffect(() => {
     applyFilters()
-  }, [clients, searchTerm, selectedTags, healthFilter, sortBy])
+  }, [clients, searchTerm, selectedTags, sortBy])
 
   const fetchClients = async () => {
     try {
