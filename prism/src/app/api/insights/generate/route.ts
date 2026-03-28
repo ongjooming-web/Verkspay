@@ -103,35 +103,40 @@ Rules:
 - Keep each section concise but substantive`
 
   // Format comprehensive user message with structured data
-  const businessSummary = \`
-Business Summary:
-- Total clients: \${insightsData.clients?.length || 0}
-- Total revenue: \${insightsData.revenue?.currency_code || 'USD'} \${insightsData.revenue?.total_paid?.toLocaleString() || 0}
-- Total outstanding: \${insightsData.revenue?.currency_code || 'USD'} \${insightsData.revenue?.total_overdue?.toLocaleString() || 0}
-- Total invoices: \${insightsData.invoices?.total_count || 0}
-- Proposals: \${insightsData.clients?.length || 0} sent (from client count)
+  const industriesStr = insightsData.industries?.map((ind: any) => `- ${ind.industry}: ${ind.count} clients`).join('\n') || 'No industry data available'
+  
+  const topClientsStr = insightsData.top_clients?.map((c: any, i: number) => `${i + 1}. ${c.client_name} (${c.company || 'N/A'}) — Industry: ${c.industry || 'Not specified'} — Revenue: ${insightsData.revenue?.currency_code} ${c.total_revenue?.toLocaleString()} — Last Invoice: ${c.last_invoice_date ? new Date(c.last_invoice_date).toLocaleDateString() : 'Never'}`).join('\n') || 'No client data'
+  
+  const inactiveClients = (insightsData.clients || []).filter((c: any) => {
+    const daysSince = c.last_invoice_date ? Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24)) : Infinity
+    return c.invoice_count >= 3 && daysSince > 60
+  })
+  const inactiveStr = inactiveClients.length > 0 
+    ? inactiveClients.map((c: any) => `- ${c.client_name} (${c.company || 'N/A'}) — ${Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24))} days since last invoice`).join('\n')
+    : '- None'
+  
+  const allClientsStr = insightsData.clients?.map((c: any) => `- ${c.client_name} (${c.company || 'N/A'}) — Revenue: ${insightsData.revenue?.currency_code} ${c.total_revenue?.toLocaleString()} — Outstanding: ${insightsData.revenue?.currency_code} ${c.total_outstanding?.toLocaleString() || 0}`).join('\n') || 'No client data'
+
+  const businessSummary = `Business Summary:
+- Total clients: ${insightsData.clients?.length || 0}
+- Total revenue: ${insightsData.revenue?.currency_code || 'USD'} ${insightsData.revenue?.total_paid?.toLocaleString() || 0}
+- Total outstanding: ${insightsData.revenue?.currency_code || 'USD'} ${insightsData.revenue?.total_overdue?.toLocaleString() || 0}
+- Total invoices: ${insightsData.invoices?.total_count || 0}
 
 Revenue Concentration:
-- Top 3 clients represent \${insightsData.revenue_concentration?.top_3_percentage || 0}% of total revenue
+- Top 3 clients represent ${insightsData.revenue_concentration?.top_3_percentage || 0}% of total revenue
 
 Client Industries:
-\${insightsData.industries?.map((ind: any) => \`- \${ind.industry}: \${ind.count} clients\`).join('\\n') || 'No industry data available'}
+${industriesStr}
 
 Top 5 Clients by Revenue:
-\${insightsData.top_clients?.map((c: any, i: number) => \`\${i + 1}. \${c.client_name} (\${c.company || 'N/A'}) — Industry: \${c.industry || 'Not specified'} — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()} — Outstanding: TBD — Last Invoice: \${c.last_invoice_date ? new Date(c.last_invoice_date).toLocaleDateString() : 'Never'}\`).join('\\n') || 'No client data'}
+${topClientsStr}
 
 Churned/Inactive Clients:
-\${(insightsData.clients || []).filter((c: any) => {
-  const daysSince = c.last_invoice_date ? Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24)) : Infinity;
-  return c.invoice_count >= 3 && daysSince > 60;
-}).map((c: any) => \`- \${c.client_name} (\${c.company || 'N/A'}) — Last invoice: \${c.last_invoice_date ? Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'} days ago — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()}\`).join('\\n') || '- None'}
-
-Most Common Services:
-\${insightsData.clients?.slice(0, 5)?.map((c: any, i: number) => \`\${i + 1}. Service name TBD (from line items)\`).join('\\n') || 'Not enough data'}
+${inactiveStr}
 
 All Clients Overview:
-\${insightsData.clients?.map((c: any) => \`- \${c.client_name} (\${c.company || 'N/A'}) — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()} — Outstanding: \${insightsData.revenue?.currency_code} \${c.total_outstanding?.toLocaleString() || 0}\`).join('\\n') || 'No client data'}
-\`;
+${allClientsStr}`
 
   const userMessage = businessSummary
 
