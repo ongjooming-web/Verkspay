@@ -411,8 +411,8 @@ export default function Dashboard() {
               <div className="space-y-2 mb-4">
                 {overdueInvoices.map((inv) => (
                   <div key={inv.id} className="flex justify-between items-center">
-                    <span className="text-red-300 text-sm">INV-{inv.id?.slice(0, 6)?.toUpperCase()}</span>
-                    <span className="text-red-400 font-semibold">{formatCurrency(inv.amount, inv.currency_code || 'MYR')}</span>
+                    <span className="text-red-300 text-sm font-mono">{inv.invoice_number}</span>
+                    <span className="text-red-400 font-semibold">{formatCurrency(inv.remaining_balance || inv.amount, inv.currency_code || 'MYR')}</span>
                   </div>
                 ))}
               </div>
