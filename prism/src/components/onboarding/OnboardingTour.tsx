@@ -92,7 +92,6 @@ const TOUR_STEPS = [
 
 export function OnboardingTour() {
   const { showTour, tourStep, updateTourStep, completeOnboarding } = useOnboarding()
-  const [currentStep, setCurrentStep] = useState(0)
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const router = useRouter()
@@ -100,7 +99,7 @@ export function OnboardingTour() {
 
   if (!showTour) return null
 
-  const step = TOUR_STEPS[currentStep]
+  const step = TOUR_STEPS[tourStep]
 
   // Find and track target element
   useEffect(() => {
@@ -163,17 +162,16 @@ export function OnboardingTour() {
         resizeObserverRef.current.disconnect()
       }
     }
-  }, [step, currentStep])
+  }, [step, tourStep])
 
   const handleAction = async (action: string, target?: string) => {
     if (action === 'next') {
-      const newStep = currentStep + 1
-      setCurrentStep(newStep)
+      const newStep = tourStep + 1
       await updateTourStep(newStep)
     } else if (action === 'skip') {
       await updateTourStep(8) // Mark as skipped (beyond final step)
     } else if (action === 'navigate' && target) {
-      await updateTourStep(currentStep + 1)
+      await updateTourStep(tourStep + 1)
       router.push(target)
     } else if (action === 'complete') {
       await completeOnboarding()
@@ -191,7 +189,7 @@ export function OnboardingTour() {
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentStep])
+  }, [tourStep])
 
   return (
     <>
