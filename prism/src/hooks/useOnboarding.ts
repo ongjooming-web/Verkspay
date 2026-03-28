@@ -132,7 +132,7 @@ export function useOnboarding() {
   useEffect(() => {
     console.log('[useOnboarding] Hook mounted, fetching status...')
     refresh()
-  }, [router])
+  }, [])
 
   return {
     status,
