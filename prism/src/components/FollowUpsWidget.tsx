@@ -100,7 +100,7 @@ export function FollowUpsWidget() {
       </CardHeader>
       <CardBody>
         <div className="space-y-2 md:space-y-3">
-          {followUps.slice(0, 5).map((followUp) => (
+          {followUps.slice(0, 10).map((followUp) => (
             <div key={followUp.id} className="p-3 md:p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition">
               <div className="flex flex-col gap-2 mb-3">
                 <div className="flex justify-between items-start gap-2">
@@ -137,7 +137,7 @@ export function FollowUpsWidget() {
           ))}
         </div>
 
-        {followUps.length > 5 && (
+        {followUps.length > 10 && (
           <Link href="/follow-ups" className="block mt-4">
             <Button className="w-full bg-blue-600 hover:bg-blue-700 text-sm">
               View All {followUps.length} Suggestions →

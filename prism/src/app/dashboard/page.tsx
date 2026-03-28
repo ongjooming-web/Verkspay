@@ -580,14 +580,14 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Revenue Forecast + Follow-ups Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-          <div>
-            <RevenueForecastWidget />
-          </div>
-          <div>
-            <FollowUpsWidget />
-          </div>
+        {/* Revenue Forecast */}
+        <div className="mb-10">
+          <RevenueForecastWidget />
+        </div>
+
+        {/* Follow-up Suggestions - Full Width */}
+        <div className="mb-10">
+          <FollowUpsWidget />
         </div>
 
         {/* Charts Row 1 */}
