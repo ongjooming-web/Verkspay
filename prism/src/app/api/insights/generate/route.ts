@@ -34,7 +34,7 @@ export type InsightsResponse = {
 
 const PLAN_LIMITS: Record<string, number> = {
   trial: 10,
-  starter: 10,
+  starter: 5,
   pro: 30,
   enterprise: 999999, // unlimited
 }
@@ -64,41 +64,50 @@ async function callClaudeAPI(insightsData: InsightsData): Promise<ClaudeInsights
     throw new Error('ANTHROPIC_API_KEY not configured')
   }
 
-  const systemPrompt = `You are a business analyst for a freelancer's invoicing platform. Analyze the provided business data and generate actionable insights.
+  const systemPrompt = `You are a business strategist for freelancers and agencies. Analyze business data and generate comprehensive insights covering financial health, client intelligence, growth opportunities, and risks.
 
 Respond ONLY with valid JSON, no markdown, no code blocks, no preamble. Use this exact structure:
 {
-  "summary": "2-3 sentence executive summary of the business health",
+  "summary": "2-3 sentence executive summary of overall business health, revenue trends, and cash flow status",
   "highlights": [
     {
       "type": "positive" | "warning" | "action",
       "title": "Short title",
-      "description": "1-2 sentence insight"
+      "description": "1-2 sentence insight with specific numbers"
     }
   ],
   "client_insights": [
     {
       "client_name": "Name",
       "health": "good" | "attention" | "at_risk",
-      "note": "1 sentence about this client"
+      "note": "1 sentence observation"
     }
   ],
   "recommendations": [
-    "Actionable recommendation 1",
-    "Actionable recommendation 2",
-    "Actionable recommendation 3"
+    "Actionable, prioritized next step for this week",
+    "Actionable next step",
+    "Actionable next step"
   ],
   "revenue_trend": "growing" | "stable" | "declining"
 }
 
+Analysis areas to cover:
+- Revenue trends: Compare month-to-month, flag declining revenue
+- Client concentration: Flag if top 3+ clients account for >60% revenue (concentration risk)
+- Industry diversity: Comment on client spread across industries if available
+- Payment health: Flag late payers, average collection time, on-time % 
+- Growth opportunities: Suggest upselling to high-potential clients, contract adjustments for problem clients
+- Risk alerts: Flag overdue amounts, inactive clients (60+ days), declining patterns, churn risk
+- Client segmentation: Identify high-value, growing, at-risk segments
+
 Rules:
-- Be specific with numbers and names, not vague
-- Flag clients with overdue invoices or declining payment patterns
-- Suggest concrete actions (follow up with X, adjust terms for Y)
-- Keep highlights to 3-5 items max
-- Keep recommendations to 3-5 items max
-- If there's very little data (< 3 invoices), say so and give basic advice
-- Use the user's currency in any amounts you mention`
+- Be specific with numbers and client names (use top 5 provided)
+- Include industry insights if client data shows industry breakdown
+- Flag revenue concentration if top 3 > 60% of total
+- Suggest concrete actions: "Follow up with [Client] about [Reason]"
+- Keep highlights to 4-6 items (business overview, top highlights, growth/risk alerts)
+- Keep recommendations to 3-5 actionable items
+- If < 3 invoices total, acknowledge and give basic startup advice`
 
   const userMessage = `Here is my business data: ${JSON.stringify(insightsData)}`
 
@@ -111,7 +120,7 @@ Rules:
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      max_tokens: 2500,
       system: systemPrompt,
       messages: [
         {

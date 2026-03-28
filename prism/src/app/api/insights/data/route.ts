@@ -56,6 +56,28 @@ export type InsightsData = {
     invoice_count: number
   }[]
 
+  // Top 5 clients by revenue
+  top_clients: {
+    client_id: string
+    client_name: string
+    company: string
+    industry: string | null
+    total_revenue: number
+    invoice_count: number
+    last_invoice_date: string | null
+  }[]
+
+  // Revenue concentration
+  revenue_concentration: {
+    top_3_percentage: number // What % of total comes from top 3 clients
+  }
+
+  // Industry breakdown
+  industries: {
+    industry: string
+    count: number
+  }[]
+
   // Metadata
   account_age_days: number
   data_generated_at: string
@@ -308,6 +330,46 @@ export async function GET(request: NextRequest) {
     })
     const accountAgeDays = Math.round((now.getTime() - new Date(oldestInvoice.created_at).getTime()) / (1000 * 60 * 60 * 24))
 
+    // Top 5 clients by revenue (fetch full data with industry)
+    const { data: allClients } = await supabase
+      .from('clients')
+      .select('id, name, company, industry, total_revenue, invoice_count, last_invoice_date')
+      .eq('user_id', userId)
+      .order('total_revenue', { ascending: false })
+      .limit(5)
+
+    const topClients = (allClients || []).map((c: any) => ({
+      client_id: c.id,
+      client_name: c.name,
+      company: c.company || '',
+      industry: c.industry || null,
+      total_revenue: c.total_revenue || 0,
+      invoice_count: c.invoice_count || 0,
+      last_invoice_date: c.last_invoice_date,
+    }))
+
+    // Revenue concentration (top 3 percentage)
+    const top3Revenue = (allClients || []).slice(0, 3).reduce((sum: number, c: any) => sum + (c.total_revenue || 0), 0)
+    const totalClientRevenue = (allClients || []).reduce((sum: number, c: any) => sum + (c.total_revenue || 0), 0)
+    const revenueConcentration = totalClientRevenue > 0 ? Math.round((top3Revenue / totalClientRevenue) * 100) : 0
+
+    // Industry breakdown
+    const { data: clientsWithIndustry } = await supabase
+      .from('clients')
+      .select('industry')
+      .eq('user_id', userId)
+      .not('industry', 'is', null)
+
+    const industryMap = new Map<string, number>()
+    clientsWithIndustry?.forEach((c: any) => {
+      if (c.industry) {
+        industryMap.set(c.industry, (industryMap.get(c.industry) || 0) + 1)
+      }
+    })
+    const industries = Array.from(industryMap.entries())
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count)
+
     const insightsData: InsightsData = {
       revenue: {
         total_paid: totalPaid,
@@ -333,6 +395,9 @@ export async function GET(request: NextRequest) {
         payment_methods: Array.from(methodMap.entries()).map(([method, count]) => ({ method, count })),
       },
       monthly_revenue: monthlyRevenue,
+      top_clients: topClients,
+      revenue_concentration: { top_3_percentage: revenueConcentration },
+      industries,
       account_age_days: accountAgeDays,
       data_generated_at: now.toISOString(),
     }
