@@ -11,6 +11,14 @@ import { useTags } from '@/hooks/useTags'
 import { useCurrency } from '@/hooks/useCurrency'
 
 
+interface Tag {
+  id: string
+  name: string
+  color: string
+  is_system: boolean
+  is_auto: boolean
+}
+
 interface Client {
   id: string
   name: string
@@ -23,6 +31,7 @@ interface Client {
   last_invoice_date: string | null
   invoice_count: number
   health_score: number | null
+  tags?: Tag[]
 }
 
 type SortBy = 'name' | 'revenue' | 'outstanding' | 'last_invoice' | 'health'
@@ -73,7 +82,39 @@ export default function ClientsPage() {
         .order('created_at', { ascending: false })
 
       if (data) {
-        setClients(data as Client[])
+        // Batch fetch all tag assignments for these clients
+        const clientIds = data.map((c: any) => c.id)
+        
+        const { data: tagAssignments } = await supabase
+          .from('client_tag_assignments')
+          .select('client_id, client_tags(id, name, color, is_system), is_auto')
+          .in('client_id', clientIds)
+
+        // Create a map of client_id -> tags
+        const tagMap = new Map<string, Tag[]>()
+        tagAssignments?.forEach((assignment: any) => {
+          const clientId = assignment.client_id
+          const tag: Tag = {
+            id: assignment.client_tags.id,
+            name: assignment.client_tags.name,
+            color: assignment.client_tags.color,
+            is_system: assignment.client_tags.is_system,
+            is_auto: assignment.is_auto
+          }
+          
+          if (!tagMap.has(clientId)) {
+            tagMap.set(clientId, [])
+          }
+          tagMap.get(clientId)!.push(tag)
+        })
+
+        // Attach tags to clients
+        const clientsWithTags = data.map((c: any) => ({
+          ...c,
+          tags: tagMap.get(c.id) || []
+        }))
+
+        setClients(clientsWithTags as Client[])
       }
     } catch (err) {
       console.error('[ClientsList] Error fetching clients:', err)
@@ -377,6 +418,28 @@ export default function ClientsPage() {
                             {healthBadge.label}
                           </div>
                         </div>
+
+                        {/* Tags Row */}
+                        {client.tags && client.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {client.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap"
+                                style={{ backgroundColor: tag.color + '30', color: tag.color }}
+                              >
+                                {tag.is_auto && tag.is_system && <span>⚡</span>}
+                                {tag.is_auto && !tag.is_system && <span>✨</span>}
+                                {tag.name}
+                              </span>
+                            ))}
+                            {client.tags.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-400 whitespace-nowrap">
+                                +{client.tags.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Contact Info - Grid Layout */}
                         <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
