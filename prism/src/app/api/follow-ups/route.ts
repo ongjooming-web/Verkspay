@@ -13,40 +13,43 @@ const FOLLOW_UP_RULES = [
     name: 'Overdue Invoices',
     priority: 'high',
     condition: async (supabase: any, userId: string) => {
+      const now = new Date()
+      const threeD aysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+      
       const { data: invoices } = await supabase
         .from('invoices')
-        .select('id, client_id, amount, due_date, invoice_number')
+        .select('id, client_id, remaining_balance, due_date, invoice_number, currency_code, status')
         .eq('user_id', userId)
-        .eq('status', 'overdue')
+        .in('status', ['overdue', 'unpaid'])
 
       const suggestions: any[] = []
       const invoicesByClient = new Map<string, any[]>()
 
       invoices?.forEach((inv: any) => {
-        if (!invoicesByClient.has(inv.client_id)) {
-          invoicesByClient.set(inv.client_id, [])
+        const dueDate = new Date(inv.due_date)
+        // Include if status is overdue OR (unpaid AND due_date is 3+ days ago)
+        if (inv.status === 'overdue' || (inv.status === 'unpaid' && dueDate < threeD aysAgo)) {
+          if (!invoicesByClient.has(inv.client_id)) {
+            invoicesByClient.set(inv.client_id, [])
+          }
+          invoicesByClient.get(inv.client_id)!.push(inv)
         }
-        invoicesByClient.get(inv.client_id)!.push(inv)
       })
 
       for (const [clientId, clientInvoices] of invoicesByClient) {
-        const dueDate = new Date(clientInvoices[0].due_date)
-        const now = new Date()
-        const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-
-        if (daysOverdue >= 3) {
-          const totalAmount = clientInvoices.reduce((sum, inv) => sum + inv.amount, 0)
-          suggestions.push({
-            client_id: clientId,
-            reason: 'overdue_invoices',
-            priority: 'high',
-            data: {
-              count: clientInvoices.length,
-              amount: totalAmount,
-              daysOverdue
-            }
-          })
-        }
+        const totalRemaining = clientInvoices.reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
+        const currency = clientInvoices[0].currency_code || 'USD'
+        
+        suggestions.push({
+          client_id: clientId,
+          reason: 'overdue_invoices',
+          priority: 'high',
+          data: {
+            count: clientInvoices.length,
+            totalRemaining,
+            currency
+          }
+        })
       }
 
       return suggestions
@@ -57,31 +60,32 @@ const FOLLOW_UP_RULES = [
     name: 'Inactive Client',
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
+      const now = new Date()
+      const sixtyD aysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+
       const { data: clients } = await supabase
         .from('clients')
         .select('id, name, last_invoice_date, invoice_count')
         .eq('user_id', userId)
+        .gte('invoice_count', 3)
+        .not('last_invoice_date', 'is', null)
+        .lt('last_invoice_date', sixtyD aysAgo.toISOString())
 
       const suggestions: any[] = []
-      const now = new Date()
 
       clients?.forEach((client: any) => {
-        if (client.invoice_count >= 3 && client.last_invoice_date) {
-          const lastInvoiceDate = new Date(client.last_invoice_date)
-          const daysSince = Math.floor((now.getTime() - lastInvoiceDate.getTime()) / (1000 * 60 * 60 * 24))
+        const lastInvoiceDate = new Date(client.last_invoice_date)
+        const daysSince = Math.floor((now.getTime() - lastInvoiceDate.getTime()) / (1000 * 60 * 60 * 24))
 
-          if (daysSince >= 45) {
-            suggestions.push({
-              client_id: client.id,
-              reason: 'inactive_client',
-              priority: 'medium',
-              data: {
-                daysSince,
-                invoiceCount: client.invoice_count
-              }
-            })
+        suggestions.push({
+          client_id: client.id,
+          reason: 'inactive_client',
+          priority: 'medium',
+          data: {
+            daysSince,
+            invoiceCount: client.invoice_count
           }
-        }
+        })
       })
 
       return suggestions
@@ -92,30 +96,31 @@ const FOLLOW_UP_RULES = [
     name: 'Paused Recurring',
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
+      const now = new Date()
+      const thirtyD aysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
       const { data: recurring } = await supabase
         .from('recurring_invoices')
-        .select('id, client_id, recurring_number, updated_at')
+        .select('id, client_id, description, updated_at')
         .eq('user_id', userId)
         .eq('status', 'paused')
+        .lt('updated_at', thirtyD aysAgo.toISOString())
 
       const suggestions: any[] = []
-      const now = new Date()
 
       recurring?.forEach((rec: any) => {
         const pausedDate = new Date(rec.updated_at)
         const daysPaused = Math.floor((now.getTime() - pausedDate.getTime()) / (1000 * 60 * 60 * 24))
 
-        if (daysPaused >= 30) {
-          suggestions.push({
-            client_id: rec.client_id,
-            reason: 'paused_recurring',
-            priority: 'medium',
-            data: {
-              recurringNumber: rec.recurring_number,
-              daysPaused
-            }
-          })
-        }
+        suggestions.push({
+          client_id: rec.client_id,
+          reason: 'paused_recurring',
+          priority: 'medium',
+          data: {
+            description: rec.description || 'Recurring invoice',
+            daysPaused
+          }
+        })
       })
 
       return suggestions
@@ -126,31 +131,32 @@ const FOLLOW_UP_RULES = [
     name: 'Pending Proposal',
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
+      const now = new Date()
+      const sevenD aysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
       const { data: proposals } = await supabase
         .from('proposals')
         .select('id, client_id, proposal_number, total_amount, created_at')
         .eq('user_id', userId)
         .eq('status', 'sent')
+        .lt('created_at', sevenD aysAgo.toISOString())
 
       const suggestions: any[] = []
-      const now = new Date()
 
       proposals?.forEach((prop: any) => {
         const createdDate = new Date(prop.created_at)
         const daysPending = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))
 
-        if (daysPending >= 7) {
-          suggestions.push({
-            client_id: prop.client_id,
-            reason: 'pending_proposal',
-            priority: 'medium',
-            data: {
-              proposalNumber: prop.proposal_number,
-              amount: prop.total_amount,
-              daysPending
-            }
-          })
-        }
+        suggestions.push({
+          client_id: prop.client_id,
+          reason: 'pending_proposal',
+          priority: 'medium',
+          data: {
+            proposalNumber: prop.proposal_number,
+            amount: prop.total_amount,
+            daysPending
+          }
+        })
       })
 
       return suggestions
@@ -161,30 +167,30 @@ const FOLLOW_UP_RULES = [
     name: 'New Client (No Invoices)',
     priority: 'low',
     condition: async (supabase: any, userId: string) => {
+      const now = new Date()
+      const sevenD aysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
       const { data: clients } = await supabase
         .from('clients')
         .select('id, name, created_at, invoice_count')
         .eq('user_id', userId)
+        .eq('invoice_count', 0)
+        .lt('created_at', sevenD aysAgo.toISOString())
 
       const suggestions: any[] = []
-      const now = new Date()
 
       clients?.forEach((client: any) => {
-        if (client.invoice_count === 0) {
-          const createdDate = new Date(client.created_at)
-          const daysSince = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))
+        const createdDate = new Date(client.created_at)
+        const daysSince = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))
 
-          if (daysSince >= 7) {
-            suggestions.push({
-              client_id: client.id,
-              reason: 'new_no_invoices',
-              priority: 'low',
-              data: {
-                daysSince
-              }
-            })
+        suggestions.push({
+          client_id: client.id,
+          reason: 'new_no_invoices',
+          priority: 'low',
+          data: {
+            daysSince
           }
-        }
+        })
       })
 
       return suggestions
@@ -199,22 +205,23 @@ const FOLLOW_UP_RULES = [
         .from('clients')
         .select('id, name, total_outstanding, total_revenue')
         .eq('user_id', userId)
+        .gt('total_outstanding', 0)
 
       const suggestions: any[] = []
 
       clients?.forEach((client: any) => {
-        if (client.total_outstanding > 0) {
-          const total = client.total_outstanding + client.total_revenue
-          const percentage = (client.total_outstanding / total) * 100
+        const totalBillings = client.total_outstanding + client.total_revenue
+        if (totalBillings > 0) {
+          const outstandingPct = (client.total_outstanding / totalBillings) * 100
 
-          if (percentage > 50) {
+          if (outstandingPct > 30) {
             suggestions.push({
               client_id: client.id,
               reason: 'high_outstanding',
               priority: 'low',
               data: {
                 outstanding: client.total_outstanding,
-                percentage: Math.round(percentage)
+                percentage: Math.round(outstandingPct)
               }
             })
           }
@@ -336,20 +343,24 @@ export async function GET(request: NextRequest) {
 
 function generateSuggestionText(suggestion: any, clientName: string): string {
   const { reason, data } = suggestion
+  const formatCurrency = (amount: number, currency: string) => {
+    const symbol = currency === 'MYR' ? 'RM' : '$'
+    return `${symbol}${amount.toLocaleString()}`
+  }
 
   switch (reason) {
     case 'overdue_invoices':
-      return `${clientName} has ${data.count} overdue invoice(s) totaling $${data.amount.toLocaleString()}. Consider sending a reminder.`
+      return `${clientName} has ${data.count} overdue invoice(s) totaling ${formatCurrency(data.totalRemaining, data.currency)}. Consider sending a reminder.`
     case 'inactive_client':
       return `You haven't invoiced ${clientName} in ${data.daysSince} days. They previously had ${data.invoiceCount} invoices with you.`
     case 'paused_recurring':
-      return `Recurring invoice ${data.recurringNumber} for ${clientName} has been paused for ${data.daysPaused} days.`
+      return `Recurring invoice for ${clientName} (${data.description}) has been paused for ${data.daysPaused} days.`
     case 'pending_proposal':
-      return `Proposal ${data.proposalNumber} for ${clientName} ($${data.amount.toLocaleString()}) has been pending for ${data.daysPending} days. Consider following up.`
+      return `Proposal ${data.proposalNumber} for ${clientName} has been pending for ${data.daysPending} days. Consider following up.`
     case 'new_no_invoices':
       return `${clientName} was added ${data.daysSince} days ago but has no invoices yet.`
     case 'high_outstanding':
-      return `${clientName} has $${data.outstanding.toLocaleString()} outstanding (${data.percentage}% of total billings). Review their payment status.`
+      return `${clientName} has outstanding balance (${data.percentage}% of total billings). Review their payment status.`
     default:
       return 'Follow up with this client.'
   }
