@@ -8,6 +8,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { TagBadge } from '@/components/TagBadge'
+import { AiContentRenderer } from '@/components/AiContentRenderer'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useClientTags } from '@/hooks/useClientTags'
 import { useClientNotes } from '@/hooks/useClientNotes'
@@ -15,7 +16,6 @@ import { useClientStats } from '@/hooks/useClientStats'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useGrowthOpportunities } from '@/hooks/useGrowthOpportunities'
 import { formatCurrency } from '@/lib/countries'
-import ReactMarkdown from 'react-markdown'
 
 interface Client {
   id: string
@@ -507,10 +507,13 @@ export default function ClientProfilePage() {
                     )}
 
                     {!aiSummaryIsLocked && aiSummaryData && (
-                      <div className="space-y-4">
-                        <ReactMarkdown className="prose prose-invert max-w-none text-sm prose-headings:text-gray-200 prose-headings:font-semibold prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-gray-100">
-                          {aiSummaryData.summary}
-                        </ReactMarkdown>
+                      <div>
+                        <AiContentRenderer content={aiSummaryData.summary} />
+                        {aiSummaryData.generated_at && (
+                          <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-700/50">
+                            {aiSummaryIsFresh ? '✓ Fresh' : `Generated ${Math.floor((new Date().getTime() - new Date(aiSummaryData.generated_at).getTime()) / (1000 * 60 * 60 * 24))} days ago`}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -577,7 +580,7 @@ export default function ClientProfilePage() {
                     )}
 
                     {!growthOppIsLocked && growthOppData && (
-                      <div className="space-y-4">
+                      <div>
                         {growthOppData.engagement_score > 0 && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
                             <div className="p-3 bg-gray-900/50 rounded">
@@ -592,9 +595,12 @@ export default function ClientProfilePage() {
                             </div>
                           </div>
                         )}
-                        <ReactMarkdown className="prose prose-invert max-w-none text-sm prose-headings:text-gray-200 prose-headings:font-semibold prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-gray-100">
-                          {growthOppData.opportunities}
-                        </ReactMarkdown>
+                        <AiContentRenderer content={growthOppData.opportunities} />
+                        {growthOppData.generated_at && (
+                          <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-700/50">
+                            {growthOppIsFresh ? '✓ Fresh' : `Generated ${Math.floor((new Date().getTime() - new Date(growthOppData.generated_at).getTime()) / (1000 * 60 * 60 * 24))} days ago`}
+                          </p>
+                        )}
                       </div>
                     )}
 
