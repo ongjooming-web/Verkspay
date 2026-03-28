@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { TagBadge } from '@/components/TagBadge'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useClientTags } from '@/hooks/useClientTags'
 import { useClientNotes } from '@/hooks/useClientNotes'
@@ -207,13 +208,7 @@ export default function ClientProfilePage() {
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="px-3 py-1 rounded-full text-xs font-medium text-white"
-                    style={{ backgroundColor: tag.color + '30', borderLeft: `3px solid ${tag.color}` }}
-                  >
-                    {tag.name}
-                  </span>
+                  <TagBadge key={tag.id} tag={tag} />
                 ))}
               </div>
             )}

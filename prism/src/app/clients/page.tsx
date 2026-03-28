@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
+import { TagBadge } from '@/components/TagBadge'
 import Link from 'next/link'
 import { formatCurrency } from '@/lib/countries'
 import { useTags } from '@/hooks/useTags'
@@ -387,15 +388,7 @@ export default function ClientsPage() {
                           {client.tags && client.tags.length > 0 && (
                             <div className="flex flex-col items-end gap-1 flex-shrink-0">
                               {client.tags.slice(0, 2).map((tag) => (
-                                <span
-                                  key={tag.id}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap"
-                                  style={{ backgroundColor: tag.color + '30', color: tag.color }}
-                                >
-                                  {tag.is_auto && tag.is_system && <span>⚡</span>}
-                                  {tag.is_auto && !tag.is_system && <span>✨</span>}
-                                  <span className="truncate max-w-[80px]">{tag.name}</span>
-                                </span>
+                                <TagBadge key={tag.id} tag={tag} />
                               ))}
                               {client.tags.length > 2 && (
                                 <span className="text-xs text-gray-400 whitespace-nowrap">
