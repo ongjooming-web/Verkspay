@@ -14,7 +14,6 @@ import { useClientTags } from '@/hooks/useClientTags'
 import { useClientNotes } from '@/hooks/useClientNotes'
 import { useClientStats } from '@/hooks/useClientStats'
 import { useAISummary } from '@/hooks/useAISummary'
-import { useGrowthOpportunities } from '@/hooks/useGrowthOpportunities'
 import { formatCurrency } from '@/lib/countries'
 
 interface Client {
@@ -47,7 +46,6 @@ export default function ClientProfilePage() {
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
   const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, isFresh: aiSummaryIsFresh, remaining: aiSummaryRemaining, isLocked: aiSummaryIsLocked, generateSummary } = useAISummary(clientId)
-  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, isFresh: growthOppIsFresh, remaining: growthOppRemaining, isLocked: growthOppIsLocked, generateOpportunities } = useGrowthOpportunities(clientId)
 
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
@@ -523,92 +521,17 @@ export default function ClientProfilePage() {
                   </CardBody>
                 </Card>
 
-                {/* Growth Opportunities */}
-                <Card className="border-purple-500/30">
-                  <CardHeader>
-                    <div className="flex justify-between items-center gap-2">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">💡 Growth Opportunities</h3>
-                        {growthOppData && !growthOppLoading && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            {growthOppIsFresh ? '✓ Fresh' : '⚠️ Cached (7+ days old)'}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        {growthOppRemaining !== null && (
-                          <p className={`text-xs mb-2 ${growthOppRemaining === 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                            {growthOppRemaining} remaining
-                          </p>
-                        )}
-                        <Button
-                          onClick={generateOpportunities}
-                          disabled={!!(growthOppLoading || (growthOppData && growthOppIsFresh) || growthOppRemaining === 0)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
-                        >
-                          {growthOppLoading ? 'Generating...' : 'Generate'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardBody>
-                    {growthOppIsLocked && (
-                      <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-700/50">
-                        <p className="text-gray-400 text-sm mb-3">
-                          Growth Opportunities require <span className="font-semibold text-purple-400">Enterprise plan</span>
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          Discover expansion opportunities, identify at-risk accounts, and optimize client relationships.
-                        </p>
-                      </div>
-                    )}
-
-                    {!growthOppIsLocked && growthOppError && (
-                      <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
-                        <p className="text-red-400 text-sm">{growthOppError}</p>
-                        {growthOppRemaining === 0 && (
-                          <p className="text-red-400 text-xs mt-2">Your monthly limit has been reached. Please try again next month.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {!growthOppIsLocked && growthOppLoading && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
-                        <span className="text-gray-400 text-sm">Analyzing growth potential...</span>
-                      </div>
-                    )}
-
-                    {!growthOppIsLocked && growthOppData && (
-                      <div>
-                        {growthOppData.engagement_score > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
-                            <div className="p-3 bg-gray-900/50 rounded">
-                              <p className="text-xs uppercase text-gray-400 mb-1">Engagement Score</p>
-                              <p className="text-3xl font-bold text-purple-400">{growthOppData.engagement_score}/100</p>
-                            </div>
-                            <div className="p-3 bg-gray-900/50 rounded">
-                              <p className="text-xs uppercase text-gray-400 mb-1">Monthly Average</p>
-                              <p className="text-2xl font-bold text-green-400">
-                                {formatCurrency(growthOppData.monthly_average, currencyCode)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        <AiContentRenderer content={growthOppData.opportunities} />
-                        {growthOppData.generated_at && (
-                          <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-700/50">
-                            {growthOppIsFresh ? '✓ Fresh' : `Generated ${Math.floor((new Date().getTime() - new Date(growthOppData.generated_at).getTime()) / (1000 * 60 * 60 * 24))} days ago`}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {!growthOppIsLocked && !growthOppData && !growthOppLoading && !growthOppError && (
-                      <p className="text-gray-400 text-sm">Click "Generate" to identify growth opportunities</p>
-                    )}
-                  </CardBody>
-                </Card>
+                {/* Link to AI Insights Page */}
+                <div className="text-center py-8">
+                  <p className="text-gray-400 text-sm mb-3">
+                    View comprehensive AI-powered business insights
+                  </p>
+                  <Link href={`/insights?client=${clientId}`}>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm">
+                      📊 View AI Insights →
+                    </Button>
+                  </Link>
+                </div>
               </div>
             )}
           </CardBody>
