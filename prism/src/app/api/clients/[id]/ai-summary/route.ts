@@ -236,8 +236,8 @@ ${notesList.length > 0 ? notesList.join('\n') : 'No notes'}`
 
     let summary = response.content[0].type === 'text' ? response.content[0].text : ''
     
-    // Strip TAGS line if present
-    summary = summary.replace(/\nTAGS:\s*\[.*?\]/gs, '').trim()
+    // Strip TAGS line if present (handle multiline with [\s\S]*? instead of . with s flag)
+    summary = summary.replace(/\nTAGS:\s*\[[\s\S]*?\]/g, '').trim()
 
     // Save to database
     const { error: updateError } = await supabase
