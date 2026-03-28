@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate forecasts
     const now = new Date()
-    const forecast30 = calculateForecast(recurringInvoices, outstandingInvoices, historicalInvoices, now, 30)
-    const forecast60 = calculateForecast(recurringInvoices, outstandingInvoices, historicalInvoices, now, 60)
-    const forecast90 = calculateForecast(recurringInvoices, outstandingInvoices, historicalInvoices, now, 90)
+    const forecast30 = calculateForecast(recurringInvoices || [], outstandingInvoices || [], historicalInvoices || [], now, 30)
+    const forecast60 = calculateForecast(recurringInvoices || [], outstandingInvoices || [], historicalInvoices || [], now, 60)
+    const forecast90 = calculateForecast(recurringInvoices || [], outstandingInvoices || [], historicalInvoices || [], now, 90)
 
     console.log('[RevenueForecast] Generated forecasts for user', userId)
 
