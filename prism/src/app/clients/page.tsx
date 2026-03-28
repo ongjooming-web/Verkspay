@@ -34,7 +34,7 @@ interface Client {
   tags?: Tag[]
 }
 
-type SortBy = 'name' | 'revenue' | 'outstanding' | 'last_invoice' | 'health'
+type SortBy = 'name' | 'revenue' | 'outstanding' | 'last_invoice'
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
@@ -44,7 +44,6 @@ export default function ClientsPage() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [healthFilter, setHealthFilter] = useState<'all' | 'healthy' | 'at_risk' | 'needs_attention'>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
 
   const [formData, setFormData] = useState({
@@ -142,18 +141,6 @@ export default function ClientsPage() {
       // For now, we'll just show a placeholder
     }
 
-    // Health filter
-    if (healthFilter !== 'all') {
-      filtered = filtered.filter((c) => {
-        const score = c.health_score
-        if (score === null) return false
-        if (healthFilter === 'healthy') return score >= 80
-        if (healthFilter === 'at_risk') return score >= 50 && score < 80
-        if (healthFilter === 'needs_attention') return score < 50
-        return true
-      })
-    }
-
     // Sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -167,8 +154,6 @@ export default function ClientsPage() {
           const dateA = a.last_invoice_date ? new Date(a.last_invoice_date).getTime() : 0
           const dateB = b.last_invoice_date ? new Date(b.last_invoice_date).getTime() : 0
           return dateB - dateA
-        case 'health':
-          return (b.health_score || 0) - (a.health_score || 0)
         default:
           return 0
       }
@@ -206,13 +191,6 @@ export default function ClientsPage() {
     } catch (err) {
       console.error('[ClientsList] Error adding client:', err)
     }
-  }
-
-  const getHealthBadge = (score: number | null) => {
-    if (score === null) return { color: 'bg-gray-500/20 text-gray-400', label: 'Not Scored' }
-    if (score >= 80) return { color: 'bg-green-500/20 text-green-400', label: 'Healthy' }
-    if (score >= 50) return { color: 'bg-yellow-500/20 text-yellow-400', label: 'At Risk' }
-    return { color: 'bg-red-500/20 text-red-400', label: 'Needs Attention' }
   }
 
   const getLastInvoiceText = (date: string | null) => {
@@ -346,21 +324,6 @@ export default function ClientsPage() {
                   </div>
                 )}
 
-                {/* Health Filter */}
-                <div>
-                  <label className="text-xs text-gray-400 uppercase block mb-2">Health</label>
-                  <select
-                    value={healthFilter}
-                    onChange={(e) => setHealthFilter(e.target.value as typeof healthFilter)}
-                    className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
-                  >
-                    <option value="all">All</option>
-                    <option value="healthy">Healthy</option>
-                    <option value="at_risk">At Risk</option>
-                    <option value="needs_attention">Needs Attn</option>
-                  </select>
-                </div>
-
                 {/* Sort By */}
                 <div>
                   <label className="text-xs text-gray-400 uppercase block mb-2">Sort</label>
@@ -373,7 +336,6 @@ export default function ClientsPage() {
                     <option value="revenue">Revenue</option>
                     <option value="outstanding">Outstanding</option>
                     <option value="last_invoice">Last Invoice</option>
-                    <option value="health">Health</option>
                   </select>
                 </div>
               </div>
@@ -399,24 +361,17 @@ export default function ClientsPage() {
         ) : (
           <div className="space-y-3">
             {filteredClients.map((client) => {
-              const healthBadge = getHealthBadge(client.health_score)
-
               return (
                 <Link key={client.id} href={`/clients/${client.id}`}>
                   <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
                     <CardBody>
                       <div className="space-y-3">
-                        {/* Name + Health Badge */}
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
-                            {client.company && (
-                              <p className="text-gray-400 text-xs md:text-sm truncate">{client.company}</p>
-                            )}
-                          </div>
-                          <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap flex-shrink-0 ${healthBadge.color}`}>
-                            {healthBadge.label}
-                          </div>
+                        {/* Name + Company */}
+                        <div>
+                          <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
+                          {client.company && (
+                            <p className="text-gray-400 text-xs md:text-sm truncate">{client.company}</p>
+                          )}
                         </div>
 
                         {/* Tags Row */}
