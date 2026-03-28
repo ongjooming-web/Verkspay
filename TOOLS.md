@@ -30,6 +30,21 @@ git config --global user.email "admin@prismops.xyz"
 
 All set in Vercel. No local setup needed.
 
+### Supabase Email Configuration
+**Important:** Mobile email clients (Gmail, Apple Mail, etc.) don't support button clicks in HTML emails. The "Verify Email" button in Supabase's default template doesn't work on mobile.
+
+**Fix needed:** In Supabase Console → Authentication → Email Templates:
+1. Edit the "Confirm signup" template
+2. Replace the `<table>` button with a plain `<a>` link
+3. Ensure the link href is: `{{ .ConfirmationURL }}`
+
+**Mobile-friendly template:**
+```html
+<p><a href="{{ .ConfirmationURL }}" style="color: #7c3aed; text-decoration: underline;">Verify your email</a></p>
+```
+
+This will work on all mobile clients.
+
 ---
 
 ## What Goes Here
