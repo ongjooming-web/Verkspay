@@ -316,11 +316,15 @@ export default function ClientsPage() {
                           setSelectedTags([])
                         }
                       }}
-                      className="w-full glass px-3 py-2 rounded-lg text-white text-sm [&>option]:bg-gray-900 [&>option]:text-white"
+                      style={{
+                        backgroundColor: '#1f2937',
+                        color: '#fff'
+                      }}
+                      className="w-full px-3 py-2 rounded-lg text-white text-sm border border-white/10 hover:border-white/20 focus:border-blue-500 focus:outline-none transition"
                     >
-                      <option value="">All Tags</option>
+                      <option value="" style={{ backgroundColor: '#1f2937', color: '#fff' }}>All Tags</option>
                       {tags.map((tag) => (
-                        <option key={tag.id} value={tag.id} className="bg-gray-900 text-white">
+                        <option key={tag.id} value={tag.id} style={{ backgroundColor: '#1f2937', color: '#fff' }}>
                           {tag.name}
                         </option>
                       ))}
