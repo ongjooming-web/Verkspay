@@ -464,11 +464,13 @@ export default function ClientProfilePage() {
                       </div>
                       <div className="text-right">
                         {aiSummaryRemaining !== null && (
-                          <p className="text-xs text-gray-400 mb-2">{aiSummaryRemaining} remaining</p>
+                          <p className={`text-xs mb-2 ${aiSummaryRemaining === 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                            {aiSummaryRemaining} remaining
+                          </p>
                         )}
                         <Button
                           onClick={generateSummary}
-                          disabled={!!(aiSummaryLoading || (aiSummaryData && aiSummaryIsFresh))}
+                          disabled={!!(aiSummaryLoading || (aiSummaryData && aiSummaryIsFresh) || aiSummaryRemaining === 0)}
                           className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
                         >
                           {aiSummaryLoading ? 'Generating...' : 'Generate'}
@@ -491,6 +493,9 @@ export default function ClientProfilePage() {
                     {!aiSummaryIsLocked && aiSummaryError && (
                       <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
                         <p className="text-red-400 text-sm">{aiSummaryError}</p>
+                        {aiSummaryRemaining === 0 && (
+                          <p className="text-red-400 text-xs mt-2">Your monthly limit has been reached. Please try again next month.</p>
+                        )}
                       </div>
                     )}
 
@@ -529,11 +534,13 @@ export default function ClientProfilePage() {
                       </div>
                       <div className="text-right">
                         {growthOppRemaining !== null && (
-                          <p className="text-xs text-gray-400 mb-2">{growthOppRemaining} remaining</p>
+                          <p className={`text-xs mb-2 ${growthOppRemaining === 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                            {growthOppRemaining} remaining
+                          </p>
                         )}
                         <Button
                           onClick={generateOpportunities}
-                          disabled={!!(growthOppLoading || (growthOppData && growthOppIsFresh))}
+                          disabled={!!(growthOppLoading || (growthOppData && growthOppIsFresh) || growthOppRemaining === 0)}
                           className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
                         >
                           {growthOppLoading ? 'Generating...' : 'Generate'}
@@ -556,6 +563,9 @@ export default function ClientProfilePage() {
                     {!growthOppIsLocked && growthOppError && (
                       <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
                         <p className="text-red-400 text-sm">{growthOppError}</p>
+                        {growthOppRemaining === 0 && (
+                          <p className="text-red-400 text-xs mt-2">Your monthly limit has been reached. Please try again next month.</p>
+                        )}
                       </div>
                     )}
 

@@ -35,7 +35,7 @@ export function useAISummary(clientId: string) {
         // Fetch user's profile for rate limit
         const { data: profile } = await supabase
           .from('profiles')
-          .select('plan, ai_summary_count')
+          .select('plan, ai_summary_count, ai_summary_reset_date')
           .eq('id', userData.user.id)
           .single()
 
@@ -56,12 +56,29 @@ export function useAISummary(clientId: string) {
           }
         }
 
-        // Set remaining count
+        // Calculate remaining count based on plan
         if (profile) {
           const plan = profile.plan || 'trial'
-          const limit = plan === 'pro' ? 10 : (plan === 'enterprise' ? Infinity : 0)
           const used = profile.ai_summary_count || 0
-          setRemaining(Math.max(0, limit - used))
+          const resetDate = profile.ai_summary_reset_date
+          
+          // If reset date is more than 30 days ago, reset the count
+          if (resetDate) {
+            const reset = new Date(resetDate)
+            const now = new Date()
+            const daysSinceReset = Math.floor((now.getTime() - reset.getTime()) / (1000 * 60 * 60 * 24))
+            if (daysSinceReset > 30) {
+              setRemaining(plan === 'enterprise' ? 100 : (plan === 'pro' ? 10 : 0))
+            } else {
+              // Within 30 days, calculate remaining
+              const limit = plan === 'enterprise' ? 100 : (plan === 'pro' ? 10 : 0)
+              setRemaining(Math.max(0, limit - used))
+            }
+          } else {
+            // No reset date, use full limit minus used
+            const limit = plan === 'enterprise' ? 100 : (plan === 'pro' ? 10 : 0)
+            setRemaining(Math.max(0, limit - used))
+          }
         }
 
         setLoading(false)
@@ -97,12 +114,22 @@ export function useAISummary(clientId: string) {
       })
 
       if (response.status === 403) {
-        // Gracefully handle plan gating
-        setIsLocked(true)
-        setError(null) // Don't show error message for locked features
+        const errorData = await response.json().catch(() => ({}))
+        
+        // Check if it's a rate limit error vs plan gating
+        if (errorData.remaining === 0 || errorData.error?.includes('limit')) {
+          // Rate limit reached
+          setRemaining(0)
+          setError(errorData.error || 'Monthly limit reached')
+        } else {
+          // Plan gating
+          setIsLocked(true)
+          setError(null)
+        }
+        
         setData(null)
         setLoading(false)
-        console.log('[useAISummary] Feature locked (requires Pro plan or higher)')
+        console.log('[useAISummary] 403 error:', errorData.error)
         return
       }
 
@@ -117,6 +144,11 @@ export function useAISummary(clientId: string) {
       const result = await response.json()
       setData(result)
       setIsFresh(true)
+      
+      // Update remaining count from response if provided
+      if (result.remaining !== undefined) {
+        setRemaining(result.remaining)
+      }
 
       console.log('[useAISummary] Generated summary for client', clientId)
     } catch (err) {

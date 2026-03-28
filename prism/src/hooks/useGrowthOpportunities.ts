@@ -26,10 +26,10 @@ export function useGrowthOpportunities(clientId: string) {
           return
         }
 
-        // Fetch user's profile for cached insights
+        // Fetch user's profile for cached insights and rate limits
         const { data: profile } = await supabase
           .from('profiles')
-          .select('plan, ai_lead_insights_count, latest_insights')
+          .select('plan, ai_lead_insights_count, ai_lead_insights_reset_date, latest_insights')
           .eq('id', userData.user.id)
           .single()
 
@@ -55,10 +55,29 @@ export function useGrowthOpportunities(clientId: string) {
           }
         }
 
-        // Set remaining count - Enterprise only gets 30/month
-        if (profile?.plan === 'enterprise') {
+        // Calculate remaining count based on plan
+        if (profile) {
+          const plan = profile.plan || 'trial'
           const used = profile.ai_lead_insights_count || 0
-          setRemaining(Math.max(0, 30 - used))
+          const resetDate = profile.ai_lead_insights_reset_date
+          
+          // If reset date is more than 30 days ago, reset the count
+          if (resetDate) {
+            const reset = new Date(resetDate)
+            const now = new Date()
+            const daysSinceReset = Math.floor((now.getTime() - reset.getTime()) / (1000 * 60 * 60 * 24))
+            if (daysSinceReset > 30) {
+              setRemaining(plan === 'enterprise' ? 100 : (plan === 'pro' ? 5 : 0))
+            } else {
+              // Within 30 days, calculate remaining
+              const limit = plan === 'enterprise' ? 100 : (plan === 'pro' ? 5 : 0)
+              setRemaining(Math.max(0, limit - used))
+            }
+          } else {
+            // No reset date, use full limit minus used
+            const limit = plan === 'enterprise' ? 100 : (plan === 'pro' ? 5 : 0)
+            setRemaining(Math.max(0, limit - used))
+          }
         }
 
         setLoading(false)
@@ -94,12 +113,22 @@ export function useGrowthOpportunities(clientId: string) {
       })
 
       if (response.status === 403) {
-        // Gracefully handle plan gating
-        setIsLocked(true)
-        setError(null) // Don't show error message for locked features
+        const errorData = await response.json().catch(() => ({}))
+        
+        // Check if it's a rate limit error vs plan gating
+        if (errorData.remaining === 0 || errorData.error?.includes('limit')) {
+          // Rate limit reached
+          setRemaining(0)
+          setError(errorData.error || 'Monthly limit reached')
+        } else {
+          // Plan gating
+          setIsLocked(true)
+          setError(null)
+        }
+        
         setData(null)
         setLoading(false)
-        console.log('[useGrowthOpportunities] Feature locked (requires Enterprise plan)')
+        console.log('[useGrowthOpportunities] 403 error:', errorData.error)
         return
       }
 
@@ -114,6 +143,11 @@ export function useGrowthOpportunities(clientId: string) {
       const result = await response.json()
       setData(result)
       setIsFresh(true)
+      
+      // Update remaining count from response if provided
+      if (result.remaining !== undefined) {
+        setRemaining(result.remaining)
+      }
 
       console.log('[useGrowthOpportunities] Generated opportunities for client', clientId)
     } catch (err) {
