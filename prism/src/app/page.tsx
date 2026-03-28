@@ -299,14 +299,6 @@ export default function LandingPage() {
                   })}
                 </ul>
 
-                {plan.comparison && (
-                  <p className="text-gray-400 text-xs italic mb-4 pb-4 border-t border-white/10 pt-4">{plan.comparison}</p>
-                )}
-
-                {plan.note && (
-                  <p className="text-gray-400 text-xs italic mb-4 pb-4 border-t border-white/10 pt-4">{plan.note}</p>
-                )}
-
                 <Link href="/signup" className={`w-full py-2 rounded-lg font-medium transition block text-center ${
                   plan.highlighted
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
