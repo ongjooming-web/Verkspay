@@ -14,11 +14,7 @@ const ReportsChart = dynamic(() => import('@/components/ReportsChart').then((mod
   ssr: false,
 })
 
-// Dynamically import html2pdf (browser-only)
-let html2pdf: any = null
-if (typeof window !== 'undefined') {
-  html2pdf = require('html2pdf.js').default
-}
+// html2pdf will be loaded dynamically in exportToPDF function
 
 type ReportType = 'revenue' | 'aging' | 'client' | 'tax' | 'payments'
 
@@ -666,14 +662,18 @@ export default function ReportsPage() {
     return `${from} to ${to}`
   }
 
-  const exportToPDF = () => {
-    if (!html2pdf) {
-      console.error('PDF export not available')
-      return
-    }
+  const exportToPDF = async () => {
+    try {
+      // Load html2pdf library dynamically
+      const html2pdfLib = await import('html2pdf.js').then(m => m.default)
+      
+      if (!html2pdfLib) {
+        console.error('PDF export library not available')
+        return
+      }
 
-    const reportTitle = getReportTitle()
-    const dateRange = getDateRangeString()
+      const reportTitle = getReportTitle()
+      const dateRange = getDateRangeString()
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -774,15 +774,19 @@ export default function ReportsPage() {
       </div>
     `
 
-    const opt = {
-      margin: 10,
-      filename: `${reportTitle.toLowerCase().replace(/\s+/g, '-')}-${getDateRange().from}-${getDateRange().to}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait' as const, unit: 'mm' as const, format: 'a4' },
-    }
+      const opt = {
+        margin: 10,
+        filename: `${reportTitle.toLowerCase().replace(/\s+/g, '-')}-${getDateRange().from}-${getDateRange().to}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait' as const, unit: 'mm' as const, format: 'a4' },
+      }
 
-    html2pdf().set(opt).from(htmlContent).save()
+      html2pdfLib().set(opt).from(htmlContent).save()
+    } catch (err) {
+      console.error('[Reports] PDF export error:', err)
+      alert('Failed to generate PDF. Please try again.')
+    }
   }
 
   const exportToCSV = () => {
