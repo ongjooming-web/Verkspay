@@ -51,7 +51,9 @@ export default function ClientsPage() {
     name: '',
     email: '',
     company: '',
-    phone: ''
+    phone: '',
+    industry: '',
+    custom_industry: ''
   })
 
   const { tags } = useTags()
@@ -173,6 +175,8 @@ export default function ClientsPage() {
 
       if (!userId) return
 
+      const industry = formData.industry === 'Other' ? formData.custom_industry : formData.industry
+
       const { error } = await supabase
         .from('clients')
         .insert([
@@ -181,12 +185,13 @@ export default function ClientsPage() {
             name: formData.name,
             email: formData.email,
             company: formData.company || null,
-            phone: formData.phone || null
+            phone: formData.phone || null,
+            industry: industry || null
           }
         ])
 
       if (!error) {
-        setFormData({ name: '', email: '', company: '', phone: '' })
+        setFormData({ name: '', email: '', company: '', phone: '', industry: '', custom_industry: '' })
         setShowForm(false)
         fetchClients()
       }
@@ -270,6 +275,34 @@ export default function ClientsPage() {
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
                 />
+                <select
+                  value={formData.industry}
+                  onChange={(e) => setFormData({ ...formData, industry: e.target.value, custom_industry: e.target.value === 'Other' ? formData.custom_industry : '' })}
+                  className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                  style={{ backgroundColor: '#1f2937', color: '#fff' }}
+                >
+                  <option value="" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Select Industry (Optional)</option>
+                  <option value="Technology" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Technology</option>
+                  <option value="F&B / Hospitality" style={{ backgroundColor: '#1f2937', color: '#fff' }}>F&B / Hospitality</option>
+                  <option value="Education / Training" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Education / Training</option>
+                  <option value="Retail / E-commerce" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Retail / E-commerce</option>
+                  <option value="Marketing / Advertising" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Marketing / Advertising</option>
+                  <option value="Design / Creative" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Design / Creative</option>
+                  <option value="Construction / Property" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Construction / Property</option>
+                  <option value="Healthcare" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Healthcare</option>
+                  <option value="Professional Services" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Professional Services</option>
+                  <option value="Manufacturing" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Manufacturing</option>
+                  <option value="Other" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Other</option>
+                </select>
+                {formData.industry === 'Other' && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom industry"
+                    value={formData.custom_industry}
+                    onChange={(e) => setFormData({ ...formData, custom_industry: e.target.value })}
+                    className="w-full glass px-4 py-2 rounded-lg text-white placeholder-gray-500"
+                  />
+                )}
                 <div className="flex gap-3">
                   <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                     Add Client
