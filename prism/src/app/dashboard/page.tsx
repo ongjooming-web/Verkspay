@@ -20,6 +20,15 @@ import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
+// Wrapper component to safely render OnboardingTour without crashing the app
+function SafeOnboardingTour() {
+  return (
+    <SafeWidgetWrapper fallbackMessage="">
+      <OnboardingTour />
+    </SafeWidgetWrapper>
+  )
+}
+
 interface RecentActivity {
   id: string
   type: string
@@ -830,8 +839,8 @@ export default function Dashboard() {
         </footer>
       </div>
 
-      {/* Onboarding Tour - Only on authenticated pages */}
-      <OnboardingTour />
+      {/* Onboarding Tour - Only on authenticated pages - Wrapped in SafeWidgetWrapper */}
+      <SafeOnboardingTour />
     </div>
   )
 }

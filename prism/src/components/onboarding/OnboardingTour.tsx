@@ -91,36 +91,44 @@ const TOUR_STEPS = [
 ]
 
 export function OnboardingTour() {
-  const { showTour, tourStep, updateTourStep, completeOnboarding, loading, status } = useOnboarding()
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
-  const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
-  const router = useRouter()
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  try {
+    const { showTour, tourStep, updateTourStep, completeOnboarding, loading, status } = useOnboarding()
+    const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
+    const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+    const [mounted, setMounted] = useState(false)
+    const router = useRouter()
+    const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[OnboardingTour] State:', {
-      loading,
-      showTour,
-      tourStep,
-      statusExists: !!status,
-      status
-    })
-  }, [loading, showTour, tourStep, status])
+    // Wait for client to mount before rendering
+    useEffect(() => {
+      setMounted(true)
+    }, [])
 
-  // Don't render while loading or if tour shouldn't show
-  if (loading || !showTour) {
-    console.log('[OnboardingTour] Not rendering - loading:', loading, 'showTour:', showTour)
-    return null
-  }
+    // Debug logging
+    useEffect(() => {
+      console.log('[OnboardingTour] State:', {
+        loading,
+        showTour,
+        tourStep,
+        mounted,
+        statusExists: !!status,
+        status
+      })
+    }, [loading, showTour, tourStep, mounted, status])
 
-  const step = TOUR_STEPS[tourStep]
-  if (!step) {
-    console.log('[OnboardingTour] No step found for tourStep:', tourStep)
-    return null // Safety check
-  }
+    // Don't render while loading, if tour shouldn't show, or if not mounted
+    if (!mounted || loading || !showTour) {
+      console.log('[OnboardingTour] Not rendering - mounted:', mounted, 'loading:', loading, 'showTour:', showTour)
+      return null
+    }
 
-  console.log('[OnboardingTour] Rendering step:', tourStep, step.title)
+    const step = TOUR_STEPS[tourStep]
+    if (!step) {
+      console.log('[OnboardingTour] No step found for tourStep:', tourStep)
+      return null // Safety check
+    }
+
+    console.log('[OnboardingTour] Rendering step:', tourStep, step.title)
 
   // Find and track target element
   useEffect(() => {
@@ -212,64 +220,69 @@ export function OnboardingTour() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [tourStep])
 
-  return (
-    <>
-      {/* Overlay with spotlight */}
-      {step.position !== 'center' && (
-        <div className="fixed inset-0 z-[1000] bg-black/60" />
-      )}
+    return (
+      <>
+        {/* Overlay with spotlight */}
+        {step.position !== 'center' && (
+          <div className="fixed inset-0 z-[1000] bg-black/60" />
+        )}
 
-      {/* Spotlight effect */}
-      {step.position !== 'center' && targetRect && (
-        <div
-          className="fixed z-[1001] rounded-lg border border-purple-500/30 transition-all duration-400"
-          style={{
-            top: targetRect.top - 8,
-            left: targetRect.left - 8,
-            width: targetRect.width + 16,
-            height: targetRect.height + 16,
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.65)'
-          }}
-        />
-      )}
+        {/* Spotlight effect - only render if target element was found */}
+        {step.position !== 'center' && targetRect && (
+          <div
+            className="fixed z-[1001] rounded-lg border border-purple-500/30 transition-all duration-400"
+            style={{
+              top: targetRect.top - 8,
+              left: targetRect.left - 8,
+              width: targetRect.width + 16,
+              height: targetRect.height + 16,
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.65)'
+            }}
+          />
+        )}
 
       {/* Tooltip Card */}
-      <div
-        className={`fixed z-[1002] transition-all duration-400 ${
-          step.position === 'center' ? 'flex items-center justify-center inset-0' : ''
-        }`}
-        style={step.position === 'center' ? undefined : { top: tooltipPos.top, left: tooltipPos.left }}
-      >
-        <div className="w-full max-w-[360px] rounded-2xl border border-purple-500/30 bg-[#1A1A2E] p-6 shadow-2xl">
-          {/* Step counter */}
-          <div className="mb-4 text-xs text-gray-400">
-            Step {tourStep + 1} of {TOUR_STEPS.length}
-          </div>
+        {/* Tooltip Card */}
+        <div
+          className={`fixed z-[1002] transition-all duration-400 ${
+            step.position === 'center' ? 'flex items-center justify-center inset-0' : ''
+          }`}
+          style={step.position === 'center' ? undefined : { top: tooltipPos.top, left: tooltipPos.left }}
+        >
+          <div className="w-full max-w-[360px] rounded-2xl border border-purple-500/30 bg-[#1A1A2E] p-6 shadow-2xl">
+            {/* Step counter */}
+            <div className="mb-4 text-xs text-gray-400">
+              Step {tourStep + 1} of {TOUR_STEPS.length}
+            </div>
 
-          {/* Title */}
-          <h2 className="mb-3 text-lg font-bold text-white">{step.title}</h2>
+            {/* Title */}
+            <h2 className="mb-3 text-lg font-bold text-white">{step.title}</h2>
 
-          {/* Description */}
-          <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
+            {/* Description */}
+            <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
 
-          {/* Buttons */}
-          <div className="flex flex-col gap-3">
-            {step.buttons.map((btn, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleAction(btn.action, btn.target)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  btn.type === 'primary'
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : 'text-gray-400 hover:text-gray-300 bg-transparent'
-                }`}
-              >
-                {btn.label}
-              </button>
-            ))}
+            {/* Buttons */}
+            <div className="flex flex-col gap-3">
+              {step.buttons.map((btn, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleAction(btn.action, btn.target)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    btn.type === 'primary'
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'text-gray-400 hover:text-gray-300 bg-transparent'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </>
-  )
+      </>
+    )
+  } catch (error) {
+    console.error('[OnboardingTour] Render error:', error)
+    return null
+  }
 }
