@@ -449,29 +449,6 @@ export default function Settings() {
           </CardBody>
         </Card>
 
-        {/* Webhook Configuration (Step 2 Foundation) */}
-        <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
-          <CardHeader>
-            <h2 className="text-2xl font-bold text-white">🔔 Payment Detection (Coming Soon)</h2>
-            <p className="text-gray-400 text-sm mt-1">Automatic payment confirmation via webhooks</p>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <div className="glass rounded-lg p-4 border-blue-400/30">
-              <p className="text-blue-300 text-sm mb-3">
-                <strong>Phase 3 Step 2:</strong> This feature will automatically confirm USDC payments using Alchemy webhooks.
-              </p>
-              <ul className="text-gray-300 text-sm space-y-2 ml-4 list-disc">
-                <li>Real-time payment notifications</li>
-                <li>Automatic invoice status updates</li>
-                <li>Transaction history tracking</li>
-              </ul>
-            </div>
-            <Button disabled className="w-full md:w-auto opacity-50 cursor-not-allowed">
-              🔒 Coming Soon - Phase 3 Step 2
-            </Button>
-          </CardBody>
-        </Card>
-
         {/* Billing Section */}
         <BillingSection />
 
