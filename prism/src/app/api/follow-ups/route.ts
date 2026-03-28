@@ -249,14 +249,15 @@ export async function GET(request: NextRequest) {
 
     const userId = data.user.id
 
-    // Check plan gating
+    // Check plan gating and fetch currency
     const { data: profile } = await supabase
       .from('profiles')
-      .select('plan')
+      .select('plan, currency_code')
       .eq('id', userId)
       .single()
 
     const plan = profile?.plan || 'trial'
+    const currencyCode = profile?.currency_code || 'USD'
     const allowedPlans = ['pro', 'enterprise']
 
     // Master test account bypass
@@ -271,29 +272,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Generate suggestions from all rules
-    let allSuggestions: any[] = []
-    for (const rule of FOLLOW_UP_RULES) {
-      const ruleSuggestions = await rule.condition(supabase, userId)
-      allSuggestions = allSuggestions.concat(ruleSuggestions)
-    }
-
-    // Get existing pending follow-ups to avoid duplicates
-    const { data: existingFollowUps } = await supabase
-      .from('client_follow_ups')
-      .select('client_id, reason')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-
-    const existingKeys = new Set(
-      existingFollowUps?.map((fu) => `${fu.client_id}:${fu.reason}`) || []
-    )
-
-    // Filter out duplicates and get client names
-    const uniqueSuggestions = allSuggestions.filter(
-      (s) => !existingKeys.has(`${s.client_id}:${s.reason}`)
-    )
-
     // Get client names
     const { data: clients } = await supabase
       .from('clients')
@@ -302,20 +280,65 @@ export async function GET(request: NextRequest) {
 
     const clientMap = new Map(clients?.map((c) => [c.id, c.name]) || [])
 
-    // Upsert follow-ups
+    // Generate suggestions from all rules
+    const allSuggestions: any[] = []
+    const ruleResults = new Map<string, number>()
+
+    for (const rule of FOLLOW_UP_RULES) {
+      const ruleSuggestions = await rule.condition(supabase, userId)
+      ruleResults.set(rule.id, ruleSuggestions.length)
+      console.log(`[FollowUps] Rule ${rule.id}: ${ruleSuggestions.length} matches`)
+      allSuggestions.push(...ruleSuggestions)
+    }
+
+    // Get existing pending follow-ups for deduplication and cleanup
+    const { data: existingFollowUps } = await supabase
+      .from('client_follow_ups')
+      .select('id, client_id, reason, status')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+
+    // Create set of currently matching suggestions (client_id + reason)
+    const currentMatches = new Set(
+      allSuggestions.map((s) => `${s.client_id}:${s.reason}`)
+    )
+
+    // Insert new suggestions that don't already exist as pending
+    const existingKeys = new Set(
+      existingFollowUps?.map((fu) => `${fu.client_id}:${fu.reason}`) || []
+    )
+
+    const uniqueSuggestions = allSuggestions.filter(
+      (s) => !existingKeys.has(`${s.client_id}:${s.reason}`)
+    )
+
     const followUpsToInsert = uniqueSuggestions.map((s) => ({
       user_id: userId,
       client_id: s.client_id,
       reason: s.reason,
       priority: s.priority,
       status: 'pending',
-      suggestion: generateSuggestionText(s, clientMap.get(s.client_id) || 'Unknown'),
-      data: s.data
+      suggestion: generateSuggestionText(s, clientMap.get(s.client_id) || 'Unknown', currencyCode),
+      created_at: new Date().toISOString()
     }))
 
     if (followUpsToInsert.length > 0) {
       await supabase.from('client_follow_ups').insert(followUpsToInsert)
       console.log('[FollowUps] Created', followUpsToInsert.length, 'new suggestions')
+    }
+
+    // Dismiss pending follow-ups whose rules NO LONGER match
+    const followUpsToCleanup = existingFollowUps?.filter(
+      (fu) => !currentMatches.has(`${fu.client_id}:${fu.reason}`)
+    ) || []
+
+    if (followUpsToCleanup.length > 0) {
+      const idsToUpdate = followUpsToCleanup.map((fu) => fu.id)
+      await supabase
+        .from('client_follow_ups')
+        .update({ status: 'dismissed' })
+        .in('id', idsToUpdate)
+      console.log('[FollowUps] Dismissed', followUpsToCleanup.length, 'stale suggestions')
     }
 
     // Return all pending follow-ups sorted by priority
@@ -341,16 +364,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateSuggestionText(suggestion: any, clientName: string): string {
+function generateSuggestionText(suggestion: any, clientName: string, userCurrency: string): string {
   const { reason, data } = suggestion
-  const formatCurrency = (amount: number, currency: string) => {
-    const symbol = currency === 'MYR' ? 'RM' : '$'
+  const formatCurrency = (amount: number) => {
+    const symbol = userCurrency === 'MYR' ? 'RM' : '$'
     return `${symbol}${amount.toLocaleString()}`
   }
 
   switch (reason) {
     case 'overdue_invoices':
-      return `${clientName} has ${data.count} overdue invoice(s) totaling ${formatCurrency(data.totalRemaining, data.currency)}. Consider sending a reminder.`
+      return `${clientName} has ${data.count} overdue invoice(s) totaling ${formatCurrency(data.totalRemaining)}. Consider sending a reminder.`
     case 'inactive_client':
       return `You haven't invoiced ${clientName} in ${data.daysSince} days. They previously had ${data.invoiceCount} invoices with you.`
     case 'paused_recurring':
