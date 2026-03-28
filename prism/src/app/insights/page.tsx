@@ -401,20 +401,7 @@ export default function InsightsPage() {
           </>
         )}
 
-        {/* Client Intelligence Section */}
-        <div className="mt-16 pt-8 border-t border-gray-700/50">
-          <h2 className="text-2xl font-bold text-white mb-6">Client Intelligence</h2>
-          <p className="text-gray-400 text-sm mb-4">Select a client to view their AI-powered summary</p>
-          
-          <Card>
-            <CardBody>
-              <div className="text-center text-gray-400 py-12">
-                <p>Client Intelligence feature is available on the client profile page.</p>
-                <p className="text-sm mt-2">Go to any client and click "View AI Insights" to analyze their performance.</p>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+
       </div>
     </div>
   )

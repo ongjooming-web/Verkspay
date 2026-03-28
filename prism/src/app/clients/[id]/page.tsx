@@ -8,12 +8,10 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { TagBadge } from '@/components/TagBadge'
-import { AiContentRenderer } from '@/components/AiContentRenderer'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useClientTags } from '@/hooks/useClientTags'
 import { useClientNotes } from '@/hooks/useClientNotes'
 import { useClientStats } from '@/hooks/useClientStats'
-import { useAISummary } from '@/hooks/useAISummary'
 import { formatCurrency } from '@/lib/countries'
 
 interface Client {
@@ -37,7 +35,7 @@ export default function ClientProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'activity' | 'notes' | 'insights'>('activity')
+  const [activeTab, setActiveTab] = useState<'activity' | 'notes'>('activity')
   const [invoices, setInvoices] = useState<any[]>([])
   const [proposals, setProposals] = useState<any[]>([])
 
@@ -45,7 +43,7 @@ export default function ClientProfilePage() {
   const { tags } = useClientTags(clientId)
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
-  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, isFresh: aiSummaryIsFresh, remaining: aiSummaryRemaining, isLocked: aiSummaryIsLocked, generateSummary } = useAISummary(clientId)
+
 
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
@@ -295,16 +293,6 @@ export default function ClientProfilePage() {
               >
                 Notes
               </button>
-              <button
-                onClick={() => setActiveTab('insights')}
-                className={`pb-2 px-1 transition ${
-                  activeTab === 'insights'
-                    ? 'border-b-2 border-blue-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                AI Insights
-              </button>
             </div>
 
             {/* Activity Tab */}
@@ -445,95 +433,7 @@ export default function ClientProfilePage() {
               </div>
             )}
 
-            {/* AI Insights Tab */}
-            {activeTab === 'insights' && (
-              <div className="space-y-6">
-                {/* AI Client Summary */}
-                <Card className="border-blue-500/30">
-                  <CardHeader>
-                    <div className="flex justify-between items-center gap-2">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">📊 AI Client Summary</h3>
-                        {aiSummaryData && !aiSummaryLoading && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            {aiSummaryIsFresh ? '✓ Fresh' : '⚠️ Cached (7+ days old)'}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        {aiSummaryRemaining !== null && (
-                          <p className={`text-xs mb-2 ${aiSummaryRemaining === 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                            {aiSummaryRemaining} remaining
-                          </p>
-                        )}
-                        <Button
-                          onClick={generateSummary}
-                          disabled={!!(aiSummaryLoading || (aiSummaryData && aiSummaryIsFresh) || aiSummaryRemaining === 0)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
-                        >
-                          {aiSummaryLoading ? 'Generating...' : 'Generate'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardBody>
-                    {aiSummaryIsLocked && (
-                      <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-700/50">
-                        <p className="text-gray-400 text-sm mb-3">
-                          AI Client Summaries require <span className="font-semibold text-blue-400">Pro plan</span> or higher
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          Get AI-powered insights about your client's payment patterns, engagement, and business health.
-                        </p>
-                      </div>
-                    )}
 
-                    {!aiSummaryIsLocked && aiSummaryError && (
-                      <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30">
-                        <p className="text-red-400 text-sm">{aiSummaryError}</p>
-                        {aiSummaryRemaining === 0 && (
-                          <p className="text-red-400 text-xs mt-2">Your monthly limit has been reached. Please try again next month.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {!aiSummaryIsLocked && aiSummaryLoading && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-                        <span className="text-gray-400 text-sm">Analyzing client data...</span>
-                      </div>
-                    )}
-
-                    {!aiSummaryIsLocked && aiSummaryData && (
-                      <div>
-                        <AiContentRenderer content={aiSummaryData.summary} />
-                        {aiSummaryData.generated_at && (
-                          <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-700/50">
-                            {aiSummaryIsFresh ? '✓ Fresh' : `Generated ${Math.floor((new Date().getTime() - new Date(aiSummaryData.generated_at).getTime()) / (1000 * 60 * 60 * 24))} days ago`}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {!aiSummaryIsLocked && !aiSummaryData && !aiSummaryLoading && !aiSummaryError && (
-                      <p className="text-gray-400 text-sm">Click "Generate" to analyze this client with AI</p>
-                    )}
-                  </CardBody>
-                </Card>
-
-                {/* Link to AI Insights Page */}
-                <div className="text-center py-8">
-                  <p className="text-gray-400 text-sm mb-3">
-                    View comprehensive AI-powered business insights
-                  </p>
-                  <Link href={`/insights?client=${clientId}`}>
-                    <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm">
-                      📊 View AI Insights →
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            )}
           </CardBody>
         </Card>
 
