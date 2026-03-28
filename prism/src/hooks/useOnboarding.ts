@@ -27,10 +27,10 @@ export function useOnboarding() {
   const totalTasks = status?.total_tasks || 5
   const tourStep = status?.tour_step || 0
 
-  // Show tour only on first login (step 0, not completed)
-  const showTour = tourStep === 0 && !isComplete
-  // Show progress bar if tasks incomplete, not dismissed, and not completed
-  const showProgress = !isComplete && !isDismissed
+  // Show tour only on first login (step 0, not completed) - and only if authenticated
+  const showTour = status !== null && tourStep === 0 && !isComplete
+  // Show progress bar if tasks incomplete, not dismissed, and not completed - and only if authenticated
+  const showProgress = status !== null && !isComplete && !isDismissed
 
   const refresh = async () => {
     try {
