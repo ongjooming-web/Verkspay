@@ -372,12 +372,16 @@ export default function ClientsPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortBy)}
-                    className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
+                    style={{
+                      backgroundColor: '#1f2937',
+                      color: '#fff'
+                    }}
+                    className="w-full px-3 py-2 rounded-lg text-white text-sm border border-white/10 hover:border-white/20 focus:border-blue-500 focus:outline-none transition"
                   >
-                    <option value="name">Name</option>
-                    <option value="revenue">Revenue</option>
-                    <option value="outstanding">Outstanding</option>
-                    <option value="last_invoice">Last Invoice</option>
+                    <option value="name" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Name</option>
+                    <option value="revenue" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Revenue</option>
+                    <option value="outstanding" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Outstanding</option>
+                    <option value="last_invoice" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Last Invoice</option>
                   </select>
                 </div>
               </div>
