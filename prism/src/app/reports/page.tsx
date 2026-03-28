@@ -831,7 +831,7 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen relative z-10">
         <Navigation />
         <div className="max-w-7xl mx-auto p-6 flex justify-center items-center h-96">
           <div className="text-gray-400">Loading reports...</div>
@@ -841,7 +841,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen relative z-10">
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-6 pb-12">

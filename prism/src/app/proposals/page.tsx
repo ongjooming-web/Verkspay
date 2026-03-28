@@ -111,7 +111,7 @@ export default function ProposalsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen relative z-10">
         <Navigation />
         <div className="max-w-7xl mx-auto p-6 flex justify-center items-center h-96">
           <div className="text-gray-400">Loading proposals...</div>
@@ -121,7 +121,7 @@ export default function ProposalsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen relative z-10">
       <Navigation />
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
