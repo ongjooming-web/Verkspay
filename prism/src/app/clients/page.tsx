@@ -372,36 +372,55 @@ export default function ClientsPage() {
                 <Link key={client.id} href={`/clients/${client.id}`}>
                   <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
                     <CardBody>
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base md:text-lg font-semibold text-white mb-1 truncate">{client.name}</h3>
-                          {client.company && (
-                            <p className="text-gray-400 text-xs md:text-sm mb-2 truncate">{client.company}</p>
-                          )}
-                          <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs md:text-sm text-gray-400">
-                            {client.email && <span className="truncate">📧 {client.email}</span>}
-                            {client.phone && <span className="truncate">📞 {client.phone}</span>}
-                            {client.last_invoice_date && (
-                              <span>📄 {getLastInvoiceText(client.last_invoice_date)}</span>
+                      <div className="space-y-3">
+                        {/* Name + Health Badge */}
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
+                            {client.company && (
+                              <p className="text-gray-400 text-xs md:text-sm truncate">{client.company}</p>
                             )}
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap flex-shrink-0 ${healthBadge.color}`}>
+                            {healthBadge.label}
                           </div>
                         </div>
 
-                        <div className="text-right space-y-2 flex-shrink-0">
+                        {/* Contact Info - Grid Layout */}
+                        <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                          {client.email && (
+                            <div className="text-gray-400">
+                              <span className="block text-gray-500 text-xs mb-1">Email</span>
+                              <span className="text-white truncate block">{client.email}</span>
+                            </div>
+                          )}
+                          {client.phone && (
+                            <div className="text-gray-400">
+                              <span className="block text-gray-500 text-xs mb-1">Phone</span>
+                              <span className="text-white truncate block">{client.phone}</span>
+                            </div>
+                          )}
+                          {client.last_invoice_date && (
+                            <div className="text-gray-400">
+                              <span className="block text-gray-500 text-xs mb-1">Last Invoice</span>
+                              <span className="text-white">{getLastInvoiceText(client.last_invoice_date)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Revenue + Outstanding Grid */}
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
                           <div>
-                            <p className="text-gray-400 text-xs uppercase">Revenue</p>
+                            <p className="text-gray-400 text-xs uppercase mb-1">Revenue</p>
                             <p className="text-lg md:text-xl font-bold text-green-400">
                               {formatCurrency(client.total_revenue || 0, currencyCode)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-gray-400 text-xs uppercase">Outstanding</p>
-                            <p className="text-base md:text-lg font-semibold text-yellow-400">
+                            <p className="text-gray-400 text-xs uppercase mb-1">Outstanding</p>
+                            <p className="text-lg md:text-xl font-bold text-yellow-400">
                               {formatCurrency(client.total_outstanding || 0, currencyCode)}
                             </p>
-                          </div>
-                          <div className={`px-2 md:px-3 py-1 rounded text-xs font-semibold whitespace-nowrap ${healthBadge.color}`}>
-                            {healthBadge.label}
                           </div>
                         </div>
                       </div>
