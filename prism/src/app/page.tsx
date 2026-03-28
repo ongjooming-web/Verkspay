@@ -209,6 +209,7 @@ export default function LandingPage() {
                   'Smart Invoice Creation (auto-fill from history)',
                   'WhatsApp sharing & reminders',
                   'Client management',
+                  'Auto-tagging',
                   '5 AI Business Insights/month',
                   'Reports with PDF & CSV export',
                   'Email support'
@@ -230,14 +231,12 @@ export default function LandingPage() {
                   'Recurring invoices (auto-generated on schedule)',
                   'Proposals & Contracts',
                   '30 AI Business Insights/month',
-                  'AI Client Summaries (10/month)',
                   'Smart Follow-up Suggestions',
-                  'Advanced reporting with PDF & CSV export',
+                  'Advanced reporting',
                   'Priority email support'
                 ],
                 cta: 'Start Free Trial',
-                highlighted: true,
-                comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for freelancers.'
+                highlighted: true
               },
               {
                 name: 'Enterprise',
@@ -248,7 +247,6 @@ export default function LandingPage() {
                 features: [
                   '**Everything in Pro, plus:**',
                   '100 AI Business Insights/month',
-                  '100 AI Client Summaries/month',
                   'Revenue Forecasting',
                   'Receivables aging reports',
                   'Team management (3 users)',
@@ -256,8 +254,7 @@ export default function LandingPage() {
                   'Priority support'
                 ],
                 cta: 'Start Free Trial',
-                highlighted: false,
-                note: 'Everything you need to manage clients and grow your agency.'
+                highlighted: false
               }
             ].map((plan, i) => (
               <div

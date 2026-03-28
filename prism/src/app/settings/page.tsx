@@ -710,9 +710,9 @@ function BillingSection() {
   
   // Plan configuration
   const plans = [
-    { id: 'starter', name: 'Starter', monthlyPrice: 19, annualPrice: 15, features: 'Up to 20 invoices, Payment links, Stripe, Smart Reminders, WhatsApp, AI Insights, Reports' },
-    { id: 'pro', name: 'Pro', monthlyPrice: 49, annualPrice: 39, features: 'Everything in Starter, plus: Unlimited invoices, Partial payments, Recurring, Proposals, 30 AI Insights, AI Summaries' },
-    { id: 'enterprise', name: 'Enterprise', monthlyPrice: 89, annualPrice: 71, features: 'Everything in Pro, plus: 100 AI Insights, 100 Summaries, Revenue Forecasting, Team mgmt' }
+    { id: 'starter', name: 'Starter', monthlyPrice: 19, annualPrice: 15, features: 'Up to 20 invoices, 10 payment links, Stripe, Smart Reminders, Smart Invoice Creation, WhatsApp, Client management, Auto-tagging, 5 AI Insights, Reports, Email support' },
+    { id: 'pro', name: 'Pro', monthlyPrice: 49, annualPrice: 39, features: 'Everything in Starter, plus: Unlimited invoices & links, Partial payments, Recurring invoices, Proposals & Contracts, 30 AI Insights, Follow-up Suggestions, Advanced reporting, Priority support' },
+    { id: 'enterprise', name: 'Enterprise', monthlyPrice: 89, annualPrice: 71, features: 'Everything in Pro, plus: 100 AI Insights, Revenue Forecasting, Receivables aging, Team management (3 users), Custom branding, Priority support' }
   ]
 
   // Calculate trial days remaining

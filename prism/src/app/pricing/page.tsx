@@ -100,6 +100,7 @@ export default function PricingPage() {
         'Smart Invoice Creation (auto-fill from history)',
         'WhatsApp sharing & reminders',
         'Client management',
+        'Auto-tagging',
         '5 AI Business Insights/month',
         'Reports with PDF & CSV export',
         'Email support'
@@ -122,12 +123,10 @@ export default function PricingPage() {
         'Recurring invoices (auto-generated on schedule)',
         'Proposals & Contracts',
         '30 AI Business Insights/month',
-        'AI Client Summaries (10/month)',
         'Smart Follow-up Suggestions',
-        'Advanced reporting with PDF & CSV export',
+        'Advanced reporting',
         'Priority email support'
       ],
-      comparison: 'FreshBooks charges $25-40/mo for features built for accountants. Prism is built for freelancers.',
       button: { text: 'Start Free Trial', action: 'pro' },
       highlighted: true
     },
@@ -141,14 +140,12 @@ export default function PricingPage() {
       features: [
         '**Everything in Pro, plus:**',
         '100 AI Business Insights/month',
-        '100 AI Client Summaries/month',
         'Revenue Forecasting',
         'Receivables aging reports',
         'Team management (3 users)',
         'Custom branding',
         'Priority support'
       ],
-      note: 'Everything you need to manage clients and grow your agency.',
       button: { text: 'Start Free Trial', action: 'enterprise' },
       highlighted: false
     }
