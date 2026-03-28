@@ -24,15 +24,19 @@ export function useRevenueForecast() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAvailable, setIsAvailable] = useState(true)
+  const [isLocked, setIsLocked] = useState(false)
 
   const fetchForecast = async () => {
     try {
       setLoading(true)
       setError(null)
+      setIsLocked(false)
 
       const { data: sessionData } = await supabase.auth.getSession()
       if (!sessionData?.session) {
         setError('Not authenticated')
+        setData(null)
+        setIsAvailable(false)
         setLoading(false)
         return
       }
@@ -44,16 +48,21 @@ export function useRevenueForecast() {
       })
 
       if (response.status === 403) {
+        // Gracefully handle plan gating
+        setIsLocked(true)
         setIsAvailable(false)
-        setError('Revenue forecasting requires Enterprise plan')
         setData(null)
+        setError(null) // Don't show error, show locked state instead
         setLoading(false)
+        console.log('[useRevenueForecast] Feature locked (requires Enterprise plan)')
         return
       }
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         setError(errorData.error || 'Failed to fetch forecast')
+        setData(null)
+        setIsAvailable(false)
         setLoading(false)
         return
       }
@@ -61,11 +70,15 @@ export function useRevenueForecast() {
       const forecastData = await response.json()
       setData(forecastData)
       setIsAvailable(true)
+      setIsLocked(false)
 
       console.log('[useRevenueForecast] Fetched forecast data')
     } catch (err) {
       console.error('[useRevenueForecast] Error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
+      setData(null)
+      setIsAvailable(false)
+      setIsLocked(false)
     } finally {
       setLoading(false)
     }
@@ -80,6 +93,7 @@ export function useRevenueForecast() {
     loading,
     error,
     isAvailable,
+    isLocked,
     refetch: fetchForecast
   }
 }
