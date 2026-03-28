@@ -26,6 +26,8 @@ interface RecentActivity {
 interface Invoice {
   id: string
   amount: number
+  invoice_number: string
+  remaining_balance?: number
   status: string
   created_at: string
   due_date: string
