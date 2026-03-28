@@ -234,6 +234,7 @@ const FOLLOW_UP_RULES = [
 ]
 
 export async function GET(request: NextRequest) {
+  // Always return a valid response, never crash
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -285,10 +286,18 @@ export async function GET(request: NextRequest) {
     const ruleResults = new Map<string, number>()
 
     for (const rule of FOLLOW_UP_RULES) {
-      const ruleSuggestions = await rule.condition(supabase, userId)
-      ruleResults.set(rule.id, ruleSuggestions.length)
-      console.log(`[FollowUps] Rule ${rule.id}: ${ruleSuggestions.length} matches`)
-      allSuggestions.push(...ruleSuggestions)
+      try {
+        const ruleSuggestions = await rule.condition(supabase, userId)
+        ruleResults.set(rule.id, ruleSuggestions?.length || 0)
+        console.log(`[FollowUps] Rule ${rule.id}: ${ruleSuggestions?.length || 0} matches`)
+        if (Array.isArray(ruleSuggestions)) {
+          allSuggestions.push(...ruleSuggestions)
+        }
+      } catch (ruleError) {
+        console.error(`[FollowUps] Rule ${rule.id} error:`, ruleError)
+        ruleResults.set(rule.id, 0)
+        // Continue with next rule, don't fail entire request
+      }
     }
 
     // Get existing pending follow-ups for deduplication and cleanup
@@ -323,8 +332,13 @@ export async function GET(request: NextRequest) {
     }))
 
     if (followUpsToInsert.length > 0) {
-      await supabase.from('client_follow_ups').insert(followUpsToInsert)
-      console.log('[FollowUps] Created', followUpsToInsert.length, 'new suggestions')
+      try {
+        await supabase.from('client_follow_ups').insert(followUpsToInsert)
+        console.log('[FollowUps] Created', followUpsToInsert.length, 'new suggestions')
+      } catch (insertError) {
+        console.error('[FollowUps] Error inserting follow-ups:', insertError)
+        // Don't fail request if insert fails
+      }
     }
 
     // Dismiss pending follow-ups whose rules NO LONGER match
@@ -333,31 +347,52 @@ export async function GET(request: NextRequest) {
     ) || []
 
     if (followUpsToCleanup.length > 0) {
-      const idsToUpdate = followUpsToCleanup.map((fu) => fu.id)
-      await supabase
-        .from('client_follow_ups')
-        .update({ status: 'dismissed' })
-        .in('id', idsToUpdate)
-      console.log('[FollowUps] Dismissed', followUpsToCleanup.length, 'stale suggestions')
+      try {
+        const idsToUpdate = followUpsToCleanup.map((fu) => fu.id)
+        await supabase
+          .from('client_follow_ups')
+          .update({ status: 'dismissed' })
+          .in('id', idsToUpdate)
+        console.log('[FollowUps] Dismissed', followUpsToCleanup.length, 'stale suggestions')
+      } catch (dismissError) {
+        console.error('[FollowUps] Error dismissing follow-ups:', dismissError)
+        // Don't fail request if dismiss fails
+      }
     }
 
     // Return all pending follow-ups sorted by priority
-    const { data: allFollowUps } = await supabase
-      .from('client_follow_ups')
-      .select('id, client_id, reason, suggestion, priority, created_at')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: false })
+    try {
+      const { data: allFollowUps, error: fetchError } = await supabase
+        .from('client_follow_ups')
+        .select('id, client_id, reason, suggestion, priority, created_at')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false })
 
-    const followUpsWithNames = allFollowUps?.map((fu) => ({
-      ...fu,
-      client_name: clientMap.get(fu.client_id) || 'Unknown'
-    })) || []
+      if (fetchError) {
+        console.error('[FollowUps] Error fetching follow-ups:', fetchError)
+        // Return empty list instead of crashing
+        return NextResponse.json({
+          follow_ups: []
+        })
+      }
 
-    return NextResponse.json({
-      follow_ups: followUpsWithNames
-    })
+      const followUpsWithNames = allFollowUps?.map((fu) => ({
+        ...fu,
+        client_name: clientMap.get(fu.client_id) || 'Unknown'
+      })) || []
+
+      return NextResponse.json({
+        follow_ups: followUpsWithNames
+      })
+    } catch (fetchError) {
+      console.error('[FollowUps] Unexpected error fetching follow-ups:', fetchError)
+      // Return empty list instead of crashing
+      return NextResponse.json({
+        follow_ups: []
+      })
+    }
   } catch (err) {
     console.error('[FollowUps] Error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

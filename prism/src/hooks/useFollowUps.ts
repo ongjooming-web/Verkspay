@@ -60,10 +60,17 @@ export function useFollowUps() {
       }
 
       const data = await response.json()
-      setFollowUps(data.follow_ups || [])
-      setCount(data.follow_ups?.length || 0)
+      
+      // Validate response data
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response data')
+      }
 
-      console.log('[useFollowUps] Fetched', data.follow_ups?.length, 'follow-ups')
+      const followUpsArray = Array.isArray(data.follow_ups) ? data.follow_ups : []
+      setFollowUps(followUpsArray)
+      setCount(followUpsArray.length)
+
+      console.log('[useFollowUps] Fetched', followUpsArray.length, 'follow-ups')
     } catch (err) {
       console.error('[useFollowUps] Error:', err)
       setError('Something went wrong. Please try again.')

@@ -463,7 +463,7 @@ export default function ClientProfilePage() {
                         )}
                       </div>
                       <div className="text-right">
-                        {aiSummaryRemaining !== null && !aiSummaryData && (
+                        {aiSummaryRemaining !== null && (
                           <p className="text-xs text-gray-400 mb-2">{aiSummaryRemaining} remaining</p>
                         )}
                         <Button
@@ -528,7 +528,7 @@ export default function ClientProfilePage() {
                         )}
                       </div>
                       <div className="text-right">
-                        {growthOppRemaining !== null && !growthOppData && (
+                        {growthOppRemaining !== null && (
                           <p className="text-xs text-gray-400 mb-2">{growthOppRemaining} remaining</p>
                         )}
                         <Button
