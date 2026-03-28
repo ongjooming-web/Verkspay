@@ -264,18 +264,6 @@ export default function PricingPage() {
                     })}
                   </ul>
 
-                  {plan.comparison && (
-                    <p className="text-gray-400 text-xs italic mb-6 pb-4 border-t border-white/10 pt-4">
-                      {plan.comparison}
-                    </p>
-                  )}
-
-                  {plan.note && (
-                    <p className="text-gray-400 text-xs italic mb-6 pb-4 border-t border-white/10 pt-4">
-                      {plan.note}
-                    </p>
-                  )}
-
                   {plan.button.action === 'enterprise' ? (
                     <a href="mailto:support@prismops.xyz" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
