@@ -123,7 +123,6 @@ export default function PricingPage() {
         'Proposals & Contracts',
         '30 AI Business Insights/month',
         'AI Client Summaries (10/month)',
-        'AI Growth Opportunities (5/month)',
         'Smart Follow-up Suggestions',
         'Advanced reporting with PDF & CSV export',
         'Priority email support'
@@ -143,7 +142,6 @@ export default function PricingPage() {
         '**Everything in Pro, plus:**',
         '100 AI Business Insights/month',
         '100 AI Client Summaries/month',
-        '100 AI Growth Opportunities/month',
         'Revenue Forecasting',
         'Receivables aging reports',
         'Team management (3 users)',
