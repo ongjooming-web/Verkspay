@@ -44,8 +44,8 @@ export default function ClientProfilePage() {
   const { tags } = useClientTags(clientId)
   const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
   const { triggerAggregation } = useClientStats(clientId)
-  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, generateSummary } = useAISummary(clientId)
-  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, generateOpportunities } = useGrowthOpportunities(clientId)
+  const { data: aiSummaryData, loading: aiSummaryLoading, error: aiSummaryError, isFresh: aiSummaryIsFresh, remaining: aiSummaryRemaining, generateSummary } = useAISummary(clientId)
+  const { data: growthOppData, loading: growthOppLoading, error: growthOppError, isFresh: growthOppIsFresh, remaining: growthOppRemaining, generateOpportunities } = useGrowthOpportunities(clientId)
 
   const [newNoteContent, setNewNoteContent] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
@@ -457,15 +457,27 @@ export default function ClientProfilePage() {
                 {/* AI Client Summary */}
                 <Card className="border-blue-500/30">
                   <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-white">📊 AI Client Summary</h3>
-                      <Button
-                        onClick={generateSummary}
-                        disabled={aiSummaryLoading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
-                      >
-                        {aiSummaryLoading ? 'Generating...' : 'Generate'}
-                      </Button>
+                    <div className="flex justify-between items-center gap-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">📊 AI Client Summary</h3>
+                        {aiSummaryData && !aiSummaryLoading && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {aiSummaryIsFresh ? '✓ Fresh' : '⚠️ Cached (7+ days old)'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {aiSummaryRemaining !== null && !aiSummaryData && (
+                          <p className="text-xs text-gray-400 mb-2">{aiSummaryRemaining} remaining</p>
+                        )}
+                        <Button
+                          onClick={generateSummary}
+                          disabled={aiSummaryLoading || (aiSummaryData && aiSummaryIsFresh)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm"
+                        >
+                          {aiSummaryLoading ? 'Generating...' : 'Generate'}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardBody>
@@ -511,15 +523,27 @@ export default function ClientProfilePage() {
                 {/* Growth Opportunities */}
                 <Card className="border-purple-500/30">
                   <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-white">💡 Growth Opportunities</h3>
-                      <Button
-                        onClick={generateOpportunities}
-                        disabled={growthOppLoading}
-                        className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
-                      >
-                        {growthOppLoading ? 'Generating...' : 'Generate'}
-                      </Button>
+                    <div className="flex justify-between items-center gap-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">💡 Growth Opportunities</h3>
+                        {growthOppData && !growthOppLoading && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {growthOppIsFresh ? '✓ Fresh' : '⚠️ Cached (7+ days old)'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {growthOppRemaining !== null && !growthOppData && (
+                          <p className="text-xs text-gray-400 mb-2">{growthOppRemaining} remaining</p>
+                        )}
+                        <Button
+                          onClick={generateOpportunities}
+                          disabled={growthOppLoading || (growthOppData && growthOppIsFresh)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-sm"
+                        >
+                          {growthOppLoading ? 'Generating...' : 'Generate'}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardBody>

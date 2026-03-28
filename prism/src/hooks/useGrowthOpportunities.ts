@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export interface GrowthOpportunitiesResponse {
@@ -9,9 +9,68 @@ export interface GrowthOpportunitiesResponse {
 }
 
 export function useGrowthOpportunities(clientId: string) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<GrowthOpportunitiesResponse | null>(null)
+  const [isFresh, setIsFresh] = useState(false)
+  const [remaining, setRemaining] = useState<number | null>(null)
+
+  // Load cached opportunities on mount
+  useEffect(() => {
+    const loadCachedOpportunities = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser()
+        if (!userData?.user) {
+          setLoading(false)
+          return
+        }
+
+        // Fetch user's profile for cached insights
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan, ai_lead_insights_count, ai_lead_insights_generated_at, ai_lead_insights')
+          .eq('id', userData.user.id)
+          .single()
+
+        if (profile?.ai_lead_insights) {
+          const insights = profile.ai_lead_insights
+          const generatedDate = profile.ai_lead_insights_generated_at
+            ? new Date(profile.ai_lead_insights_generated_at)
+            : null
+
+          if (insights && generatedDate) {
+            const now = new Date()
+            const daysSince = Math.floor((now.getTime() - generatedDate.getTime()) / (1000 * 60 * 60 * 24))
+
+            // If cached insights are less than 7 days old, use them
+            if (daysSince < 7) {
+              setData({
+                opportunities: insights,
+                engagement_score: 0, // Will be recalculated if needed
+                monthly_average: 0,
+                generated_at: generatedDate.toISOString()
+              })
+              setIsFresh(true)
+              console.log('[useGrowthOpportunities] Loaded cached opportunities')
+            }
+          }
+        }
+
+        // Set remaining count - Enterprise only gets 30/month
+        if (profile?.plan === 'enterprise') {
+          const used = profile.ai_lead_insights_count || 0
+          setRemaining(Math.max(0, 30 - used))
+        }
+
+        setLoading(false)
+      } catch (err) {
+        console.error('[useGrowthOpportunities] Error loading cached opportunities:', err)
+        setLoading(false)
+      }
+    }
+
+    loadCachedOpportunities()
+  }, [clientId])
 
   const generateOpportunities = async () => {
     try {
@@ -49,6 +108,7 @@ export function useGrowthOpportunities(clientId: string) {
 
       const result = await response.json()
       setData(result)
+      setIsFresh(true)
 
       console.log('[useGrowthOpportunities] Generated opportunities for client', clientId)
     } catch (err) {
@@ -63,6 +123,8 @@ export function useGrowthOpportunities(clientId: string) {
     data,
     loading,
     error,
+    isFresh,
+    remaining,
     generateOpportunities
   }
 }
