@@ -70,7 +70,14 @@ export function OnboardingProgress() {
   if (showCelebration) {
     return (
       <Card className="mb-8 border-green-500/30 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-        <CardBody className="text-center py-8">
+        <CardBody className="text-center py-8 relative">
+          <button
+            onClick={() => setShowCelebration(false)}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition text-2xl leading-none"
+            title="Dismiss celebration"
+          >
+            ✕
+          </button>
           <p className="text-4xl mb-4">🎉</p>
           <h3 className="text-xl font-bold text-white mb-2">All set! You're ready to go</h3>
           <p className="text-gray-400 text-sm">You've completed all setup tasks. Start inviting clients and grow your business!</p>
