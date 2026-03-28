@@ -14,7 +14,7 @@ const FOLLOW_UP_RULES = [
     priority: 'high',
     condition: async (supabase: any, userId: string) => {
       const now = new Date()
-      const threeD aysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
       
       const { data: invoices } = await supabase
         .from('invoices')
@@ -28,7 +28,7 @@ const FOLLOW_UP_RULES = [
       invoices?.forEach((inv: any) => {
         const dueDate = new Date(inv.due_date)
         // Include if status is overdue OR (unpaid AND due_date is 3+ days ago)
-        if (inv.status === 'overdue' || (inv.status === 'unpaid' && dueDate < threeD aysAgo)) {
+        if (inv.status === 'overdue' || (inv.status === 'unpaid' && dueDate < threeDaysAgo)) {
           if (!invoicesByClient.has(inv.client_id)) {
             invoicesByClient.set(inv.client_id, [])
           }
@@ -61,7 +61,7 @@ const FOLLOW_UP_RULES = [
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
       const now = new Date()
-      const sixtyD aysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
 
       const { data: clients } = await supabase
         .from('clients')
@@ -69,7 +69,7 @@ const FOLLOW_UP_RULES = [
         .eq('user_id', userId)
         .gte('invoice_count', 3)
         .not('last_invoice_date', 'is', null)
-        .lt('last_invoice_date', sixtyD aysAgo.toISOString())
+        .lt('last_invoice_date', sixtyDaysAgo.toISOString())
 
       const suggestions: any[] = []
 
@@ -97,14 +97,14 @@ const FOLLOW_UP_RULES = [
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
       const now = new Date()
-      const thirtyD aysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
       const { data: recurring } = await supabase
         .from('recurring_invoices')
         .select('id, client_id, description, updated_at')
         .eq('user_id', userId)
         .eq('status', 'paused')
-        .lt('updated_at', thirtyD aysAgo.toISOString())
+        .lt('updated_at', thirtyDaysAgo.toISOString())
 
       const suggestions: any[] = []
 
@@ -132,14 +132,14 @@ const FOLLOW_UP_RULES = [
     priority: 'medium',
     condition: async (supabase: any, userId: string) => {
       const now = new Date()
-      const sevenD aysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
       const { data: proposals } = await supabase
         .from('proposals')
         .select('id, client_id, proposal_number, total_amount, created_at')
         .eq('user_id', userId)
         .eq('status', 'sent')
-        .lt('created_at', sevenD aysAgo.toISOString())
+        .lt('created_at', sevenDaysAgo.toISOString())
 
       const suggestions: any[] = []
 
@@ -168,14 +168,14 @@ const FOLLOW_UP_RULES = [
     priority: 'low',
     condition: async (supabase: any, userId: string) => {
       const now = new Date()
-      const sevenD aysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
       const { data: clients } = await supabase
         .from('clients')
         .select('id, name, created_at, invoice_count')
         .eq('user_id', userId)
         .eq('invoice_count', 0)
-        .lt('created_at', sevenD aysAgo.toISOString())
+        .lt('created_at', sevenDaysAgo.toISOString())
 
       const suggestions: any[] = []
 
