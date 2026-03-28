@@ -91,17 +91,36 @@ const TOUR_STEPS = [
 ]
 
 export function OnboardingTour() {
-  const { showTour, tourStep, updateTourStep, completeOnboarding, loading } = useOnboarding()
+  const { showTour, tourStep, updateTourStep, completeOnboarding, loading, status } = useOnboarding()
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const router = useRouter()
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[OnboardingTour] State:', {
+      loading,
+      showTour,
+      tourStep,
+      statusExists: !!status,
+      status
+    })
+  }, [loading, showTour, tourStep, status])
+
   // Don't render while loading or if tour shouldn't show
-  if (loading || !showTour) return null
+  if (loading || !showTour) {
+    console.log('[OnboardingTour] Not rendering - loading:', loading, 'showTour:', showTour)
+    return null
+  }
 
   const step = TOUR_STEPS[tourStep]
-  if (!step) return null // Safety check
+  if (!step) {
+    console.log('[OnboardingTour] No step found for tourStep:', tourStep)
+    return null // Safety check
+  }
+
+  console.log('[OnboardingTour] Rendering step:', tourStep, step.title)
 
   // Find and track target element
   useEffect(() => {

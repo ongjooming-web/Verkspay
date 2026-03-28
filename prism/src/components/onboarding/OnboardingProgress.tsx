@@ -19,8 +19,21 @@ export function OnboardingProgress() {
   const [showCelebration, setShowCelebration] = useState(false)
   const router = useRouter()
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[OnboardingProgress] State:', {
+      loading,
+      showProgress,
+      completedCount,
+      totalTasks,
+      statusExists: !!status,
+      showCelebration
+    })
+  }, [loading, showProgress, completedCount, totalTasks, status, showCelebration])
+
   useEffect(() => {
     if (showProgress && completedCount === totalTasks && !showCelebration) {
+      console.log('[OnboardingProgress] All tasks complete, showing celebration')
       setShowCelebration(true)
       const timer = setTimeout(() => {
         completeOnboarding()
@@ -30,7 +43,12 @@ export function OnboardingProgress() {
   }, [completedCount, totalTasks, showProgress, showCelebration, completeOnboarding])
 
   // Don't render while loading or if progress shouldn't show
-  if (loading || !showProgress || !status) return null
+  if (loading || !showProgress || !status) {
+    console.log('[OnboardingProgress] Not rendering - loading:', loading, 'showProgress:', showProgress, 'status:', !!status)
+    return null
+  }
+
+  console.log('[OnboardingProgress] Rendering progress bar')
 
   const progressPercent = (completedCount / totalTasks) * 100
 
