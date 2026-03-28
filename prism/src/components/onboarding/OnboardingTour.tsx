@@ -4,6 +4,13 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/hooks/useOnboarding'
 
+type TourButton = {
+  label: string
+  action: string
+  type: 'primary' | 'secondary'
+  target?: string
+}
+
 const TOUR_STEPS = [
   {
     step: 0,
@@ -12,9 +19,9 @@ const TOUR_STEPS = [
     target: null,
     position: 'center',
     buttons: [
-      { label: "Let's Go", action: 'next', type: 'primary' },
-      { label: 'Skip Tour', action: 'skip', type: 'secondary' }
-    ]
+      { label: "Let's Go", action: 'next', type: 'primary' as const },
+      { label: 'Skip Tour', action: 'skip', type: 'secondary' as const }
+    ] as TourButton[]
   },
   {
     step: 1,
@@ -22,7 +29,7 @@ const TOUR_STEPS = [
     description: 'Navigate between your Dashboard, Clients, Invoices, Insights, Reports, Proposals, and Settings from here.',
     target: '[data-onboarding="nav"]',
     position: 'below',
-    buttons: [{ label: 'Next', action: 'next', type: 'primary' }]
+    buttons: [{ label: 'Next', action: 'next', type: 'primary' as const }] as TourButton[]
   },
   {
     step: 2,
@@ -30,7 +37,7 @@ const TOUR_STEPS = [
     description: 'Track your paid revenue, pending payments, active clients, and total invoices. These update automatically as you create and collect on invoices.',
     target: '[data-onboarding="metrics-cards"]',
     position: 'below',
-    buttons: [{ label: 'Next', action: 'next', type: 'primary' }]
+    buttons: [{ label: 'Next', action: 'next', type: 'primary' as const }] as TourButton[]
   },
   {
     step: 3,
@@ -39,9 +46,9 @@ const TOUR_STEPS = [
     target: '[data-onboarding="nav-settings"]',
     position: 'below',
     buttons: [
-      { label: 'Go to Settings', action: 'navigate', target: '/settings', type: 'primary' },
-      { label: 'I\'ll do this later →', action: 'next', type: 'secondary' }
-    ]
+      { label: 'Go to Settings', action: 'navigate', target: '/settings', type: 'primary' as const },
+      { label: 'I\'ll do this later →', action: 'next', type: 'secondary' as const }
+    ] as TourButton[]
   },
   {
     step: 4,
@@ -50,9 +57,9 @@ const TOUR_STEPS = [
     target: '[data-onboarding="nav-clients"]',
     position: 'below',
     buttons: [
-      { label: 'Go to Clients', action: 'navigate', target: '/clients', type: 'primary' },
-      { label: 'Next', action: 'next', type: 'secondary' }
-    ]
+      { label: 'Go to Clients', action: 'navigate', target: '/clients', type: 'primary' as const },
+      { label: 'Next', action: 'next', type: 'secondary' as const }
+    ] as TourButton[]
   },
   {
     step: 5,
@@ -61,9 +68,9 @@ const TOUR_STEPS = [
     target: '[data-onboarding="nav-invoices"]',
     position: 'below',
     buttons: [
-      { label: 'Go to Invoices', action: 'navigate', target: '/invoices', type: 'primary' },
-      { label: 'Next', action: 'next', type: 'secondary' }
-    ]
+      { label: 'Go to Invoices', action: 'navigate', target: '/invoices', type: 'primary' as const },
+      { label: 'Next', action: 'next', type: 'secondary' as const }
+    ] as TourButton[]
   },
   {
     step: 6,
@@ -71,7 +78,7 @@ const TOUR_STEPS = [
     description: 'Once you have a few invoices, generate AI-powered analysis of your business — client segments, growth opportunities, risk alerts, and recommendations.',
     target: '[data-onboarding="nav-insights"]',
     position: 'below',
-    buttons: [{ label: 'Got it!', action: 'next', type: 'primary' }]
+    buttons: [{ label: 'Got it!', action: 'next', type: 'primary' as const }] as TourButton[]
   },
   {
     step: 7,
@@ -79,7 +86,7 @@ const TOUR_STEPS = [
     description: "Start by setting up your business profile in Settings, then add a client and send your first invoice. We're here to help you get paid faster.",
     target: null,
     position: 'center',
-    buttons: [{ label: 'Start Using Prism', action: 'complete', type: 'primary' }]
+    buttons: [{ label: 'Start Using Prism', action: 'complete', type: 'primary' as const }] as TourButton[]
   }
 ]
 
