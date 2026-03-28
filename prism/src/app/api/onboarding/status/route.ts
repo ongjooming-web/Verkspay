@@ -1,71 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
-import { getSupabaseServer } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[Onboarding Status] Request received')
-    
-    // Verify auth
-    const { user, error: authError } = await requireAuth(request)
-    
-    if (authError) {
-      console.log('[Onboarding Status] Auth failed:', authError.message)
-      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
     }
-    
-    if (!user) {
+
+    const token = authHeader.substring(7)
+    const { data: userData, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !userData.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[Onboarding Status] User verified:', user.id)
-    const supabase = getSupabaseServer()
+    const userId = userData.user.id
 
-    // Fetch profile
-    const { data: profile, error: profileError } = await supabase
+    // Get profile
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('company_name, stripe_customer_id, onboarding_completed, onboarding_step, onboarding_dismissed_at, latest_insights')
-      .eq('id', user.id)
+      .select('onboarding_completed, onboarding_step, onboarding_dismissed_at, company_name, stripe_customer_id, latest_insights')
+      .eq('id', userId)
       .single()
 
-    if (profileError || !profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
     // Count clients
-    const { count: clientCount, error: clientError } = await supabase
+    const { count: clientCount } = await supabase
       .from('clients')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
 
     // Count invoices
-    const { count: invoiceCount, error: invoiceError } = await supabase
+    const { count: invoiceCount } = await supabase
       .from('invoices')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
 
     const tasks = {
-      business_profile: !!(profile.company_name && profile.company_name.trim() !== ''),
-      stripe_connected: !!profile.stripe_customer_id,
+      business_profile: !!(profile?.company_name && profile.company_name.trim() !== ''),
+      stripe_connected: !!profile?.stripe_customer_id,
       first_client: (clientCount || 0) >= 1,
       first_invoice: (invoiceCount || 0) >= 1,
-      ai_insights: !!(profile.latest_insights && typeof profile.latest_insights === 'string' && profile.latest_insights.trim() !== '')
+      ai_insights: !!(profile?.latest_insights && typeof profile.latest_insights === 'string' && profile.latest_insights.trim() !== ''),
     }
 
     const completedCount = Object.values(tasks).filter(Boolean).length
-    const isDismissed = !!profile.onboarding_dismissed_at
-    const isCompleted = profile.onboarding_completed || completedCount === 5
 
     return NextResponse.json({
-      completed: isCompleted,
-      dismissed: isDismissed,
+      completed: profile?.onboarding_completed || false,
+      dismissed: !!profile?.onboarding_dismissed_at,
+      tour_step: profile?.onboarding_step || 0,
       tasks,
       completed_count: completedCount,
       total_tasks: 5,
-      tour_step: profile.onboarding_step || 0
     })
-  } catch (err) {
-    console.error('[Onboarding Status] Error:', err)
+  } catch (error) {
+    console.error('[Onboarding] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
