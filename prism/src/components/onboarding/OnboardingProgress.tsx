@@ -68,13 +68,20 @@ export function OnboardingProgress() {
   const progressPercent = (completedCount / totalTasks) * 100
 
   if (showCelebration) {
+    const handleCloseCelebration = () => {
+      console.log('[OnboardingProgress] Closing celebration')
+      setShowCelebration(false)
+    }
+
     return (
       <Card className="mb-8 border-green-500/30 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
         <CardBody className="text-center py-8 relative">
           <button
-            onClick={() => setShowCelebration(false)}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition text-2xl leading-none"
+            type="button"
+            onClick={handleCloseCelebration}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition text-xl leading-none p-1 z-10 cursor-pointer"
             title="Dismiss celebration"
+            aria-label="Close celebration"
           >
             ✕
           </button>
@@ -96,9 +103,14 @@ export function OnboardingProgress() {
             <p className="text-sm text-gray-400">{completedCount} of {totalTasks} complete</p>
           </div>
           <button
-            onClick={dismissProgress}
-            className="text-gray-500 hover:text-gray-300 transition text-2xl leading-none"
-            title="Dismiss"
+            type="button"
+            onClick={() => {
+              console.log('[OnboardingProgress] Dismissing progress bar')
+              dismissProgress()
+            }}
+            className="text-gray-500 hover:text-gray-300 transition text-xl leading-none p-1 z-10 cursor-pointer flex-shrink-0"
+            title="Dismiss progress bar"
+            aria-label="Dismiss"
           >
             ✕
           </button>
