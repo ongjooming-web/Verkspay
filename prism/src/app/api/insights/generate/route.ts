@@ -64,52 +64,76 @@ async function callClaudeAPI(insightsData: InsightsData): Promise<ClaudeInsights
     throw new Error('ANTHROPIC_API_KEY not configured')
   }
 
-  const systemPrompt = `You are a business strategist for freelancers and agencies. Analyze business data and generate comprehensive insights covering financial health, client intelligence, growth opportunities, and risks.
+  const systemPrompt = `You are an AI business strategist for Prism, an invoicing platform used by freelancers and small businesses. Analyze the provided business data and generate comprehensive, actionable insights.
 
-Respond ONLY with valid JSON, no markdown, no code blocks, no preamble. Use this exact structure:
-{
-  "summary": "2-3 sentence executive summary of overall business health, revenue trends, and cash flow status",
-  "highlights": [
-    {
-      "type": "positive" | "warning" | "action",
-      "title": "Short title",
-      "description": "1-2 sentence insight with specific numbers"
-    }
-  ],
-  "client_insights": [
-    {
-      "client_name": "Name",
-      "health": "good" | "attention" | "at_risk",
-      "note": "1 sentence observation"
-    }
-  ],
-  "recommendations": [
-    "Actionable, prioritized next step for this week",
-    "Actionable next step",
-    "Actionable next step"
-  ],
-  "revenue_trend": "growing" | "stable" | "declining"
-}
+Format your response EXACTLY as follows:
 
-Analysis areas to cover:
-- Revenue trends: Compare month-to-month, flag declining revenue
-- Client concentration: Flag if top 3+ clients account for >60% revenue (concentration risk)
-- Industry diversity: Comment on client spread across industries if available
-- Payment health: Flag late payers, average collection time, on-time % 
-- Growth opportunities: Suggest upselling to high-potential clients, contract adjustments for problem clients
-- Risk alerts: Flag overdue amounts, inactive clients (60+ days), declining patterns, churn risk
-- Client segmentation: Identify high-value, growing, at-risk segments
+## Business Overview
+One paragraph on overall business health — revenue trends, cash flow status, and payment collection health.
+
+## Top Highlights
+- 3-4 key highlights with specific numbers (best clients, biggest wins, notable trends)
+
+## Client Intelligence
+For each of the top 3-5 clients by revenue, provide a one-line assessment:
+- "{{client_name}} ({{company}}): {{one-line summary of relationship health, payment behavior}}"
+
+Flag any clients that need immediate attention.
+
+## Client Segments
+Identify 2-3 natural groupings in the client base (by revenue, frequency, or industry). Name each segment and describe its characteristics.
+
+## Growth Opportunities
+- 3-4 specific, actionable opportunities based on patterns
+- Include "clients like X" suggestions where relevant
+
+## Risk Alerts
+- Flag concentration risks, declining trends, overdue patterns, or churning clients
+- Name specific clients and amounts
+
+## Recommended Actions
+- 2-3 prioritized next steps the business owner should take this week
 
 Rules:
-- Be specific with numbers and client names (use top 5 provided)
-- Include industry insights if client data shows industry breakdown
-- Flag revenue concentration if top 3 > 60% of total
-- Suggest concrete actions: "Follow up with [Client] about [Reason]"
-- Keep highlights to 4-6 items (business overview, top highlights, growth/risk alerts)
-- Keep recommendations to 3-5 actionable items
-- If < 3 invoices total, acknowledge and give basic startup advice`
+- Be specific with numbers, currency, and client names
+- If data shows revenue concentration >60%, flag it as a risk
+- Include industry breakdown if provided
+- Flag overdue amounts and inactive clients explicitly
+- Suggest concrete actions: "Follow up with [Client] about [specific reason]"
+- Keep each section concise but substantive`
 
-  const userMessage = `Here is my business data: ${JSON.stringify(insightsData)}`
+  // Format comprehensive user message with structured data
+  const businessSummary = \`
+Business Summary:
+- Total clients: \${insightsData.clients?.length || 0}
+- Total revenue: \${insightsData.revenue?.currency_code || 'USD'} \${insightsData.revenue?.total_paid?.toLocaleString() || 0}
+- Total outstanding: \${insightsData.revenue?.currency_code || 'USD'} \${insightsData.revenue?.total_overdue?.toLocaleString() || 0}
+- Total invoices: \${insightsData.invoices?.total_count || 0}
+- Proposals: \${insightsData.clients?.length || 0} sent (from client count)
+
+Revenue Concentration:
+- Top 3 clients represent \${insightsData.revenue_concentration?.top_3_percentage || 0}% of total revenue
+
+Client Industries:
+\${insightsData.industries?.map((ind: any) => \`- \${ind.industry}: \${ind.count} clients\`).join('\\n') || 'No industry data available'}
+
+Top 5 Clients by Revenue:
+\${insightsData.top_clients?.map((c: any, i: number) => \`\${i + 1}. \${c.client_name} (\${c.company || 'N/A'}) — Industry: \${c.industry || 'Not specified'} — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()} — Outstanding: TBD — Last Invoice: \${c.last_invoice_date ? new Date(c.last_invoice_date).toLocaleDateString() : 'Never'}\`).join('\\n') || 'No client data'}
+
+Churned/Inactive Clients:
+\${(insightsData.clients || []).filter((c: any) => {
+  const daysSince = c.last_invoice_date ? Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24)) : Infinity;
+  return c.invoice_count >= 3 && daysSince > 60;
+}).map((c: any) => \`- \${c.client_name} (\${c.company || 'N/A'}) — Last invoice: \${c.last_invoice_date ? Math.floor((Date.now() - new Date(c.last_invoice_date).getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'} days ago — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()}\`).join('\\n') || '- None'}
+
+Most Common Services:
+\${insightsData.clients?.slice(0, 5)?.map((c: any, i: number) => \`\${i + 1}. Service name TBD (from line items)\`).join('\\n') || 'Not enough data'}
+
+All Clients Overview:
+\${insightsData.clients?.map((c: any) => \`- \${c.client_name} (\${c.company || 'N/A'}) — Revenue: \${insightsData.revenue?.currency_code} \${c.total_revenue?.toLocaleString()} — Outstanding: \${insightsData.revenue?.currency_code} \${c.total_outstanding?.toLocaleString() || 0}\`).join('\\n') || 'No client data'}
+\`;
+
+  const userMessage = businessSummary
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -120,7 +144,8 @@ Rules:
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2500,
+      max_tokens: 1000,
+      temperature: 0.3,
       system: systemPrompt,
       messages: [
         {
