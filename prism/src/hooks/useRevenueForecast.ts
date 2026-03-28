@@ -41,6 +41,29 @@ export function useRevenueForecast() {
         return
       }
 
+      // Step 1: Check plan BEFORE fetching (Enterprise only)
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('plan, email')
+        .eq('id', sessionData.session.user.id)
+        .single()
+
+      const plan = profileData?.plan || 'trial'
+      const email = profileData?.email || ''
+      const masterTestEmails = (process.env.NEXT_PUBLIC_MASTER_TEST_EMAILS || '').split(',')
+      const isMaster = masterTestEmails.includes(email)
+
+      // Enterprise only: lock immediately for non-Enterprise, non-Master
+      if (!isMaster && plan !== 'enterprise') {
+        console.log('[useRevenueForecast] Plan locked:', plan)
+        setIsLocked(true)
+        setIsAvailable(false)
+        setData(null)
+        setLoading(false)
+        return
+      }
+
+      // Step 2: Fetch if plan allows it
       const response = await fetch('/api/revenue-forecast', {
         headers: {
           'Authorization': `Bearer ${sessionData.session.access_token}`
@@ -48,11 +71,11 @@ export function useRevenueForecast() {
       })
 
       if (response.status === 403) {
-        // Gracefully handle plan gating
+        // Gracefully handle any remaining 403 responses
         setIsLocked(true)
         setIsAvailable(false)
         setData(null)
-        setError(null) // Don't show error, show locked state instead
+        setError(null)
         setLoading(false)
         console.log('[useRevenueForecast] Feature locked (requires Enterprise plan)')
         return

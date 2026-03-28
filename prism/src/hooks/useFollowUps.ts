@@ -13,7 +13,7 @@ export interface FollowUp {
 
 export function useFollowUps() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
-  const [loading, setLoading] = useState(true) // Start as true so we show loading state
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [count, setCount] = useState(0)
   const [isLocked, setIsLocked] = useState(false)
@@ -33,6 +33,29 @@ export function useFollowUps() {
         return
       }
 
+      // Step 1: Check plan BEFORE fetching
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('plan, email')
+        .eq('id', sessionData.session.user.id)
+        .single()
+
+      const plan = profileData?.plan || 'trial'
+      const email = profileData?.email || ''
+      const masterTestEmails = (process.env.NEXT_PUBLIC_MASTER_TEST_EMAILS || '').split(',')
+      const isMaster = masterTestEmails.includes(email)
+
+      // Trial/Starter: lock immediately, don't fetch
+      if (!isMaster && (plan === 'trial' || plan === 'starter')) {
+        console.log('[useFollowUps] Plan locked:', plan)
+        setIsLocked(true)
+        setFollowUps([])
+        setCount(0)
+        setLoading(false)
+        return
+      }
+
+      // Step 2: Fetch if plan allows it
       const response = await fetch('/api/follow-ups', {
         headers: {
           'Authorization': `Bearer ${sessionData.session.access_token}`
@@ -40,9 +63,9 @@ export function useFollowUps() {
       })
 
       if (response.status === 403) {
-        // Gracefully handle plan gating
+        // Gracefully handle any remaining 403 responses
         setIsLocked(true)
-        setError(null) // Don't show error message for locked features
+        setError(null)
         setFollowUps([])
         setCount(0)
         setLoading(false)
@@ -60,7 +83,7 @@ export function useFollowUps() {
       }
 
       const data = await response.json()
-      
+
       // Validate response data
       if (!data || typeof data !== 'object') {
         throw new Error('Invalid response data')
