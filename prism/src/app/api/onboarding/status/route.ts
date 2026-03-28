@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Get profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('onboarding_completed, onboarding_step, onboarding_dismissed_at, company_name, stripe_customer_id, latest_insights')
+      .select('onboarding_completed, onboarding_step, onboarding_dismissed_at, business_name, stripe_customer_id, latest_insights')
       .eq('id', userId)
       .single()
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       onboarding_completed: profile?.onboarding_completed,
       onboarding_step: profile?.onboarding_step,
       onboarding_dismissed_at: profile?.onboarding_dismissed_at,
-      company_name: profile?.company_name,
+      business_name: profile?.business_name,
       stripe_customer_id: profile?.stripe_customer_id,
       latest_insights: !!profile?.latest_insights
     })
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
 
     const tasks = {
-      business_profile: !!(profile?.company_name && profile.company_name.trim() !== ''),
+      business_profile: !!(profile?.business_name && profile.business_name.trim() !== ''),
       stripe_connected: !!profile?.stripe_customer_id,
       first_client: (clientCount || 0) >= 1,
       first_invoice: (invoiceCount || 0) >= 1,
