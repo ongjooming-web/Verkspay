@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = getSupabaseServer()
+    // Verify auth
+    const { user, error: authError } = await requireAuth(request)
     
-    // Get the auth token from the request header
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Verify the user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !user) {
-      console.log('[Onboarding Update] Auth error:', authError)
+    if (authError) {
+      console.log('[Onboarding Update] Auth failed:', authError.message)
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    }
+    
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = getSupabaseServer()
 
     const body = await request.json()
     const { tour_step, dismissed, completed } = body

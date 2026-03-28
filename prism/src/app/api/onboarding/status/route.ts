@@ -1,26 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[Onboarding Status] Request received')
-    const supabase = getSupabaseServer()
     
-    // Get the auth token from the request header
-    const authHeader = request.headers.get('authorization')
-    console.log('[Onboarding Status] Auth header present:', !!authHeader)
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Verify the user
-    console.log('[Onboarding Status] Verifying user with token:', !!token)
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    console.log('[Onboarding Status] Auth result:', { userExists: !!user, error: authError?.message })
+    // Verify auth
+    const { user, error: authError } = await requireAuth(request)
     
-    if (authError || !user) {
-      console.log('[Onboarding Status] Auth error:', authError?.message)
-      return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
+    if (authError) {
+      console.log('[Onboarding Status] Auth failed:', authError.message)
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
     }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log('[Onboarding Status] User verified:', user.id)
+    const supabase = getSupabaseServer()
 
     // Fetch profile
     const { data: profile, error: profileError } = await supabase
