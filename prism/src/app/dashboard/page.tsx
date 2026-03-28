@@ -77,6 +77,7 @@ export default function Dashboard() {
     acceptedValue: 0,
     winRate: 0
   })
+  const [recentActivityExpanded, setRecentActivityExpanded] = useState(false)
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -809,31 +810,41 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity (Collapsible) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <span>📊</span> Recent Activity
-              </h2>
+              <button
+                onClick={() => setRecentActivityExpanded(!recentActivityExpanded)}
+                className="w-full flex items-center justify-between gap-2 hover:opacity-80 transition"
+              >
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>📊</span> Recent Activity
+                </h2>
+                <span className={`text-gray-400 text-2xl transition-transform ${recentActivityExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
             </CardHeader>
-            <CardBody className="space-y-4">
-              {recentActivity.length === 0 ? (
-                <div className="text-gray-400 text-center py-8">
-                  <p>No activity yet. Create your first client, invoice, or proposal!</p>
-                </div>
-              ) : (
-                recentActivity.map((activity, idx) => (
-                  <div key={activity.id} className={`py-3 ${idx < recentActivity.length - 1 ? 'border-b border-white/10' : ''} hover:bg-white/5 rounded px-2 transition-colors`}>
-                    <div className="font-medium text-white flex items-center gap-2">
-                      <span className="text-lg">{activity.type === 'invoice' ? '📄' : '📝'}</span>
-                      {activity.description}
-                    </div>
-                    <div className="text-gray-400 text-sm mt-1">{getTimeAgo(activity.timestamp)}</div>
+            {recentActivityExpanded && (
+              <CardBody className="space-y-4">
+                {recentActivity.length === 0 ? (
+                  <div className="text-gray-400 text-center py-8">
+                    <p>No activity yet. Create your first client, invoice, or proposal!</p>
                   </div>
-                ))
-              )}
-            </CardBody>
+                ) : (
+                  recentActivity.map((activity, idx) => (
+                    <div key={activity.id} className={`py-3 ${idx < recentActivity.length - 1 ? 'border-b border-white/10' : ''} hover:bg-white/5 rounded px-2 transition-colors`}>
+                      <div className="font-medium text-white flex items-center gap-2">
+                        <span className="text-lg">{activity.type === 'invoice' ? '📄' : '📝'}</span>
+                        {activity.description}
+                      </div>
+                      <div className="text-gray-400 text-sm mt-1">{getTimeAgo(activity.timestamp)}</div>
+                    </div>
+                  ))
+                )}
+              </CardBody>
+            )}
           </Card>
         </div>
 
