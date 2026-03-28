@@ -38,7 +38,10 @@ export function useOnboarding() {
       const res = await fetch('/api/onboarding/status')
       if (res.ok) {
         const data = await res.json()
+        console.log('[useOnboarding] Status fetched:', data)
         setStatus(data)
+      } else {
+        console.log('[useOnboarding] Status fetch failed:', res.status)
       }
     } catch (err) {
       console.error('[useOnboarding] Error fetching status:', err)

@@ -15,7 +15,7 @@ const TASK_CONFIG = [
 ]
 
 export function OnboardingProgress() {
-  const { showProgress, status, completedCount, totalTasks, dismissProgress, completeOnboarding } = useOnboarding()
+  const { showProgress, status, completedCount, totalTasks, dismissProgress, completeOnboarding, loading } = useOnboarding()
   const [showCelebration, setShowCelebration] = useState(false)
   const router = useRouter()
 
@@ -29,7 +29,8 @@ export function OnboardingProgress() {
     }
   }, [completedCount, totalTasks, showProgress, showCelebration, completeOnboarding])
 
-  if (!showProgress || !status) return null
+  // Don't render while loading or if progress shouldn't show
+  if (loading || !showProgress || !status) return null
 
   const progressPercent = (completedCount / totalTasks) * 100
 
