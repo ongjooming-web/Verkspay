@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -14,6 +14,34 @@ export default function Login() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Handle email confirmation callback
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      // Check if there's a hash fragment with auth tokens
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const accessToken = hashParams.get('access_token')
+      const type = hashParams.get('type')
+
+      if (accessToken && type === 'recovery') {
+        // Password recovery flow
+        console.log('Password recovery token detected')
+        return
+      }
+
+      if (accessToken) {
+        // Email confirmation or OAuth callback
+        console.log('Auth token detected in URL, redirecting to dashboard')
+        // Supabase SDK automatically handles the token
+        // Wait a moment for Supabase to process the session
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 500)
+      }
+    }
+
+    handleAuthCallback()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

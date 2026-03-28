@@ -35,7 +35,17 @@ export function useOnboarding() {
   const refresh = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/onboarding/status')
+      
+      // Get the current session to include auth token
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      const token = session?.access_token
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const res = await fetch('/api/onboarding/status', { headers })
       if (res.ok) {
         const data = await res.json()
         console.log('[useOnboarding] Status fetched:', data)
@@ -52,9 +62,17 @@ export function useOnboarding() {
 
   const updateTourStep = async (step: number) => {
     try {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      const token = session?.access_token
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
       const res = await fetch('/api/onboarding/update', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tour_step: step })
       })
       if (res.ok) {
@@ -67,9 +85,17 @@ export function useOnboarding() {
 
   const dismissProgress = async () => {
     try {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      const token = session?.access_token
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
       const res = await fetch('/api/onboarding/update', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ dismissed: true })
       })
       if (res.ok) {
@@ -82,9 +108,17 @@ export function useOnboarding() {
 
   const completeOnboarding = async () => {
     try {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      const token = session?.access_token
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
       const res = await fetch('/api/onboarding/update', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ completed: true })
       })
       if (res.ok) {

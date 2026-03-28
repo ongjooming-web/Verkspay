@@ -4,9 +4,16 @@ import { getSupabaseServer } from '@/lib/supabase-server'
 export async function PUT(request: NextRequest) {
   try {
     const supabase = getSupabaseServer()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    // Get the auth token from the request header
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Verify the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
+      console.log('[Onboarding Update] Auth error:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
