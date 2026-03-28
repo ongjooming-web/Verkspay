@@ -5,6 +5,8 @@ interface Tag {
   id: string
   name: string
   color: string
+  is_system: boolean
+  is_auto: boolean
   created_at: string
 }
 
