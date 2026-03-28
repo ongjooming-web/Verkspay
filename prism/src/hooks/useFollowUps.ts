@@ -13,7 +13,7 @@ export interface FollowUp {
 
 export function useFollowUps() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // Start as true so we show loading state
   const [error, setError] = useState<string | null>(null)
   const [count, setCount] = useState(0)
   const [isLocked, setIsLocked] = useState(false)

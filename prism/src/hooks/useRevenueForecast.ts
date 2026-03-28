@@ -21,9 +21,9 @@ export interface RevenueForecastData {
 
 export function useRevenueForecast() {
   const [data, setData] = useState<RevenueForecastData | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // Start as true so we show loading state
   const [error, setError] = useState<string | null>(null)
-  const [isAvailable, setIsAvailable] = useState(true)
+  const [isAvailable, setIsAvailable] = useState(false) // Start as false until we know
   const [isLocked, setIsLocked] = useState(false)
 
   const fetchForecast = async () => {

@@ -9,7 +9,7 @@ export interface GrowthOpportunitiesResponse {
 }
 
 export function useGrowthOpportunities(clientId: string) {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Don't show loading during initial mount (just loading cached data)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<GrowthOpportunitiesResponse | null>(null)
   const [isFresh, setIsFresh] = useState(false)
