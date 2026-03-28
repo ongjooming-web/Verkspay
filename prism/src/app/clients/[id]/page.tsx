@@ -14,6 +14,7 @@ import { useClientStats } from '@/hooks/useClientStats'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useGrowthOpportunities } from '@/hooks/useGrowthOpportunities'
 import { formatCurrency } from '@/lib/countries'
+import ReactMarkdown from 'react-markdown'
 
 interface Client {
   id: string
@@ -495,22 +496,10 @@ export default function ClientProfilePage() {
                     )}
 
                     {aiSummaryData && (
-                      <div className="prose prose-invert max-w-none text-sm space-y-4">
-                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
+                      <div className="space-y-4">
+                        <ReactMarkdown className="prose prose-invert max-w-none text-sm prose-headings:text-gray-200 prose-headings:font-semibold prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-gray-100">
                           {aiSummaryData.summary}
-                        </div>
-                        {aiSummaryData.suggested_tags && aiSummaryData.suggested_tags.length > 0 && (
-                          <div className="pt-4 border-t border-gray-700/50">
-                            <p className="text-xs uppercase text-gray-400 mb-2">Suggested Tags</p>
-                            <div className="flex flex-wrap gap-2">
-                              {aiSummaryData.suggested_tags.map((tag, idx) => (
-                                <span key={idx} className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium">
-                                  ✨ {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        </ReactMarkdown>
                       </div>
                     )}
 
@@ -562,21 +551,23 @@ export default function ClientProfilePage() {
 
                     {growthOppData && (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
-                          <div className="p-3 bg-gray-900/50 rounded">
-                            <p className="text-xs uppercase text-gray-400 mb-1">Engagement Score</p>
-                            <p className="text-3xl font-bold text-purple-400">{growthOppData.engagement_score}/100</p>
+                        {growthOppData.engagement_score > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-700/50">
+                            <div className="p-3 bg-gray-900/50 rounded">
+                              <p className="text-xs uppercase text-gray-400 mb-1">Engagement Score</p>
+                              <p className="text-3xl font-bold text-purple-400">{growthOppData.engagement_score}/100</p>
+                            </div>
+                            <div className="p-3 bg-gray-900/50 rounded">
+                              <p className="text-xs uppercase text-gray-400 mb-1">Monthly Average</p>
+                              <p className="text-2xl font-bold text-green-400">
+                                {formatCurrency(growthOppData.monthly_average, currencyCode)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="p-3 bg-gray-900/50 rounded">
-                            <p className="text-xs uppercase text-gray-400 mb-1">Monthly Average</p>
-                            <p className="text-2xl font-bold text-green-400">
-                              {formatCurrency(growthOppData.monthly_average, currencyCode)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed text-sm">
+                        )}
+                        <ReactMarkdown className="prose prose-invert max-w-none text-sm prose-headings:text-gray-200 prose-headings:font-semibold prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-gray-100">
                           {growthOppData.opportunities}
-                        </div>
+                        </ReactMarkdown>
                       </div>
                     )}
 

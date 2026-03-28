@@ -31,7 +31,8 @@
     "pg": "^8.11.0",
     "resend": "^3.0.0",
     "html2pdf.js": "^0.10.1",
-    "@anthropic-ai/sdk": "^0.28.0"
+    "@anthropic-ai/sdk": "^0.28.0",
+    "react-markdown": "^9.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",

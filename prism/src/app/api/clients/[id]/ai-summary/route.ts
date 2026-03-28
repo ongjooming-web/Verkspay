@@ -189,14 +189,7 @@ One paragraph summarizing the business relationship with this client.
 - 2-3 actionable observations about this client (trends, risks, opportunities)
 
 ## Recommended Actions
-- 1-2 specific next steps the business owner should take
-
-## Suggested Tags
-Based on the client data, suggest 1-3 custom descriptive tags that would help categorize this client.
-Examples of good tags: "Design Services", "Monthly Retainer", "Seasonal Q4", "Upsell Candidate"
-
-Return the tags as a JSON array on its own line at the very end:
-TAGS: ["tag1", "tag2"]`
+- 1-2 specific next steps the business owner should take`
 
     const userPrompt = `Client: ${client.name}${client.company ? ` (${client.company})` : ''}
 Email: ${client.email}
@@ -243,22 +236,6 @@ ${notesList.length > 0 ? notesList.join('\n') : 'No notes'}`
 
     const summary = response.content[0].type === 'text' ? response.content[0].text : ''
 
-    // Parse tags from response
-    const tagsMatch = summary.match(/TAGS:\s*\[(.*?)\]/)
-    const suggestedTags: string[] = []
-
-    if (tagsMatch) {
-      try {
-        const tagString = `[${tagsMatch[1]}]`
-        const parsed = JSON.parse(tagString)
-        if (Array.isArray(parsed)) {
-          suggestedTags.push(...parsed)
-        }
-      } catch (e) {
-        console.error('[AISummary] Failed to parse tags:', e)
-      }
-    }
-
     // Save to database
     const { error: updateError } = await supabase
       .from('clients')
@@ -284,8 +261,8 @@ ${notesList.length > 0 ? notesList.join('\n') : 'No notes'}`
     console.log('[AISummary] Generated summary for client', clientId)
 
     return NextResponse.json({
-      summary: summary.replace(/TAGS:\s*\[.*?\]/, '').trim(),
-      suggested_tags: suggestedTags,
+      summary,
+      suggested_tags: [],
       generated_at: new Date().toISOString()
     })
   } catch (err) {

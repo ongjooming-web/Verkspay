@@ -28,26 +28,24 @@ export function useGrowthOpportunities(clientId: string) {
         // Fetch user's profile for cached insights
         const { data: profile } = await supabase
           .from('profiles')
-          .select('plan, ai_lead_insights_count, ai_lead_insights_generated_at, ai_lead_insights')
+          .select('plan, ai_lead_insights_count, latest_insights')
           .eq('id', userData.user.id)
           .single()
 
-        if (profile?.ai_lead_insights) {
-          const insights = profile.ai_lead_insights
-          const generatedDate = profile.ai_lead_insights_generated_at
-            ? new Date(profile.ai_lead_insights_generated_at)
-            : null
-
-          if (insights && generatedDate) {
+        if (profile?.latest_insights && typeof profile.latest_insights === 'object') {
+          const insights = (profile.latest_insights as any).growth_opportunities
+          
+          if (insights && insights.content && insights.generated_at) {
+            const generatedDate = new Date(insights.generated_at)
             const now = new Date()
             const daysSince = Math.floor((now.getTime() - generatedDate.getTime()) / (1000 * 60 * 60 * 24))
 
             // If cached insights are less than 7 days old, use them
             if (daysSince < 7) {
               setData({
-                opportunities: insights,
-                engagement_score: 0, // Will be recalculated if needed
-                monthly_average: 0,
+                opportunities: insights.content,
+                engagement_score: insights.engagement_score || 0,
+                monthly_average: insights.monthly_average || 0,
                 generated_at: generatedDate.toISOString()
               })
               setIsFresh(true)

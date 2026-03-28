@@ -316,11 +316,11 @@ export default function ClientsPage() {
                           setSelectedTags([])
                         }
                       }}
-                      className="w-full glass px-3 py-2 rounded-lg text-white text-sm"
+                      className="w-full glass px-3 py-2 rounded-lg text-white text-sm [&>option]:bg-gray-900 [&>option]:text-white"
                     >
                       <option value="">All Tags</option>
                       {tags.map((tag) => (
-                        <option key={tag.id} value={tag.id}>
+                        <option key={tag.id} value={tag.id} className="bg-gray-900 text-white">
                           {tag.name}
                         </option>
                       ))}
