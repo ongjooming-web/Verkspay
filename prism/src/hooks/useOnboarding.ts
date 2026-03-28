@@ -83,7 +83,9 @@ export function useOnboarding() {
         body: JSON.stringify({ tour_step: step })
       })
       if (res.ok) {
-        await refresh()
+        // Update local state immediately for instant UI feedback
+        setStatus(prev => prev ? { ...prev, tour_step: step } : null)
+        console.log('[useOnboarding] Tour step updated to:', step)
       }
     } catch (err) {
       console.error('[useOnboarding] Error updating tour step:', err)
@@ -106,7 +108,9 @@ export function useOnboarding() {
         body: JSON.stringify({ dismissed: true })
       })
       if (res.ok) {
-        await refresh()
+        // Update local state immediately for instant UI feedback
+        setStatus(prev => prev ? { ...prev, dismissed: true } : null)
+        console.log('[useOnboarding] Progress dismissed')
       }
     } catch (err) {
       console.error('[useOnboarding] Error dismissing progress:', err)
@@ -126,10 +130,12 @@ export function useOnboarding() {
       const res = await fetch('/api/onboarding/update', {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ completed: true })
+        body: JSON.stringify({ completed: true, tour_step: 8 })
       })
       if (res.ok) {
-        await refresh()
+        // Update local state immediately for instant UI feedback
+        setStatus(prev => prev ? { ...prev, completed: true, tour_step: 8 } : null)
+        console.log('[useOnboarding] Onboarding completed')
       }
     } catch (err) {
       console.error('[useOnboarding] Error completing onboarding:', err)
