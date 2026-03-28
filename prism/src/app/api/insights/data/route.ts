@@ -161,6 +161,9 @@ export async function GET(request: NextRequest) {
           payment_methods: [],
         },
         monthly_revenue: [],
+        top_clients: [],
+        revenue_concentration: { top_3_percentage: 0 },
+        industries: [],
         account_age_days: 0,
         data_generated_at: new Date().toISOString(),
       } as InsightsData)
