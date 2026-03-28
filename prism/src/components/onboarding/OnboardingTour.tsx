@@ -1,288 +1,211 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/hooks/useOnboarding'
 
-type TourButton = {
-  label: string
-  action: string
-  type: 'primary' | 'secondary'
-  target?: string
-}
-
-const TOUR_STEPS = [
+const STEPS = [
   {
-    step: 0,
+    id: 0,
     title: 'Welcome to Prism! 👋',
-    description: "Let's take a quick tour of your dashboard. We'll show you how to set up your business, add clients, and start getting paid faster.",
-    target: null,
-    position: 'center',
-    buttons: [
-      { label: "Let's Go", action: 'next', type: 'primary' as const },
-      { label: 'Skip Tour', action: 'skip', type: 'secondary' as const }
-    ] as TourButton[]
+    description: "Let's take a quick tour of your dashboard. We'll show you how to set up your business and start getting paid faster.",
+    centered: true,
   },
   {
-    step: 1,
+    id: 1,
     title: 'Your command center',
     description: 'Navigate between your Dashboard, Clients, Invoices, Insights, Reports, Proposals, and Settings from here.',
-    target: '[data-onboarding="nav"]',
-    position: 'below',
-    buttons: [{ label: 'Next', action: 'next', type: 'primary' as const }] as TourButton[]
+    centered: false,
   },
   {
-    step: 2,
+    id: 2,
     title: 'Business at a glance',
-    description: 'Track your paid revenue, pending payments, active clients, and total invoices. These update automatically as you create and collect on invoices.',
-    target: '[data-onboarding="metrics-cards"]',
-    position: 'below',
-    buttons: [{ label: 'Next', action: 'next', type: 'primary' as const }] as TourButton[]
+    description: 'Track your paid revenue, pending payments, active clients, and total invoices. These update automatically.',
+    centered: false,
   },
   {
-    step: 3,
+    id: 3,
     title: 'Set up your business profile',
-    description: 'Add your company logo, address, and tax details. Connect Stripe to start accepting payments. This is your first step.',
-    target: '[data-onboarding="nav-settings"]',
-    position: 'below',
-    buttons: [
-      { label: 'Go to Settings', action: 'navigate', target: '/settings', type: 'primary' as const },
-      { label: 'I\'ll do this later →', action: 'next', type: 'secondary' as const }
-    ] as TourButton[]
+    description: 'Add your company logo, address, and tax details. Connect Stripe to start accepting payments.',
+    centered: false,
   },
   {
-    step: 4,
+    id: 4,
     title: 'Add your first client',
-    description: 'Add clients you work with. Include their name, email, and company. The more details you add, the smarter Prism\'s AI insights become.',
-    target: '[data-onboarding="nav-clients"]',
-    position: 'below',
-    buttons: [
-      { label: 'Go to Clients', action: 'navigate', target: '/clients', type: 'primary' as const },
-      { label: 'Next', action: 'next', type: 'secondary' as const }
-    ] as TourButton[]
+    description: 'Add clients you work with. Include their name, email, and company. More details = smarter AI insights.',
+    centered: false,
   },
   {
-    step: 5,
+    id: 5,
     title: 'Send your first invoice',
-    description: 'Create an invoice, add line items, and send it with a Stripe payment link. Smart reminders will follow up automatically if it goes overdue.',
-    target: '[data-onboarding="nav-invoices"]',
-    position: 'below',
-    buttons: [
-      { label: 'Go to Invoices', action: 'navigate', target: '/invoices', type: 'primary' as const },
-      { label: 'Next', action: 'next', type: 'secondary' as const }
-    ] as TourButton[]
+    description: 'Create an invoice, add line items, and send it with a Stripe payment link. Smart reminders follow up automatically.',
+    centered: false,
   },
   {
-    step: 6,
+    id: 6,
     title: 'AI-powered business insights ✨',
-    description: 'Once you have a few invoices, generate AI-powered analysis of your business — client segments, growth opportunities, risk alerts, and recommendations.',
-    target: '[data-onboarding="nav-insights"]',
-    position: 'below',
-    buttons: [{ label: 'Got it!', action: 'next', type: 'primary' as const }] as TourButton[]
+    description: 'Once you have a few invoices, generate AI-powered analysis of your business — client segments, growth opportunities, and recommendations.',
+    centered: false,
   },
   {
-    step: 7,
+    id: 7,
     title: "You're all set! 🎉",
     description: "Start by setting up your business profile in Settings, then add a client and send your first invoice. We're here to help you get paid faster.",
-    target: null,
-    position: 'center',
-    buttons: [{ label: 'Start Using Prism', action: 'complete', type: 'primary' as const }] as TourButton[]
-  }
+    centered: true,
+  },
 ]
 
 export function OnboardingTour() {
-  try {
-    const { showTour, tourStep, updateTourStep, completeOnboarding, loading, status } = useOnboarding()
-    const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
-    const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
-    const [mounted, setMounted] = useState(false)
-    const router = useRouter()
-    const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const { showTour, tourStep, updateTourStep, completeOnboarding } = useOnboarding()
+  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
 
-    // Wait for client to mount before rendering
-    useEffect(() => {
-      setMounted(true)
-    }, [])
-
-    // Debug logging
-    useEffect(() => {
-      console.log('[OnboardingTour] State:', {
-        loading,
-        showTour,
-        tourStep,
-        mounted,
-        statusExists: !!status,
-        status
-      })
-    }, [loading, showTour, tourStep, mounted, status])
-
-    // Don't render while loading, if tour shouldn't show, or if not mounted
-    if (!mounted || loading || !showTour) {
-      console.log('[OnboardingTour] Not rendering - mounted:', mounted, 'loading:', loading, 'showTour:', showTour)
-      return null
-    }
-
-    const step = TOUR_STEPS[tourStep]
-    if (!step) {
-      console.log('[OnboardingTour] No step found for tourStep:', tourStep)
-      return null // Safety check
-    }
-
-    console.log('[OnboardingTour] Rendering step:', tourStep, step.title)
-
-  // Find and track target element
   useEffect(() => {
-    const updatePosition = () => {
-      if (!step.target) {
-        setTargetRect(null)
-        return
-      }
+    setMounted(true)
+  }, [])
 
-      const target = document.querySelector(step.target)
-      if (target) {
-        const rect = target.getBoundingClientRect()
-        setTargetRect(rect)
+  if (!mounted || !showTour) return null
 
-        // Scroll into view
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const step = STEPS[tourStep]
+  if (!step) return null
 
-        // Calculate tooltip position
-        const padding = 16
-        let top = 0
-        let left = 0
-
-        if (step.position === 'below') {
-          top = rect.bottom + padding
-          left = rect.left + rect.width / 2 - 180 // Center tooltip (assuming ~360px width)
-        } else if (step.position === 'above') {
-          top = rect.top - padding - 200 // Approximate tooltip height
-          left = rect.left + rect.width / 2 - 180
-        } else if (step.position === 'right') {
-          top = rect.top + rect.height / 2 - 100
-          left = rect.right + padding
-        } else if (step.position === 'left') {
-          top = rect.top + rect.height / 2 - 100
-          left = rect.left - padding - 360
-        }
-
-        // Clamp to viewport
-        left = Math.max(16, Math.min(left, window.innerWidth - 376))
-        top = Math.max(16, Math.min(top, window.innerHeight - 300))
-
-        setTooltipPos({ top, left })
-      }
-    }
-
-    updatePosition()
-
-    // Setup ResizeObserver
-    if (resizeObserverRef.current) {
-      resizeObserverRef.current.disconnect()
-    }
-
-    resizeObserverRef.current = new ResizeObserver(updatePosition)
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition)
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect()
-      }
-    }
-  }, [step, tourStep])
-
-  const handleAction = async (action: string, target?: string) => {
-    if (action === 'next') {
-      const newStep = tourStep + 1
-      await updateTourStep(newStep)
-    } else if (action === 'skip') {
-      await updateTourStep(8) // Mark as skipped (beyond final step)
-    } else if (action === 'navigate' && target) {
-      await updateTourStep(tourStep + 1)
-      router.push(target)
-    } else if (action === 'complete') {
+  const handleNext = async () => {
+    if (tourStep === STEPS.length - 1) {
       await completeOnboarding()
+    } else {
+      await updateTourStep(tourStep + 1)
     }
   }
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleAction('skip')
-    } else if (e.key === 'Enter') {
-      handleAction('next')
-    }
+  const handleSkip = async () => {
+    await updateTourStep(8)
   }
 
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [tourStep])
+  const handleNavigate = async (path: string) => {
+    await updateTourStep(tourStep + 1)
+    router.push(path)
+  }
 
-    return (
-      <>
-        {/* Overlay with spotlight */}
-        {step.position !== 'center' && (
-          <div className="fixed inset-0 z-[1000] bg-black/60" />
-        )}
+  return (
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 z-[1000] bg-black/60" />
 
-        {/* Spotlight effect - only render if target element was found */}
-        {step.position !== 'center' && targetRect && (
-          <div
-            className="fixed z-[1001] rounded-lg border border-purple-500/30 transition-all duration-400"
-            style={{
-              top: targetRect.top - 8,
-              left: targetRect.left - 8,
-              width: targetRect.width + 16,
-              height: targetRect.height + 16,
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.65)'
-            }}
-          />
-        )}
+      {/* Tooltip */}
+      <div
+        className={`fixed z-[1001] ${
+          step.centered
+            ? 'inset-0 flex items-center justify-center p-4'
+            : 'top-32 left-1/2 transform -translate-x-1/2'
+        }`}
+      >
+        <div className="w-full max-w-[400px] rounded-2xl bg-[#1A1A2E] border border-purple-500/30 p-8 shadow-2xl">
+          <div className="mb-4 text-xs text-gray-400">
+            Step {tourStep + 1} of {STEPS.length}
+          </div>
 
-      {/* Tooltip Card */}
-        {/* Tooltip Card */}
-        <div
-          className={`fixed z-[1002] transition-all duration-400 ${
-            step.position === 'center' ? 'flex items-center justify-center inset-0' : ''
-          }`}
-          style={step.position === 'center' ? undefined : { top: tooltipPos.top, left: tooltipPos.left }}
-        >
-          <div className="w-full max-w-[360px] rounded-2xl border border-purple-500/30 bg-[#1A1A2E] p-6 shadow-2xl">
-            {/* Step counter */}
-            <div className="mb-4 text-xs text-gray-400">
-              Step {tourStep + 1} of {TOUR_STEPS.length}
-            </div>
+          <h2 className="mb-3 text-xl font-bold text-white">{step.title}</h2>
 
-            {/* Title */}
-            <h2 className="mb-3 text-lg font-bold text-white">{step.title}</h2>
+          <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
 
-            {/* Description */}
-            <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
-
-            {/* Buttons */}
-            <div className="flex flex-col gap-3">
-              {step.buttons.map((btn, idx) => (
+          <div className="flex flex-col gap-3">
+            {tourStep === 0 && (
+              <>
                 <button
-                  key={idx}
-                  onClick={() => handleAction(btn.action, btn.target)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                    btn.type === 'primary'
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'text-gray-400 hover:text-gray-300 bg-transparent'
-                  }`}
+                  onClick={handleNext}
+                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
                 >
-                  {btn.label}
+                  Let's Go
                 </button>
-              ))}
-            </div>
+                <button
+                  onClick={handleSkip}
+                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                >
+                  Skip Tour
+                </button>
+              </>
+            )}
+
+            {tourStep === 3 && (
+              <>
+                <button
+                  onClick={() => handleNavigate('/settings')}
+                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                >
+                  Go to Settings
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                >
+                  I'll do this later →
+                </button>
+              </>
+            )}
+
+            {tourStep === 4 && (
+              <>
+                <button
+                  onClick={() => handleNavigate('/clients')}
+                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                >
+                  Go to Clients
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                >
+                  Next
+                </button>
+              </>
+            )}
+
+            {tourStep === 5 && (
+              <>
+                <button
+                  onClick={() => handleNavigate('/invoices')}
+                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+                >
+                  Go to Invoices
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="w-full px-4 py-2 text-gray-400 hover:text-gray-300 bg-transparent text-sm font-medium transition"
+                >
+                  Next
+                </button>
+              </>
+            )}
+
+            {tourStep === 6 && (
+              <button
+                onClick={handleNext}
+                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                Got it!
+              </button>
+            )}
+
+            {tourStep === 7 && (
+              <button
+                onClick={handleNext}
+                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                Start Using Prism
+              </button>
+            )}
+
+            {![0, 3, 4, 5, 6, 7].includes(tourStep) && (
+              <button
+                onClick={handleNext}
+                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                Next
+              </button>
+            )}
           </div>
         </div>
-      </>
-    )
-  } catch (error) {
-    console.error('[OnboardingTour] Render error:', error)
-    return null
-  }
+      </div>
+    </>
+  )
 }
