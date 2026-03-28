@@ -61,7 +61,6 @@ export async function GET(request: NextRequest) {
     const html = generatePDFHTML(insights, businessName, dateStr)
 
     // Return as HTML that the client-side will convert to PDF
-    // This works with html2pdf.js library or browser's print-to-PDF feature
     return new NextResponse(html, {
       status: 200,
       headers: {
@@ -78,7 +77,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function markdownToHtml(markdown: string): string {
+  // Convert markdown to HTML
+  let html = markdown
+    .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.*?)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[h|u|l|p])(.*?)$/gm, '<p>$1</p>')
+
+  return html
+}
+
 function generatePDFHTML(insights: ClaudeInsights, businessName: string, generatedAt: string): string {
+  const contentHtml = markdownToHtml(insights as string)
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -113,15 +130,45 @@ function generatePDFHTML(insights: ClaudeInsights, businessName: string, generat
       padding-bottom: 30px;
     }
     
-    .logo {
-      font-size: 36px;
-      margin-bottom: 10px;
-    }
-    
     h1 {
       font-size: 32px;
       color: #1f2937;
       margin-bottom: 10px;
+    }
+    
+    h2 {
+      font-size: 24px;
+      color: #1f2937;
+      margin: 25px 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    h3 {
+      font-size: 18px;
+      color: #1f2937;
+      margin: 15px 0 10px 0;
+    }
+    
+    p {
+      margin-bottom: 15px;
+      color: #374151;
+      font-size: 15px;
+    }
+    
+    ul {
+      margin: 15px 0 15px 20px;
+      list-style-type: disc;
+    }
+    
+    li {
+      margin-bottom: 8px;
+      color: #374151;
+    }
+    
+    strong {
+      color: #1f2937;
+      font-weight: 600;
     }
     
     .business-name {
@@ -136,257 +183,36 @@ function generatePDFHTML(insights: ClaudeInsights, businessName: string, generat
       margin-top: 10px;
     }
     
-    section {
-      margin-bottom: 40px;
-      page-break-inside: avoid;
-    }
-    
-    h2 {
-      font-size: 24px;
-      color: #1f2937;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e5e7eb;
-    }
-    
-    .summary-box {
-      background: #f3f4f6;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border-left: 4px solid #3b82f6;
-    }
-    
-    .summary-text {
-      font-size: 16px;
-      color: #374151;
-      margin-bottom: 15px;
-    }
-    
-    .trend-badge {
-      display: inline-block;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    
-    .trend-growing {
-      background: #d1fae5;
-      color: #065f46;
-    }
-    
-    .trend-stable {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    
-    .trend-declining {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-    
-    .highlights {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    
-    .highlight {
-      padding: 15px;
-      border-radius: 6px;
-      border-left: 4px solid;
-    }
-    
-    .highlight.positive {
-      background: #f0fdf4;
-      border-left-color: #22c55e;
-    }
-    
-    .highlight.warning {
-      background: #fffbeb;
-      border-left-color: #f59e0b;
-    }
-    
-    .highlight.action {
-      background: #fef2f2;
-      border-left-color: #ef4444;
-    }
-    
-    .highlight-title {
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 5px;
-    }
-    
-    .highlight-description {
-      font-size: 14px;
-      color: #4b5563;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    
-    th {
-      background: #f3f4f6;
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-      color: #1f2937;
-      border-bottom: 2px solid #d1d5db;
-    }
-    
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .health-good {
-      color: #059669;
-      font-weight: 600;
-    }
-    
-    .health-attention {
-      color: #d97706;
-      font-weight: 600;
-    }
-    
-    .health-at-risk {
-      color: #dc2626;
-      font-weight: 600;
-    }
-    
-    .recommendations {
-      list-style: none;
-      counter-reset: rec-counter;
-    }
-    
-    .recommendations li {
-      counter-increment: rec-counter;
-      padding-left: 30px;
-      position: relative;
-      margin-bottom: 12px;
-      color: #374151;
-      font-size: 15px;
-    }
-    
-    .recommendations li::before {
-      content: counter(rec-counter) ".";
-      position: absolute;
-      left: 0;
-      font-weight: 600;
-      color: #3b82f6;
-    }
-    
     footer {
       margin-top: 50px;
       padding-top: 20px;
       border-top: 2px solid #e5e7eb;
       text-align: center;
-      font-size: 12px;
       color: #9ca3af;
-    }
-    
-    @media print {
-      body {
-        padding: 20px;
-      }
-      
-      section {
-        page-break-inside: avoid;
-      }
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <header>
-      <div class="logo">◆</div>
       <h1>Business Insights Report</h1>
       <div class="business-name">${businessName}</div>
       <div class="generated-date">Generated ${generatedAt}</div>
     </header>
     
-    <!-- Executive Summary -->
+    <!-- AI-Generated Content -->
     <section>
-      <h2>Executive Summary</h2>
-      <div class="summary-box">
-        <p class="summary-text">${insights.summary}</p>
-        <span class="trend-badge trend-${insights.revenue_trend}">
-          ${insights.revenue_trend === 'growing' ? '📈 Growing' : insights.revenue_trend === 'stable' ? '➡️ Stable' : '📉 Declining'}
-        </span>
-      </div>
+      ${contentHtml}
     </section>
     
-    <!-- Highlights -->
-    ${insights.highlights.length > 0 ? `
-      <section>
-        <h2>Key Highlights</h2>
-        <div class="highlights">
-          ${insights.highlights.map(h => `
-            <div class="highlight ${h.type}">
-              <div class="highlight-title">${h.title}</div>
-              <div class="highlight-description">${h.description}</div>
-            </div>
-          `).join('')}
-        </div>
-      </section>
-    ` : ''}
-    
-    <!-- Client Health -->
-    ${insights.client_insights.length > 0 ? `
-      <section>
-        <h2>Client Health</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Client Name</th>
-              <th>Health Status</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${insights.client_insights.map(c => `
-              <tr>
-                <td>${c.client_name}</td>
-                <td>
-                  <span class="health-${c.health}">
-                    ${c.health === 'good' ? '🟢 Good' : c.health === 'attention' ? '🟡 Attention' : '🔴 At Risk'}
-                  </span>
-                </td>
-                <td>${c.note}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </section>
-    ` : ''}
-    
-    <!-- Recommendations -->
-    ${insights.recommendations.length > 0 ? `
-      <section>
-        <h2>Recommendations</h2>
-        <ul class="recommendations">
-          ${insights.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-        </ul>
-      </section>
-    ` : ''}
-    
+    <!-- Footer -->
     <footer>
-      Generated by Prism — Business Operations & Invoicing Platform<br>
-      <a href="https://app.prismops.xyz" style="color: #6b7280; text-decoration: none;">prismops.xyz</a>
+      <p>Generated by Prism - AI-powered business insights for freelancers</p>
     </footer>
   </div>
-  
-  <script>
-    // Auto-print on load (optional)
-    // window.print();
-  </script>
 </body>
 </html>
-  `
+`
 }
