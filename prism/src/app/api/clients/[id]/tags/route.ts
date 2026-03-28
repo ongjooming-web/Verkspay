@@ -7,7 +7,11 @@ const supabase = createClient(
 )
 
 // GET /api/clients/[id]/tags - Get tags for a specific client
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -22,13 +26,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = data.user.id
-    const clientId = params.id
 
     // Verify client ownership
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id')
-      .eq('id', clientId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         tag_id,
         client_tags!inner(id, name, color, created_at)
       `)
-      .eq('client_id', clientId)
+      .eq('client_id', id)
       .order('assigned_at', { ascending: false })
 
     if (assignError) {
@@ -66,7 +69,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // POST /api/clients/[id]/tags - Assign tags to a client (upsert - replaces all assignments)
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -81,7 +88,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const userId = data.user.id
-    const clientId = params.id
     const body = await request.json()
     const { tag_ids } = body
 
@@ -93,7 +99,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id')
-      .eq('id', clientId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -118,7 +124,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { error: deleteError } = await supabase
       .from('client_tag_assignments')
       .delete()
-      .eq('client_id', clientId)
+      .eq('client_id', id)
 
     if (deleteError) {
       console.error('[ClientTags] Error deleting assignments:', deleteError)
@@ -128,7 +134,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Insert new assignments
     if (tag_ids.length > 0) {
       const newAssignments = tag_ids.map((tagId: string) => ({
-        client_id: clientId,
+        client_id: id,
         tag_id: tagId
       }))
 
@@ -148,7 +154,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .select(`
         client_tags!inner(id, name, color, created_at)
       `)
-      .eq('client_id', clientId)
+      .eq('client_id', id)
 
     if (fetchError) {
       console.error('[ClientTags] Error fetching updated tags:', fetchError)

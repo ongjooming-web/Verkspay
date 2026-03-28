@@ -7,7 +7,11 @@ const supabase = createClient(
 )
 
 // GET /api/clients/[id]/notes - List notes for a client
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -22,13 +26,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = data.user.id
-    const clientId = params.id
 
     // Verify client ownership
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id')
-      .eq('id', clientId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data: notes, error: notesError } = await supabase
       .from('client_notes')
       .select('id, content, created_at, updated_at')
-      .eq('client_id', clientId)
+      .eq('client_id', id)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -57,7 +60,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // POST /api/clients/[id]/notes - Add a note
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -72,7 +79,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const userId = data.user.id
-    const clientId = params.id
     const body = await request.json()
     const { content } = body
 
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id')
-      .eq('id', clientId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -101,7 +107,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { data: newNote, error: createError } = await supabase
       .from('client_notes')
       .insert([{
-        client_id: clientId,
+        client_id: id,
         user_id: userId,
         content: content.toString().trim()
       }])

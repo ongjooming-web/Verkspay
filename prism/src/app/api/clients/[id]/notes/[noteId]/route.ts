@@ -7,7 +7,11 @@ const supabase = createClient(
 )
 
 // PUT /api/clients/[id]/notes/[noteId] - Edit a note
-export async function PUT(request: NextRequest, { params }: { params: { id: string; noteId: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; noteId: string }> }
+) {
+  const { id, noteId } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -22,8 +26,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = data.user.id
-    const clientId = params.id
-    const noteId = params.noteId
+    const clientId = id
     const body = await request.json()
     const { content } = body
 
@@ -79,7 +82,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/clients/[id]/notes/[noteId] - Delete a note
-export async function DELETE(request: NextRequest, { params }: { params: { id: string; noteId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; noteId: string }> }
+) {
+  const { id, noteId } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -94,8 +101,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const userId = data.user.id
-    const clientId = params.id
-    const noteId = params.noteId
+    const clientId = id
 
     // Verify note ownership
     const { data: existingNote, error: fetchError } = await supabase

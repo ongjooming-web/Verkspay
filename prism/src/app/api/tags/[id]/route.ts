@@ -7,7 +7,11 @@ const supabase = createClient(
 )
 
 // PUT /api/tags/[id] - Update a tag
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -22,7 +26,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = data.user.id
-    const tagId = params.id
     const body = await request.json()
     const { name, color } = body
 
@@ -30,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data: existingTag, error: fetchError } = await supabase
       .from('client_tags')
       .select('id')
-      .eq('id', tagId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -66,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data: updatedTag, error: updateError } = await supabase
       .from('client_tags')
       .update(updateData)
-      .eq('id', tagId)
+      .eq('id', id)
       .eq('user_id', userId)
       .select()
       .single()
@@ -92,7 +95,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/tags/[id] - Delete a tag (cascades assignments)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -107,13 +114,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const userId = data.user.id
-    const tagId = params.id
 
     // Verify tag ownership
     const { data: existingTag, error: fetchError } = await supabase
       .from('client_tags')
       .select('id')
-      .eq('id', tagId)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
 
@@ -125,7 +131,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { error: deleteError } = await supabase
       .from('client_tags')
       .delete()
-      .eq('id', tagId)
+      .eq('id', id)
       .eq('user_id', userId)
 
     if (deleteError) {
