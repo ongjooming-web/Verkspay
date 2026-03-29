@@ -496,6 +496,10 @@ export default function Settings() {
         </Card>
       </div>
     </div>
+
+    {/* Payment Success Modal */}
+    <PaymentSuccessModal />
+  </>
   )
 }
 
