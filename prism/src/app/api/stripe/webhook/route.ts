@@ -16,12 +16,12 @@ const supabase = createClient(
  */
 function getPlanFromPriceId(priceId: string): string | undefined {
   const priceMap: { [key: string]: string } = {
-    [process.env.Verkspay_STARTER_MONTHLY || '']: 'starter',
-    [process.env.Verkspay_STARTER_ANNUAL || '']: 'starter',
-    [process.env.Verkspay_PRO_MONTHLY || '']: 'pro',
-    [process.env.Verkspay_PRO_ANNUAL || '']: 'pro',
-    [process.env.Verkspay_ENTERPRISE_MONTHLY || '']: 'enterprise',
-    [process.env.Verkspay_ENTERPRISE_ANNUAL || '']: 'enterprise',
+    [process.env.STRIPE_PRICE_ID_STARTER_MONTHLY || '']: 'starter',
+    [process.env.STRIPE_PRICE_ID_STARTER_ANNUAL || '']: 'starter',
+    [process.env.STRIPE_PRICE_ID_PRO_MONTHLY || '']: 'pro',
+    [process.env.STRIPE_PRICE_ID_PRO_ANNUAL || '']: 'pro',
+    [process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY || '']: 'enterprise',
+    [process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL || '']: 'enterprise',
   }
   return priceMap[priceId]
 }
@@ -317,12 +317,12 @@ export async function POST(request: NextRequest) {
         if (!planToUpdate) {
           console.error('[Webhook] Could not match price ID to any plan:', priceId)
           console.error('[Webhook] Available env vars:', {
-            starter_monthly: !!process.env.Verkspay_STARTER_MONTHLY,
-            starter_annual: !!process.env.Verkspay_STARTER_ANNUAL,
-            pro_monthly: !!process.env.Verkspay_PRO_MONTHLY,
-            pro_annual: !!process.env.Verkspay_PRO_ANNUAL,
-            enterprise_monthly: !!process.env.Verkspay_ENTERPRISE_MONTHLY,
-            enterprise_annual: !!process.env.Verkspay_ENTERPRISE_ANNUAL,
+            starter_monthly: !!process.env.STRIPE_PRICE_ID_STARTER_MONTHLY,
+            starter_annual: !!process.env.STRIPE_PRICE_ID_STARTER_ANNUAL,
+            pro_monthly: !!process.env.STRIPE_PRICE_ID_PRO_MONTHLY,
+            pro_annual: !!process.env.STRIPE_PRICE_ID_PRO_ANNUAL,
+            enterprise_monthly: !!process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY,
+            enterprise_annual: !!process.env.STRIPE_PRICE_ID_ENTERPRISE_ANNUAL,
           })
           break
         }
