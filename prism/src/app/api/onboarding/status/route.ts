@@ -23,9 +23,12 @@ export async function GET(request: NextRequest) {
     const userId = userData.user.id
 
     // Get profile
+    // Note: Columns like onboarding_completed, onboarding_step, onboarding_dismissed_at, 
+    // business_name, stripe_customer_id, latest_insights may not exist on older databases.
+    // The API gracefully handles missing columns by using defaults.
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('onboarding_completed, onboarding_step, onboarding_dismissed_at, business_name, stripe_customer_id, latest_insights')
+      .select('*')
       .eq('id', userId)
       .single()
 
@@ -34,14 +37,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
+    // Ensure all onboarding fields have defaults if they don't exist
+    const safeProfile = {
+      onboarding_completed: profile?.onboarding_completed ?? false,
+      onboarding_step: profile?.onboarding_step ?? 0,
+      onboarding_dismissed_at: profile?.onboarding_dismissed_at ?? null,
+      business_name: profile?.business_name ?? '',
+      stripe_customer_id: profile?.stripe_customer_id ?? null,
+      latest_insights: profile?.latest_insights ?? null,
+    }
+
     console.log('[Onboarding Status] Profile data:', {
       userId,
-      onboarding_completed: profile?.onboarding_completed,
-      onboarding_step: profile?.onboarding_step,
-      onboarding_dismissed_at: profile?.onboarding_dismissed_at,
-      business_name: profile?.business_name,
-      stripe_customer_id: profile?.stripe_customer_id,
-      latest_insights: !!profile?.latest_insights
+      onboarding_completed: safeProfile.onboarding_completed,
+      onboarding_step: safeProfile.onboarding_step,
+      onboarding_dismissed_at: safeProfile.onboarding_dismissed_at,
+      business_name: safeProfile.business_name,
+      stripe_customer_id: safeProfile.stripe_customer_id,
+      latest_insights: !!safeProfile.latest_insights
     })
 
     // Count clients
@@ -57,19 +70,19 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
 
     const tasks = {
-      business_profile: !!(profile?.business_name && profile.business_name.trim() !== ''),
-      stripe_connected: !!profile?.stripe_customer_id,
+      business_profile: !!(safeProfile.business_name && safeProfile.business_name.trim() !== ''),
+      stripe_connected: !!safeProfile.stripe_customer_id,
       first_client: (clientCount || 0) >= 1,
       first_invoice: (invoiceCount || 0) >= 1,
-      ai_insights: !!(profile?.latest_insights && typeof profile.latest_insights === 'string' && profile.latest_insights.trim() !== ''),
+      ai_insights: !!(safeProfile.latest_insights && typeof safeProfile.latest_insights === 'string' && safeProfile.latest_insights.trim() !== ''),
     }
 
     const completedCount = Object.values(tasks).filter(Boolean).length
 
     const response = {
-      completed: profile?.onboarding_completed || false,
-      dismissed: !!profile?.onboarding_dismissed_at,
-      tour_step: profile?.onboarding_step || 0,
+      completed: safeProfile.onboarding_completed,
+      dismissed: !!safeProfile.onboarding_dismissed_at,
+      tour_step: safeProfile.onboarding_step,
       tasks,
       completed_count: completedCount,
       total_tasks: 5,
