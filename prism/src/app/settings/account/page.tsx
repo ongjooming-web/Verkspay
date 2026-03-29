@@ -96,10 +96,9 @@ export default function AccountSettings() {
         return
       }
 
-      // Call Supabase Edge Function with authorization token
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      // Call Next.js API route with authorization token
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/delete-account`,
+        '/api/account/delete',
         {
           method: 'POST',
           headers: {
