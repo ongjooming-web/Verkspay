@@ -120,6 +120,7 @@ export async function DELETE(req: NextRequest) {
         { error: 'No response from deletion function' },
         { status: 500 }
       )
+    }
 
     console.log('[account/delete] Account deletion successful:', {
       deleted_invoices: result.deleted_invoices,
