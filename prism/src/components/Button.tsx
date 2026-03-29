@@ -23,9 +23,9 @@ export function Button({
           'px-6 py-3 text-lg': size === 'lg',
         },
         {
-          'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30': variant === 'primary',
-          'glass text-white hover:bg-white/15 hover:border-white/30 active:scale-95': variant === 'secondary',
-          'glass text-gray-200 hover:bg-white/10 hover:border-white/20 active:scale-95 border border-white/10': variant === 'outline',
+          'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-400/50 hover:scale-105 active:scale-95 shadow-lg shadow-blue-400/30': variant === 'primary',
+          'glass text-blue-900 hover:bg-blue-50 hover:border-blue-200 active:scale-95': variant === 'secondary',
+          'glass text-blue-700 hover:bg-blue-50 hover:border-blue-300 active:scale-95 border border-blue-200': variant === 'outline',
         },
         className
       )}
