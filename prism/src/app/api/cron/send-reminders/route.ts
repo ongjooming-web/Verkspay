@@ -162,8 +162,8 @@ export async function POST(request: NextRequest) {
             'MYR', // TODO: Get from invoice currency_code if available
             invoice.due_date,
             daysOverdue,
-            invoice.payment_link || `https://app.prismops.xyz/pay/${invoice.id}`,
-            profile?.business_name || 'Prism',
+            invoice.payment_link || `https://app.Verkspayops.xyz/pay/${invoice.id}`,
+            profile?.business_name || 'Verkspay',
             client.phone
           )
           console.log(`[Cron] Generated WhatsApp link for ${invoice.invoice_number}`)
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
         )
 
         const emailResult = await resend.emails.send({
-          from: 'Prism Invoicing <support@prismops.xyz>',
+          from: 'Verkspay Invoicing <support@Verkspayops.xyz>',
           to: client.email,
           subject,
           html,

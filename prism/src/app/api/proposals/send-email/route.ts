@@ -53,10 +53,10 @@ export async function POST(request: NextRequest) {
       .eq('id', data.user.id)
       .single()
 
-    const senderEmail = profileData?.email || 'noreply@prism.app'
+    const senderEmail = profileData?.email || 'noreply@Verkspay.app'
 
     // Format proposal for email
-    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/proposals/${proposalId}`
+    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/proposals/${proposalId}`
     
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: `noreply@prism.app`,
+          from: `noreply@Verkspay.app`,
           to: clientEmail,
           subject: `Proposal: ${proposalData.title}`,
           html: emailHtml

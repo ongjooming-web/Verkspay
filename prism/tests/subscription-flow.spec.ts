@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 // Test the complete subscription flow: signup → trial → choose plan → checkout → webhook → plan update
 
-const BASE_URL = 'https://app.prismops.xyz'
+const BASE_URL = 'https://app.Verkspayops.xyz'
 const TEST_EMAIL = `test-${Date.now()}@example.com`
 const TEST_PASSWORD = 'TestPassword@2026'
 

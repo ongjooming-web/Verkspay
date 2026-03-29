@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         {/* Intro */}
         <section>
           <p className="text-gray-300 text-lg leading-relaxed">
-            At Prism, we take your privacy seriously. This Privacy Policy explains what data we collect, how we use it, and your rights regarding your information.
+            At Verkspay, we take your privacy seriously. This Privacy Policy explains what data we collect, how we use it, and your rights regarding your information.
           </p>
         </section>
 
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             <div>
               <p className="font-semibold text-white mb-2">Usage Data:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>How you interact with Prism (features used, login times)</li>
+                <li>How you interact with Verkspay (features used, login times)</li>
                 <li>Device information (browser type, IP address)</li>
               </ul>
             </div>
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
               <li>Send payment reminders to your clients</li>
               <li>Process payments through our payment providers</li>
               <li>Authenticate your account and prevent fraud</li>
-              <li>Improve Prism's features and performance</li>
+              <li>Improve Verkspay's features and performance</li>
               <li>Communicate with you about your account and service updates</li>
             </ul>
           </div>
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
               <li><strong>Opt-out:</strong> Unsubscribe from marketing emails anytime</li>
             </ul>
             <p className="text-sm text-gray-400 mt-4">
-              To exercise any of these rights, email us at support@prismops.xyz with "Privacy Request" in the subject line.
+              To exercise any of these rights, email us at support@Verkspayops.xyz with "Privacy Request" in the subject line.
             </p>
           </div>
         </section>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
                 This Privacy Policy is governed by Malaysian law and complies with the <strong>PDPA (Personal Data Protection Act)</strong> and <strong>GDPR</strong> where applicable.
               </p>
               <p className="font-semibold text-white mb-2">For privacy questions or concerns:</p>
-              <p className="text-blue-400 font-semibold">support@prismops.xyz</p>
+              <p className="text-blue-400 font-semibold">support@Verkspayops.xyz</p>
             </div>
           </div>
         </section>

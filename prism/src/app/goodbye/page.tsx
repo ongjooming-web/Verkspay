@@ -59,8 +59,8 @@ export default function GoodbyePage() {
         {/* Contact Info */}
         <p className="text-gray-500 text-sm mb-8">
           Questions? Contact us at{' '}
-          <a href="mailto:support@prismops.xyz" className="text-blue-400 hover:text-blue-300">
-            support@prismops.xyz
+          <a href="mailto:support@Verkspayops.xyz" className="text-blue-400 hover:text-blue-300">
+            support@Verkspayops.xyz
           </a>
         </p>
 
@@ -80,7 +80,7 @@ export default function GoodbyePage() {
 
         {/* Footer */}
         <p className="text-gray-600 text-xs mt-8">
-          © 2026 Prism. Built for freelancers and small teams.
+          © 2026 Verkspay. Built for freelancers and small teams.
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-# Prism Marketing Strategy & Market Positioning
+# Verkspay Marketing Strategy & Market Positioning
 
 **Document Version:** 1.0  
 **Date:** 2026-03-18  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Prism enters the freelance operations market by solving a critical gap: **fragmented workflows create friction, failed collections, and lost revenue for freelancers**. We position as the all-in-one invoicing platform built *for* builders/crypto community (not banking industry), with superior payment flexibility and cash flow management tools that competitors ignore.
+Verkspay enters the freelance operations market by solving a critical gap: **fragmented workflows create friction, failed collections, and lost revenue for freelancers**. We position as the all-in-one invoicing platform built *for* builders/crypto community (not banking industry), with superior payment flexibility and cash flow management tools that competitors ignore.
 
 **Target Launch:** Crypto/builder community (early adopters, high NPS), then mainstream freelancers
 
@@ -49,7 +49,7 @@ Prism enters the freelance operations market by solving a critical gap: **fragme
 
 ---
 
-## 2. Prism's Unique Position
+## 2. Verkspay's Unique Position
 
 ### What We Do Differently
 
@@ -79,7 +79,7 @@ Prism enters the freelance operations market by solving a critical gap: **fragme
 ### Competitive Advantage Matrix
 
 ```
-Criteria              | FreshBooks | Wave | Stripe | Prism
+Criteria              | FreshBooks | Wave | Stripe | Verkspay
 ---------------------|------------|------|--------|-------
 Simple invoicing     | ✓          | ✓    | ✓      | ✓✓
 Payment links        | ✗          | ✗    | ✓      | ✓✓
@@ -100,7 +100,7 @@ Fully integrated     | ✓          | ✗    | Partial| ✓✓
 
 **Who:** Are tired of juggling FreshBooks + Stripe + email follow-ups
 
-**Prism:** The all-in-one invoicing platform that automates payment collection, handles partial payments, and speaks your language (crypto-native, builder-focused)
+**Verkspay:** The all-in-one invoicing platform that automates payment collection, handles partial payments, and speaks your language (crypto-native, builder-focused)
 
 **Unlike:** FreshBooks (overkill + expensive), Wave (no payments), Stripe (invoicing is an afterthought)
 
@@ -114,7 +114,7 @@ Fully integrated     | ✓          | ✗    | Partial| ✓✓
 **Goal:** 100-150 signups, 30+ paid (Pro tier)
 
 **Channels:**
-1. **Twitter/X** (@prismops)
+1. **Twitter/X** (@Verkspayops)
    - Daily: Invoicing pain points, payment fails, builder stories
    - Weekly: Feature deep-dives, case studies
    - Engage: Reply to #builderlife, #freelancedeveloper threads
@@ -188,7 +188,7 @@ These unlock immediate value for users:
 **User value:** One-click Stripe sync, see all payments in one place
 **Example:**
 - Click "Sync Stripe" → auto-populate past payments
-- Payment recorded in Prism → auto-sync to Stripe customer
+- Payment recorded in Verkspay → auto-sync to Stripe customer
 - See payment method, chargeback history, subscription status
 
 **Status:** Partially done (webhook exists), needs UI polish
@@ -197,7 +197,7 @@ These unlock immediate value for users:
 
 #### 3. **Crypto Wallet Integration** ⭐⭐ HIGH PRIORITY
 **What:** Send invoices with USDC payment address embedded
-**User value:** Crypto freelancers can accept USDC without leaving Prism
+**User value:** Crypto freelancers can accept USDC without leaving Verkspay
 **Example flows:**
 - Create invoice → option "Add crypto payment address"
 - Pre-fill with freelancer's Solana/Ethereum/Base address
@@ -222,7 +222,7 @@ These unlock immediate value for users:
 
 #### 5. **Contract Signing (DocuSign / Ironclad)**
 **Priority:** Medium
-**What:** Embed contract signing in Prism, pre-fill with client info
+**What:** Embed contract signing in Verkspay, pre-fill with client info
 **User value:** Sign → Invoice → Payment in one flow
 **Roadmap:** Phase 5
 
@@ -256,7 +256,7 @@ These unlock immediate value for users:
 
 ### Segment 2: Small Web3 Agency (3-5 people)
 **Problem:** "We manually track who's paid what. We lose $2k/month chasing payments"
-**Message:** "Stop chasing payments. Prism does it for you with smart reminders + partial payment tracking"
+**Message:** "Stop chasing payments. Verkspay does it for you with smart reminders + partial payment tracking"
 **Feature focus:** Team accounts, recurring invoices, reminders
 **Pricing:** $199/mo Enterprise (2-5 users)
 
@@ -357,7 +357,7 @@ These unlock immediate value for users:
 
 **If Stripe Launches Better Invoicing:**
 - Position as Stripe *partner*, not competitor
-- Show Prism + Stripe integration
+- Show Verkspay + Stripe integration
 - Own the freelancer market (Stripe targets enterprises)
 
 **If Wave Adds Payment Links:**
@@ -370,7 +370,7 @@ These unlock immediate value for users:
 ## 12. Launch Checklist
 
 ### Pre-Launch (This Week)
-- [ ] Prism landing page finalized (pricing, benefits clear)
+- [ ] Verkspay landing page finalized (pricing, benefits clear)
 - [ ] 3-month roadmap published (show momentum)
 - [ ] Twitter account warm (100 followers, early content)
 - [ ] 5 beta users identified (crypto builders)
@@ -385,7 +385,7 @@ These unlock immediate value for users:
 - [ ] Weekly Twitter content (3x/week minimum)
 - [ ] First 100 signups retrospective (what worked?)
 - [ ] 5 user interviews (learn, quote for marketing)
-- [ ] Blog post: "Why we built Prism"
+- [ ] Blog post: "Why we built Verkspay"
 
 ### Month 2-3
 - [ ] Product Hunt launch (with integration)
@@ -397,7 +397,7 @@ These unlock immediate value for users:
 
 ## Conclusion
 
-**Prism owns a blue ocean:** Integrated invoicing for builders who demand crypto support, simplicity, and cash flow tools that existing competitors ignore.
+**Verkspay owns a blue ocean:** Integrated invoicing for builders who demand crypto support, simplicity, and cash flow tools that existing competitors ignore.
 
 **First-mover advantage:** No competitor currently combines:
 1. Free + affordable pricing

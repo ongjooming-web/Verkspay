@@ -1,6 +1,6 @@
 # Deployment Guide
 
-## Live at: app.prismops.xyz
+## Live at: app.Verkspayops.xyz
 
 ## Vercel Setup (One-time)
 
@@ -8,7 +8,7 @@
 1. Go to [vercel.com](https://vercel.com)
 2. Click "New Project"
 3. Select GitHub and authorize
-4. Find and select `ongjooming-web/prism` repository
+4. Find and select `ongjooming-web/Verkspay` repository
 5. Click "Import"
 
 ### 2. Environment Variables
@@ -21,7 +21,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 
 ### 3. Configure Custom Domain
 1. In Vercel dashboard, go to Settings → Domains
-2. Add domain: `app.prismops.xyz`
+2. Add domain: `app.Verkspayops.xyz`
 3. Choose "Using external nameservers"
 4. Add DNS records to your domain provider
 
@@ -35,7 +35,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 Once domain is verified:
 1. Click "Deploy" in Vercel
 2. Wait for build to complete
-3. App will be live at `https://app.prismops.xyz`
+3. App will be live at `https://app.Verkspayops.xyz`
 
 ## Supabase Configuration
 
@@ -67,14 +67,14 @@ After Vercel deployment, update Supabase OAuth settings:
 
 1. Go to Supabase → Authentication → URL Configuration
 2. Add to "Redirect URLs":
-   - `https://app.prismops.xyz/auth/callback`
+   - `https://app.Verkspayops.xyz/auth/callback`
    - `http://localhost:3000/auth/callback` (for development)
 
 ## Health Checks
 
 ### Post-Deployment Checklist
 
-- [ ] Login page loads at `https://app.prismops.xyz/login`
+- [ ] Login page loads at `https://app.Verkspayops.xyz/login`
 - [ ] Can create account with email/password
 - [ ] Can login with email/password
 - [ ] Google OAuth button appears and works
@@ -118,7 +118,7 @@ Monitor Supabase console for:
 - Wait 24-48 hours for DNS propagation
 - Check DNS records at your domain provider
 - Verify CNAME record points to `cname.vercel-dns.com`
-- Test with: `nslookup app.prismops.xyz`
+- Test with: `nslookup app.Verkspayops.xyz`
 
 ## Auto-Deployment
 

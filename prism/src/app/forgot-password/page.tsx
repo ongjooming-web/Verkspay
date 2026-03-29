@@ -79,7 +79,7 @@ export default function ForgotPassword() {
             </svg>
           </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Prism
+            Verkspay
           </h1>
           <p className="text-gray-400 text-sm mt-2">Reset your password</p>
         </CardHeader>

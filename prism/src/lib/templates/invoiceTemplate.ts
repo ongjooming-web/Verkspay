@@ -183,7 +183,7 @@ export function generateInvoiceHTML(data: InvoiceTemplateData): string {
         Thank you for your business.
       </div>
       <div class="footer-right">
-        Powered by Prism · prismops.xyz
+        Powered by Verkspay · Verkspayops.xyz
       </div>
     </div>
   </div>

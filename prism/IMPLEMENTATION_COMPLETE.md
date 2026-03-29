@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully implemented production-ready WalletConnect v2 mobile support alongside desktop MetaMask/Phantom support for the Prism wallet connection system.
+Successfully implemented production-ready WalletConnect v2 mobile support alongside desktop MetaMask/Phantom support for the Verkspay wallet connection system.
 
 ## What Was Delivered
 
@@ -25,7 +25,7 @@ Successfully implemented production-ready WalletConnect v2 mobile support alongs
 ### 4. ✅ Sign Message Flow
 Implemented in both flows with proper formatting:
 ```
-Sign in to Prism
+Sign in to Verkspay
 Wallet: {address}
 Timestamp: {Date.now()}
 ```
@@ -104,7 +104,7 @@ Timestamp: {Date.now()}
 
 ### Step 1: Install Dependencies
 ```bash
-cd prism
+cd Verkspay
 npm install
 ```
 
@@ -160,7 +160,7 @@ Wallet app opens with signature request
   ↓
 User signs in wallet app
   ↓
-Auto-redirect back to Prism
+Auto-redirect back to Verkspay
   ↓
 Address saved to Supabase
   ↓
@@ -228,7 +228,7 @@ Easy to add more chains by updating the Wagmi adapter networks array.
 - [ ] Select wallet from modal
 - [ ] Deep link to app works
 - [ ] Sign message in wallet
-- [ ] Auto-return to Prism
+- [ ] Auto-return to Verkspay
 - [ ] Verify address displays
 - [ ] Check Supabase profile updated
 - [ ] Test disconnect

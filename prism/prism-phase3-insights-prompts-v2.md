@@ -1,4 +1,4 @@
-# Prism Phase 3: AI Business Insights — Coding Agent Prompts (Updated)
+# Verkspay Phase 3: AI Business Insights — Coding Agent Prompts (Updated)
 
 Includes: Rate limiting per plan + 15-day free trial model (no free tier).
 

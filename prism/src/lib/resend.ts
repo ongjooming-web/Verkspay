@@ -30,14 +30,14 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
     }
 
     console.log('[Resend] Sending email:', {
-      from: options.from || 'payments@prismops.xyz',
+      from: options.from || 'payments@Verkspayops.xyz',
       to: options.to,
       subject: options.subject,
       htmlLength: options.html.length
     })
 
     const result = await resend.emails.send({
-      from: options.from || 'support@prismops.xyz',
+      from: options.from || 'support@Verkspayops.xyz',
       to: options.to,
       subject: options.subject,
       html: options.html

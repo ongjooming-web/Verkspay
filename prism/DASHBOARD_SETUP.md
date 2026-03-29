@@ -1,7 +1,7 @@
-# Prism Dashboard - Production Setup Guide
+# Verkspay Dashboard - Production Setup Guide
 
 ## Overview
-This document explains how to set up and deploy the fully functional Prism dashboard with real Supabase integration.
+This document explains how to set up and deploy the fully functional Verkspay dashboard with real Supabase integration.
 
 ## What's Been Implemented
 
@@ -143,7 +143,7 @@ These features are ready to build:
 ## File Structure
 
 ```
-prism/
+Verkspay/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx (root layout)

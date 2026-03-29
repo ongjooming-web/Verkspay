@@ -52,7 +52,7 @@ User on iOS/Android clicks "Open MetaMask"
 → Calls window.ethereum.request({ method: 'eth_requestAccounts' })
 → MetaMask app opens (or browser shows native auth)
 → User approves in MetaMask app
-→ Returns to Prism
+→ Returns to Verkspay
 → We query eth_accounts and save address
 ```
 
@@ -62,7 +62,7 @@ User on iOS/Android clicks "Open Phantom"
 → Redirects to https://phantom.app/ul/browse/{return_url}
 → Phantom app opens with connection request
 → User approves
-→ Phantom redirects back to Prism
+→ Phantom redirects back to Verkspay
 → We query Phantom provider and save address
 ```
 

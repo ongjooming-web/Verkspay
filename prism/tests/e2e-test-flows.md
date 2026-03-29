@@ -1,6 +1,6 @@
-# Prism: End-to-End Test Flows
+# Verkspay: End-to-End Test Flows
 
-Use this document to manually test every feature on Prism. 
+Use this document to manually test every feature on Verkspay. 
 Test with both your Master account (Enterprise) and a fresh Trial account to catch plan-gated issues.
 
 ---
@@ -8,7 +8,7 @@ Test with both your Master account (Enterprise) and a fresh Trial account to cat
 ## FLOW 1: Account Signup & Onboarding
 
 ```
-1. Go to https://app.prismops.xyz/signup
+1. Go to https://app.Verkspayops.xyz/signup
 2. Enter a new email + password
 3. ✅ Should receive a verification email (check spam if using Supabase default SMTP)
 4. Click verification link in email
@@ -131,7 +131,7 @@ EDGE CASES:
 7. Pay using Stripe test card: 4242 4242 4242 4242, any future expiry, any CVC
 8. ✅ Payment should succeed
 9. ✅ Stripe should redirect to success page
-10. Go back to the invoice in Prism
+10. Go back to the invoice in Verkspay
 11. ✅ Invoice status should update to "paid" (may take a few seconds for webhook)
 12. ✅ Payment should appear in Payment History section
 

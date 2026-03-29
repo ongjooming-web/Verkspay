@@ -396,7 +396,7 @@ Receive payment notifications:
 ## 📚 Documentation Structure
 
 ```
-prism/
+Verkspay/
 ├── PHASE3-STEP1-IMPLEMENTATION.md  ← Full technical docs (15KB)
 ├── PHASE3-QUICK-START.md           ← Quick reference (7KB)
 ├── PHASE3-TEST-SUITE.md            ← Testing guide (14KB)

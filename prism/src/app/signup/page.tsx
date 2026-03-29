@@ -127,10 +127,10 @@ export default function Signup() {
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/20">
         <CardHeader className="text-center">
           <Link href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Prism Logo" className="w-16 h-16" />
+            <img src="/logo.svg" alt="Verkspay Logo" className="w-16 h-16" />
           </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Prism
+            Verkspay
           </h1>
           <p className="text-gray-400 text-sm mt-2">Create your account to get started</p>
         </CardHeader>
@@ -240,9 +240,9 @@ export default function Signup() {
         <div className="flex justify-center gap-6 mb-2">
           <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
-          <a href="mailto:support@prismops.xyz" className="hover:text-gray-400 transition">Contact</a>
+          <a href="mailto:support@Verkspayops.xyz" className="hover:text-gray-400 transition">Contact</a>
         </div>
-        <p className="text-gray-600">© 2026 Prism</p>
+        <p className="text-gray-600">© 2026 Verkspay</p>
       </footer>
     </div>
   )

@@ -4,7 +4,7 @@
 
 ### Step 1: Install Dependencies (1 min)
 ```bash
-cd prism
+cd Verkspay
 npm install
 ```
 
@@ -104,7 +104,7 @@ Server runs at: **http://localhost:3000**
 ## 📋 File Structure - What's New
 
 ```
-prism/
+Verkspay/
 ├── src/components/
 │   ├── WalletConnect.tsx          ← Connect wallet & display status
 │   ├── QRCodeDisplay.tsx          ← Generate & display QR codes
@@ -173,7 +173,7 @@ QRCodeDisplay → generates QR from wallet + amount
 ## 🧠 Key Concepts
 
 ### Non-Custodial
-- **NOT:** Prism holds user funds
+- **NOT:** Verkspay holds user funds
 - **YES:** User controls their own wallet
 - **Result:** User receives USDC directly
 

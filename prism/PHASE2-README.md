@@ -77,7 +77,7 @@ This creates:
 ### 2. Test Locally (Optional)
 
 ```bash
-cd prism
+cd Verkspay
 npm run dev
 # Open http://localhost:3000
 ```

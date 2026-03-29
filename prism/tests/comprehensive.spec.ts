@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 
-const BASE_URL = 'https://prismops.xyz'
+const BASE_URL = 'https://Verkspayops.xyz'
 const TEST_EMAIL = 'dreyminginlove@gmail.com'
 const TEST_PASSWORD = '123456'
 
-test.describe('Prism Comprehensive Test Suite', () => {
+test.describe('Verkspay Comprehensive Test Suite', () => {
   let invoiceId: string
   let invoiceNumber: string
 

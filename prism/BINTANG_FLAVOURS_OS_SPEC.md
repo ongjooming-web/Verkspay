@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Prism is now **Bintang Flavours' internal business operating system**. It consolidates accounting, CRM, POS integration, inventory, expenses, and reporting into a single platform.
+Verkspay is now **Bintang Flavours' internal business operating system**. It consolidates accounting, CRM, POS integration, inventory, expenses, and reporting into a single platform.
 
 **Core Goal:** Real-time visibility into sales, costs, margins, and customer relationships across all channels (POS, Shopee, Lazada, direct).
 

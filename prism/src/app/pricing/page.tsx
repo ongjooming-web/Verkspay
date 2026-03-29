@@ -265,7 +265,7 @@ export default function PricingPage() {
                   </ul>
 
                   {plan.button.action === 'enterprise' ? (
-                    <a href="mailto:support@prismops.xyz" className="w-full">
+                    <a href="mailto:support@Verkspayops.xyz" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}
                       </Button>
@@ -335,7 +335,7 @@ export default function PricingPage() {
                 },
                 {
                   q: 'Do you offer refunds?',
-                  a: '30-day money-back guarantee. If Prism isn\'t working for you, we\'ll refund it.'
+                  a: '30-day money-back guarantee. If Verkspay isn\'t working for you, we\'ll refund it.'
                 },
                 {
                   q: 'What payment methods do you accept?',

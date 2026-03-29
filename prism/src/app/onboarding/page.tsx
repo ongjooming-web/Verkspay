@@ -134,7 +134,7 @@ export default function Onboarding() {
       <Card className="w-full max-w-2xl relative z-10 backdrop-blur-xl border border-white/20">
         <CardHeader>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Welcome to Prism
+            Welcome to Verkspay
           </h1>
           <p className="text-gray-400 text-sm mt-2">Step 1: Select your country</p>
         </CardHeader>

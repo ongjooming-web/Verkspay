@@ -2,8 +2,8 @@
 
 **Timeline:** Built in single session (2026-03-16)  
 **Status:** Production-ready, pushed to GitHub  
-**Repository:** https://github.com/ongjooming-web/prism  
-**Demo:** Ready to deploy to Vercel at `app.prismops.xyz`
+**Repository:** https://github.com/ongjooming-web/Verkspay  
+**Demo:** Ready to deploy to Vercel at `app.Verkspayops.xyz`
 
 ---
 
@@ -100,7 +100,7 @@ All tables include:
 ## File Structure
 
 ```
-prism/
+Verkspay/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx              # Root layout
@@ -186,7 +186,7 @@ prism/
 2. **Vercel Deployment (DEPLOYMENT.md)**
    - Connect GitHub repo to Vercel
    - Set environment variables
-   - Configure custom domain: `app.prismops.xyz`
+   - Configure custom domain: `app.Verkspayops.xyz`
    - Deploy and test
 
 3. **Post-Deployment**

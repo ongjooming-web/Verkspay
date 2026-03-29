@@ -11,7 +11,7 @@ export default function LandingPage() {
   const handleEmailSignup = (e: React.FormEvent) => {
     e.preventDefault()
     if (email) {
-      alert('Thanks! We\'ll notify you when Prism launches.')
+      alert('Thanks! We\'ll notify you when Verkspay launches.')
       setEmail('')
     }
   }
@@ -37,8 +37,8 @@ export default function LandingPage() {
         <header className="backdrop-blur-xl border-b border-white/10 sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2 md:gap-0">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Prism Logo" className="h-10 md:h-12 w-10 md:w-12" />
-              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Prism</span>
+              <img src="/logo.svg" alt="Verkspay Logo" className="h-10 md:h-12 w-10 md:w-12" />
+              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Verkspay</span>
             </Link>
             <nav className="hidden md:flex gap-6 items-center">
               <a href="#features" className="text-gray-300 hover:text-white transition text-sm">Features</a>
@@ -324,11 +324,11 @@ export default function LandingPage() {
         <footer className="border-t border-white/10 mt-20 py-12">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex justify-between items-center mb-8">
-              <p className="text-gray-400 text-sm">© 2026 Prism. Built for freelancers and small teams.</p>
+              <p className="text-gray-400 text-sm">© 2026 Verkspay. Built for freelancers and small teams.</p>
               <div className="flex gap-6 text-sm">
                 <Link href="/privacy" className="text-gray-400 hover:text-white transition">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-400 hover:text-white transition">Terms of Service</Link>
-                <a href="mailto:support@prismops.xyz" className="text-gray-400 hover:text-white transition">Contact</a>
+                <a href="mailto:support@Verkspayops.xyz" className="text-gray-400 hover:text-white transition">Contact</a>
               </div>
             </div>
           </div>

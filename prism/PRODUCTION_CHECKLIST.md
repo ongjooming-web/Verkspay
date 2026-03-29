@@ -152,7 +152,7 @@ Set up monitoring for:
    ```
 
 3. **Smoke Test**
-   - [ ] Login to Prism
+   - [ ] Login to Verkspay
    - [ ] Navigate to Settings
    - [ ] Try to connect wallet (don't complete)
    - [ ] Go to Invoices

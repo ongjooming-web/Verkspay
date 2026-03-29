@@ -6,10 +6,10 @@
 
 ## Overview
 
-Phase 3 Step 1 implements non-custodial USDC payment capabilities for the Prism invoicing platform. Users can connect their own wallets, view payment instructions, and receive USDC directly without any intermediary holding funds.
+Phase 3 Step 1 implements non-custodial USDC payment capabilities for the Verkspay invoicing platform. Users can connect their own wallets, view payment instructions, and receive USDC directly without any intermediary holding funds.
 
 ### Key Principle
-**Non-Custodial:** Each user's wallet is their own. Prism never holds or manages funds. Users receive USDC directly at their specified wallet address.
+**Non-Custodial:** Each user's wallet is their own. Verkspay never holds or manages funds. Users receive USDC directly at their specified wallet address.
 
 ---
 
@@ -344,7 +344,7 @@ Open http://localhost:3000 and navigate to **Settings** to test wallet connectio
 ## File Structure
 
 ```
-prism/
+Verkspay/
 ├── src/
 │   ├── app/
 │   │   ├── api/

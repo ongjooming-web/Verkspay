@@ -1,4 +1,4 @@
-# Prism Testing
+# Verkspay Testing
 
 ## Test Files
 
@@ -151,7 +151,7 @@ jobs:
 
 3. **Logs**
    - `console.log()` in test code prints to stdout
-   - Check Prism's Vercel logs for backend errors
+   - Check Verkspay's Vercel logs for backend errors
 
 4. **Network Traffic**
    - Enable `HAR` recording: `har: 'tests.har'` in config

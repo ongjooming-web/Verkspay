@@ -48,13 +48,13 @@ export function SendInvoiceModal({
   const [emailCc, setEmailCc] = useState('')
   const [senderName, setSenderName] = useState(profile.business_name || profile.full_name || '')
   const [subject, setSubject] = useState(
-    `Invoice "${invoice.invoice_number}" from ${profile.business_name || profile.full_name || 'Prism User'}`
+    `Invoice "${invoice.invoice_number}" from ${profile.business_name || profile.full_name || 'Verkspay User'}`
   )
   const [emailMessage, setEmailMessage] = useState(
     `Hi ${client.name},\n\nPlease find your invoice ${invoice.invoice_number} for ${formatCurrency(
       invoice.amount,
       invoice.currency_code || 'MYR'
-    )} due on ${new Date(invoice.due_date).toLocaleDateString()}.\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nClick the download button below to view or save your invoice.\n\nThank you,\n${profile.business_name || profile.full_name || 'Prism User'}`
+    )} due on ${new Date(invoice.due_date).toLocaleDateString()}.\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nClick the download button below to view or save your invoice.\n\nThank you,\n${profile.business_name || profile.full_name || 'Verkspay User'}`
   )
 
   // WhatsApp form state
@@ -63,9 +63,9 @@ export function SendInvoiceModal({
     `Hi ${client.name}, here is your invoice ${invoice.invoice_number} for ${formatCurrency(
       invoice.amount,
       invoice.currency_code || 'MYR'
-    )} from ${profile.business_name || profile.full_name || 'Prism User'}.\n\nDue date: ${new Date(
+    )} from ${profile.business_name || profile.full_name || 'Verkspay User'}.\n\nDue date: ${new Date(
       invoice.due_date
-    ).toLocaleDateString()}\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nPay here: ${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+    ).toLocaleDateString()}\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nPay here: ${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/pay/${invoice.id}`
   )
 
   const handleSendEmail = async () => {
@@ -242,7 +242,7 @@ export function SendInvoiceModal({
                 disabled
                 className="glass w-full px-4 py-3 rounded-lg text-gray-500 bg-gray-900/50 cursor-not-allowed"
               />
-              <p className="text-gray-500 text-xs mt-1">Read-only - emails sent from support@prismops.xyz</p>
+              <p className="text-gray-500 text-xs mt-1">Read-only - emails sent from support@Verkspayops.xyz</p>
             </div>
 
             {/* Subject */}

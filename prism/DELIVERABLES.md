@@ -36,7 +36,7 @@
 - **Method**: `personal_sign` (EIP-191)
 - **Message Format**:
   ```
-  Sign in to Prism
+  Sign in to Verkspay
   Wallet: {address}
   Timestamp: {Date.now()}
   ```
@@ -100,7 +100,7 @@
 #### Mobile UX ✅
 - Click "Connect" → WalletConnect modal
 - Select wallet → Deep link to app
-- Sign message → Auto-return to Prism
+- Sign message → Auto-return to Verkspay
 - Connected ✅
 
 #### Desktop UX ✅

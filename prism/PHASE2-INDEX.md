@@ -87,7 +87,7 @@
 ## 📁 File Structure
 
 ```
-prism/
+Verkspay/
 ├── src/
 │   ├── app/
 │   │   ├── dashboard/
@@ -313,7 +313,7 @@ prism/
 
 2. **Test Locally** (Optional)
    ```bash
-   cd prism && npm run dev
+   cd Verkspay && npm run dev
    ```
 
 3. **Create Commit**

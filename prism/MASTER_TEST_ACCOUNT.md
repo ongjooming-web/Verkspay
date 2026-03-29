@@ -32,7 +32,7 @@ MASTER_TEST_EMAILS=ongjooming@gmail.com,test@example.com,dev@company.com
 ### 2. Create the Account (Any Method)
 
 You can create the account in any way:
-- Normal signup at https://app.prismops.xyz/signup
+- Normal signup at https://app.Verkspayops.xyz/signup
 - Via Supabase Dashboard
 - Via your auth system
 - Or request access from admin

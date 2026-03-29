@@ -1,5 +1,5 @@
 /**
- * Supported countries and currencies for Prism
+ * Supported countries and currencies for Verkspay
  * Only non-sanctioned countries with major currencies
  */
 

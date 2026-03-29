@@ -7,7 +7,7 @@ import { useOnboarding } from '@/hooks/useOnboarding'
 const STEPS = [
   {
     id: 0,
-    title: 'Welcome to Prism! 👋',
+    title: 'Welcome to Verkspay! 👋',
     description: "Let's take a quick tour of your dashboard. We'll show you how to set up your business and start getting paid faster.",
     centered: true,
   },
@@ -117,7 +117,7 @@ export function OnboardingTour() {
   }
 
   const handleStartUsing = () => {
-    console.log('[Tour] Button clicked: Start Using Prism, step:', tourStep)
+    console.log('[Tour] Button clicked: Start Using Verkspay, step:', tourStep)
     completeOnboarding()
   }
 
@@ -245,14 +245,14 @@ export function OnboardingTour() {
               </button>
             )}
 
-            {/* Step 7: Start Using Prism */}
+            {/* Step 7: Start Using Verkspay */}
             {tourStep === 7 && (
               <button
                 type="button"
                 onClick={handleStartUsing}
                 className="w-full min-h-[44px] px-4 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-lg text-sm font-medium transition duration-150"
               >
-                Start Using Prism
+                Start Using Verkspay
               </button>
             )}
 

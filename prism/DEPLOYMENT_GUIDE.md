@@ -1,4 +1,4 @@
-# Prism Dashboard - Complete Deployment Guide
+# Verkspay Dashboard - Complete Deployment Guide
 
 ## 🚀 Quick Start (5 minutes)
 
@@ -329,6 +329,6 @@ Proprietary - All rights reserved
 
 ## ✨ You're all set!
 
-Your Prism dashboard is production-ready. The database is set up, all pages are functional with real data, and deployment is straightforward.
+Your Verkspay dashboard is production-ready. The database is set up, all pages are functional with real data, and deployment is straightforward.
 
 Deploy with confidence! 🚀

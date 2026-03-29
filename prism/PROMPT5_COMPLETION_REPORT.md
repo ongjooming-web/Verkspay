@@ -41,8 +41,8 @@ if (client?.phone_number) {
     'MYR',
     invoice.due_date,
     daysOverdue,
-    invoice.payment_link || `https://app.prismops.xyz/pay/${invoice.id}`,
-    profile?.business_name || 'Prism',
+    invoice.payment_link || `https://app.Verkspayops.xyz/pay/${invoice.id}`,
+    profile?.business_name || 'Verkspay',
     client.phone_number
   )
 }
@@ -123,7 +123,7 @@ IS 'Pre-generated wa.me link for quick WhatsApp reminder sending. Users can clic
      💰 Amount Due: MYR 5,000.00
      📅 Due Date: Mar 20, 2026 (5 days overdue)
      
-     Pay here: https://app.prismops.xyz/pay/[invoice-id]
+     Pay here: https://app.Verkspayops.xyz/pay/[invoice-id]
      
      Please let me know if you have any questions.
      

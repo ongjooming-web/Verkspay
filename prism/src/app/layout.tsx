@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Prism - Invoicing & Proposals',
+  title: 'Verkspay - Invoicing & Proposals',
   description: 'Simple invoicing and proposal management with crypto payments',
 }
 

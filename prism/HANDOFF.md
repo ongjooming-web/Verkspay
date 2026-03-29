@@ -82,7 +82,7 @@ Built core invoicing, payment links, subscription billing, smart reminders, and 
 ## 🚧 INCOMPLETE WORK - For Next Session
 
 ### 1. Partial Payment UI Integration (HIGH PRIORITY)
-**File:** `prism/src/app/invoices/[id]/page.tsx`
+**File:** `Verkspay/src/app/invoices/[id]/page.tsx`
 
 Add to invoice detail page below the Reminders card:
 
@@ -189,7 +189,7 @@ const [showStripePaymentModal, setShowStripePaymentModal] = useState(false)
 ```
 
 ### 2. Fetch Payment Records
-**File:** `prism/src/app/invoices/[id]/page.tsx`
+**File:** `Verkspay/src/app/invoices/[id]/page.tsx`
 
 Add to useEffect:
 
@@ -232,12 +232,12 @@ import { PartialPaymentModal } from '@/components/PartialPaymentModal'
 ## 🐛 KNOWN BUGS - For Next Session
 
 ### Bug #1: Stripe Onboarding Complete Not Auto-Saved
-**Location:** `prism/src/app/api/stripe/connect/return/route.ts`
+**Location:** `Verkspay/src/app/api/stripe/connect/return/route.ts`
 **Issue:** After user completes Stripe Connect flow, `stripe_onboarding_complete` is manually set to `true` but should verify via Stripe API
 **Fix:** Call `stripe.accounts.retrieve(stripeAccountId)` and check `charges_enabled` before marking complete
 
 ### Bug #2: "From:" Field Blank on Public Payment Page
-**Location:** `prism/src/app/pay/[id]/page.tsx`
+**Location:** `Verkspay/src/app/pay/[id]/page.tsx`
 **Issue:** Freelancer name not displaying on public payment page
 **Fix:** Check if `freelancer.full_name` is being populated correctly from the public invoice endpoint
 
@@ -253,7 +253,7 @@ import { PartialPaymentModal } from '@/components/PartialPaymentModal'
 
 **Start with:**
 ```
-Continue building Prism. Read HANDOFF.md first for full context. 
+Continue building Verkspay. Read HANDOFF.md first for full context. 
 
 Then complete the partial payment UI integration on the 
 invoice detail page by:
@@ -274,38 +274,38 @@ After UI integration, test:
 ## 📁 KEY FILE LOCATIONS
 
 ### Invoice Management
-- **Invoice detail page:** `prism/src/app/invoices/[id]/page.tsx` (NEEDS UI INTEGRATION)
-- **Invoice list page:** `prism/src/app/invoices/page.tsx`
-- **Public payment page:** `prism/src/app/pay/[id]/page.tsx`
-- **Payment card component:** `prism/src/components/USDCPaymentCard.tsx`
+- **Invoice detail page:** `Verkspay/src/app/invoices/[id]/page.tsx` (NEEDS UI INTEGRATION)
+- **Invoice list page:** `Verkspay/src/app/invoices/page.tsx`
+- **Public payment page:** `Verkspay/src/app/pay/[id]/page.tsx`
+- **Payment card component:** `Verkspay/src/components/USDCPaymentCard.tsx`
 
 ### Billing & Subscriptions
-- **Pricing page:** `prism/src/app/pricing/page.tsx`
-- **Settings page:** `prism/src/app/settings/page.tsx`
-- **Create checkout:** `prism/src/app/api/billing/create-checkout-session/route.ts`
-- **Customer portal:** `prism/src/app/api/billing/customer-portal/route.ts`
+- **Pricing page:** `Verkspay/src/app/pricing/page.tsx`
+- **Settings page:** `Verkspay/src/app/settings/page.tsx`
+- **Create checkout:** `Verkspay/src/app/api/billing/create-checkout-session/route.ts`
+- **Customer portal:** `Verkspay/src/app/api/billing/customer-portal/route.ts`
 
 ### Partial Payments (NEW)
-- **Manual payment endpoint:** `prism/src/app/api/invoices/[id]/record-payment/route.ts`
-- **Stripe payment link endpoint:** `prism/src/app/api/invoices/[id]/partial-payment-link/route.ts`
-- **Modal component:** `prism/src/components/PartialPaymentModal.tsx` (READY TO USE)
-- **Database migration:** `prism/supabase-migrations/add_partial_payments.sql`
+- **Manual payment endpoint:** `Verkspay/src/app/api/invoices/[id]/record-payment/route.ts`
+- **Stripe payment link endpoint:** `Verkspay/src/app/api/invoices/[id]/partial-payment-link/route.ts`
+- **Modal component:** `Verkspay/src/components/PartialPaymentModal.tsx` (READY TO USE)
+- **Database migration:** `Verkspay/supabase-migrations/add_partial_payments.sql`
 
 ### Reminders
-- **Manual reminder endpoint:** `prism/src/app/api/invoices/send-reminder/route.ts`
-- **Cron job:** `prism/src/app/api/cron/send-reminders/route.ts`
-- **Email templates:** `prism/src/lib/email-templates.ts`
-- **Resend wrapper:** `prism/src/lib/resend.ts`
+- **Manual reminder endpoint:** `Verkspay/src/app/api/invoices/send-reminder/route.ts`
+- **Cron job:** `Verkspay/src/app/api/cron/send-reminders/route.ts`
+- **Email templates:** `Verkspay/src/lib/email-templates.ts`
+- **Resend wrapper:** `Verkspay/src/lib/resend.ts`
 
 ### Auth & Utilities
-- **Auth helper:** `prism/src/lib/auth.ts` (verifyAuth, requireAuth)
-- **Server Supabase:** `prism/src/lib/supabase-server.ts` (getSupabaseServer, getSupabaseAuth)
-- **Subscription limits:** `prism/src/lib/subscription-limits.ts`
+- **Auth helper:** `Verkspay/src/lib/auth.ts` (verifyAuth, requireAuth)
+- **Server Supabase:** `Verkspay/src/lib/supabase-server.ts` (getSupabaseServer, getSupabaseAuth)
+- **Subscription limits:** `Verkspay/src/lib/subscription-limits.ts`
 
 ### Webhooks & Stripe
-- **Stripe webhook handler:** `prism/src/app/api/stripe/webhook/route.ts`
-- **Stripe Connect callback:** `prism/src/app/api/stripe/connect/return/route.ts`
-- **Payment link creation:** `prism/src/app/api/stripe/payment-link/route.ts`
+- **Stripe webhook handler:** `Verkspay/src/app/api/stripe/webhook/route.ts`
+- **Stripe Connect callback:** `Verkspay/src/app/api/stripe/connect/return/route.ts`
+- **Payment link creation:** `Verkspay/src/app/api/stripe/payment-link/route.ts`
 
 ---
 

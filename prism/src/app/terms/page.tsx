@@ -14,16 +14,16 @@ export default function TermsPage() {
         {/* Intro */}
         <section>
           <p className="text-gray-300 text-lg leading-relaxed">
-            By using Prism, you agree to these Terms of Service. Please read them carefully. If you don't agree with any part, you may not use Prism.
+            By using Verkspay, you agree to these Terms of Service. Please read them carefully. If you don't agree with any part, you may not use Verkspay.
           </p>
         </section>
 
-        {/* What is Prism */}
+        {/* What is Verkspay */}
         <section>
-          <h2 className="text-3xl font-bold mb-4 text-orange-400">What is Prism?</h2>
+          <h2 className="text-3xl font-bold mb-4 text-orange-400">What is Verkspay?</h2>
           <div className="glass rounded-lg p-6 border border-orange-400/20 text-gray-300">
             <p className="mb-3">
-              Prism is invoicing and payment tracking software designed for freelancers and small businesses. It helps you:
+              Verkspay is invoicing and payment tracking software designed for freelancers and small businesses. It helps you:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Create and send invoices to clients</li>
@@ -32,7 +32,7 @@ export default function TermsPage() {
               <li>Manage client information</li>
             </ul>
             <p className="mt-4 text-sm text-gray-400 italic">
-              <strong>Important:</strong> Prism is invoicing software, NOT a payment processor. We do not process payments directly—we integrate with Stripe for payment processing.
+              <strong>Important:</strong> Verkspay is invoicing software, NOT a payment processor. We do not process payments directly—we integrate with Stripe for payment processing.
             </p>
           </div>
         </section>
@@ -44,11 +44,11 @@ export default function TermsPage() {
             <p className="font-semibold text-white mb-3">You agree NOT to:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Create invoices for illegal goods or services</li>
-              <li>Use Prism to commit fraud or deceive clients</li>
+              <li>Use Verkspay to commit fraud or deceive clients</li>
               <li>Engage in money laundering or financing illegal activities</li>
               <li>Harass, abuse, or threaten other users</li>
-              <li>Attempt to hack, bypass, or reverse-engineer Prism</li>
-              <li>Use Prism to send spam or unsolicited emails</li>
+              <li>Attempt to hack, bypass, or reverse-engineer Verkspay</li>
+              <li>Use Verkspay to send spam or unsolicited emails</li>
               <li>Violate any applicable laws in your jurisdiction</li>
             </ul>
             <p className="mt-4 text-sm text-gray-400">
@@ -64,7 +64,7 @@ export default function TermsPage() {
             <div>
               <p className="font-semibold text-white mb-2">Billing & Auto-Renewal</p>
               <p className="text-sm">
-                Prism subscriptions are billed monthly. Your subscription will automatically renew each month unless you cancel it. You will be charged on the same day each month.
+                Verkspay subscriptions are billed monthly. Your subscription will automatically renew each month unless you cancel it. You will be charged on the same day each month.
               </p>
             </div>
             <div>
@@ -95,7 +95,7 @@ export default function TermsPage() {
               <li>You have not accessed paid features extensively</li>
             </ul>
             <p className="text-sm text-gray-400">
-              To request a refund, email support@prismops.xyz with your invoice number and reason. Refunds are processed within 5-10 business days.
+              To request a refund, email support@Verkspayops.xyz with your invoice number and reason. Refunds are processed within 5-10 business days.
             </p>
             <p className="text-sm text-gray-400 mt-4">
               After 7 days, no refunds are available. You may cancel at any time to avoid future charges.
@@ -109,7 +109,7 @@ export default function TermsPage() {
           <div className="glass rounded-lg p-6 border border-orange-400/20 text-gray-300">
             <p className="mb-4 font-semibold text-white">Important Disclaimer:</p>
             <p className="mb-4">
-              Prism is a tool for creating and sending invoices. We are <strong>NOT responsible for</strong>:
+              Verkspay is a tool for creating and sending invoices. We are <strong>NOT responsible for</strong>:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-2 mb-4">
               <li>Payment disputes between you and your clients</li>
@@ -120,7 +120,7 @@ export default function TermsPage() {
               <li>Data loss due to account deletion or technical failures</li>
             </ul>
             <p className="text-sm text-gray-400">
-              To the fullest extent permitted by law, Prism's liability is limited to the amount you paid for your subscription in the last 12 months.
+              To the fullest extent permitted by law, Verkspay's liability is limited to the amount you paid for your subscription in the last 12 months.
             </p>
           </div>
         </section>
@@ -139,7 +139,7 @@ export default function TermsPage() {
               <li>You violate Stripe's or any payment processor's terms</li>
             </ul>
             <p className="mt-4 text-sm text-gray-400">
-              Upon termination, you lose access to Prism. Archived invoices may be retained for legal compliance.
+              Upon termination, you lose access to Verkspay. Archived invoices may be retained for legal compliance.
             </p>
           </div>
         </section>
@@ -148,7 +148,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-3xl font-bold mb-4 text-orange-400">Disclaimer</h2>
           <div className="glass rounded-lg p-6 border border-orange-400/20 text-gray-300">
-            <p className="mb-3">Prism is provided "AS IS" without warranties:</p>
+            <p className="mb-3">Verkspay is provided "AS IS" without warranties:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>We do not guarantee uninterrupted service</li>
               <li>We do not guarantee data security (though we work hard on it)</li>
@@ -169,7 +169,7 @@ export default function TermsPage() {
               These Terms of Service are governed by the laws of <strong>Malaysia</strong>. Any legal disputes will be handled in Malaysian courts.
             </p>
             <p className="text-sm text-gray-400">
-              For non-Malaysian users: You agree to comply with your local laws and acknowledge that Prism may not be available in all jurisdictions due to legal restrictions.
+              For non-Malaysian users: You agree to comply with your local laws and acknowledge that Verkspay may not be available in all jurisdictions due to legal restrictions.
             </p>
           </div>
         </section>
@@ -179,14 +179,14 @@ export default function TermsPage() {
           <h2 className="text-3xl font-bold mb-4 text-orange-400">Questions?</h2>
           <div className="glass rounded-lg p-6 border border-orange-400/20 text-gray-300">
             <p className="mb-2">For questions about these Terms, please contact:</p>
-            <p className="text-orange-400 font-semibold">support@prismops.xyz</p>
+            <p className="text-orange-400 font-semibold">support@Verkspayops.xyz</p>
           </div>
         </section>
 
         {/* Last Updated */}
         <div className="border-t border-white/10 pt-8 text-gray-400 text-sm">
           <p>Last updated: March 2026</p>
-          <p>We may update these terms periodically. Continued use of Prism after changes constitute acceptance.</p>
+          <p>We may update these terms periodically. Continued use of Verkspay after changes constitute acceptance.</p>
         </div>
       </div>
     </div>

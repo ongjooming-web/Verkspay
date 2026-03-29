@@ -43,7 +43,7 @@ const isMobileBrowser = (): boolean => {
 }
 
 const handleMobileDeepLink = (walletType: 'metamask' | 'phantom') => {
-  const dappUrl = typeof window !== 'undefined' ? window.location.href : 'https://app.prismops.xyz'
+  const dappUrl = typeof window !== 'undefined' ? window.location.href : 'https://app.Verkspayops.xyz'
   
   let deepLinkUrl: string
   if (walletType === 'metamask') {

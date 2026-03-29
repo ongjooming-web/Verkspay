@@ -27,7 +27,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 async function fetchInsightsData(userId: string, token: string): Promise<InsightsData> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/api/insights/data`,
+    `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/api/insights/data`,
     {
       method: 'GET',
       headers: {
@@ -50,7 +50,7 @@ async function callClaudeAPI(insightsData: InsightsData): Promise<string> {
     throw new Error('ANTHROPIC_API_KEY not configured')
   }
 
-  const systemPrompt = `You are an AI business strategist for Prism, an invoicing platform used by freelancers and small businesses. Analyze the provided business data and generate comprehensive, actionable insights.
+  const systemPrompt = `You are an AI business strategist for Verkspay, an invoicing platform used by freelancers and small businesses. Analyze the provided business data and generate comprehensive, actionable insights.
 
 Format your response EXACTLY as follows:
 

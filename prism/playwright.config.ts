@@ -12,7 +12,7 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    baseURL: 'https://app.prismops.xyz',
+    baseURL: 'https://app.Verkspayops.xyz',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -25,6 +25,6 @@ export default defineConfig({
     },
   ],
 
-  webServer: undefined, // Prism is already running, don't start a dev server
+  webServer: undefined, // Verkspay is already running, don't start a dev server
   globalTimeout: 30 * 60 * 1000, // 30 minutes total timeout
 })

@@ -5,8 +5,8 @@
 The WalletConnect component now supports both **desktop modal connections** and **mobile deep linking**.
 
 ### Mobile Flows:
-- **MetaMask Mobile (iOS/Android)**: Opens native app → user authorizes → returns to Prism
-- **Phantom Mobile (iOS/Android)**: Opens native app → user authorizes → returns to Prism
+- **MetaMask Mobile (iOS/Android)**: Opens native app → user authorizes → returns to Verkspay
+- **Phantom Mobile (iOS/Android)**: Opens native app → user authorizes → returns to Verkspay
 - **Desktop (Safari/Chrome)**: Uses WalletConnect modal as before
 
 ---
@@ -30,13 +30,13 @@ const MOBILE_DETECTION = {
 **MetaMask Mobile:**
 - Detects if on mobile → calls `window.ethereum.request({ method: 'eth_requestAccounts' })`
 - MetaMask app intercepts and opens native app
-- User authorizes → returns to Prism
+- User authorizes → returns to Verkspay
 - We check `eth_accounts` on return and save address
 
 **Phantom Mobile:**
 - Detects if on mobile → redirects to `https://phantom.app/ul/browse/{returnUrl}`
 - Phantom app opens, handles auth
-- Redirects back to Prism with wallet data
+- Redirects back to Verkspay with wallet data
 - We check for Phantom provider on return and save address
 
 ### 3. Session Storage for State
@@ -88,7 +88,7 @@ MetaMask/Phantom app opened via deep link
     ↓
 User authorizes in native app
     ↓
-Returns to Prism (via redirect or back button)
+Returns to Verkspay (via redirect or back button)
     ↓
 checkMobileWalletReturn() runs
     ↓
@@ -110,7 +110,7 @@ Session storage cleaned up
 **Prerequisites:**
 - iPhone with MetaMask installed
 - Logged into MetaMask app with test account
-- Logged into Prism on Safari
+- Logged into Verkspay on Safari
 
 **Steps:**
 1. Go to Settings page
@@ -120,7 +120,7 @@ Session storage cleaned up
 5. Confirm message pops up: "📱 Mobile Mode: You'll be directed to wallet app..."
 6. Click button
 7. **Safari switches to MetaMask app**
-8. App shows: "Allow Prism to view your wallet address?"
+8. App shows: "Allow Verkspay to view your wallet address?"
 9. Click "Allow" or "Connect"
 10. **App returns to Safari**
 11. Page shows: ✓ Green success toast
@@ -147,7 +147,7 @@ Session storage cleaned up
 **Prerequisites:**
 - Android device with MetaMask installed (Chrome/Firefox)
 - Logged into MetaMask app
-- Logged into Prism
+- Logged into Verkspay
 
 **Steps:**
 1. Same as Test 1, but on Android
@@ -170,7 +170,7 @@ Session storage cleaned up
 **Prerequisites:**
 - iPhone with Phantom installed
 - Logged into Phantom app
-- Logged into Prism on Safari
+- Logged into Verkspay on Safari
 
 **Steps:**
 1. Go to Settings page
@@ -179,7 +179,7 @@ Session storage cleaned up
 4. Confirm message: "📱 Mobile Mode: You'll be directed to wallet app..."
 5. Click button
 6. **Safari switches to Phantom app**
-7. App shows connection request for Prism
+7. App shows connection request for Verkspay
 8. User approves
 9. **App returns to Safari**
 10. Success toast shown
@@ -216,7 +216,7 @@ Session storage cleaned up
 **Prerequisites:**
 - Desktop computer
 - MetaMask/Phantom extension installed
-- Logged into Prism
+- Logged into Verkspay
 
 **Steps:**
 1. Go to Settings
