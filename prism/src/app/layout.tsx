@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Verkspay - Invoicing & Proposals',
-  description: 'Simple invoicing and proposal management with crypto payments',
+  description: 'AI-powered invoicing platform for freelancers and small businesses. Smart insights, proposals, recurring invoices, and more.',
 }
 
 export default function RootLayout({
