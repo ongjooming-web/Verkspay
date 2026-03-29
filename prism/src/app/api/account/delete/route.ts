@@ -63,36 +63,48 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // Create a client with the USER'S OWN TOKEN (not service role key!)
-    // This is secure because the token is already validated and scoped to that user
+    // Extract token from auth header
     const token = authHeader?.substring(7) || ''
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      }
-    )
-
-    console.log('[account/delete] Calling delete_user_account function...')
-
-    // Call the database function that handles deletion securely
-    const { data, error: functionError } = await supabase
-      .rpc('delete_user_account', { p_user_id: userId })
-
-    if (functionError) {
-      console.error('[account/delete] Function error:', functionError)
+    
+    if (!token) {
       return NextResponse.json(
-        { error: `Deletion failed: ${functionError.message}` },
-        { status: 500 }
+        { error: 'No authentication token provided' },
+        { status: 401 }
       )
     }
 
-    if (!data || !data[0]?.success) {
+    console.log('[account/delete] Calling delete_user_account function with user token...')
+
+    // Call the database function directly via PostgreSQL REST API
+    // This ensures the user's token is properly authenticated
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/delete_user_account`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ p_user_id: userId })
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('[account/delete] RPC call failed:', {
+        status: response.status,
+        error: errorData
+      })
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to call deletion function' },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+    
+    if (!Array.isArray(data) || !data[0]?.success) {
       console.error('[account/delete] Function returned failure:', data)
       return NextResponse.json(
         { error: data?.[0]?.message || 'Account deletion failed' },
@@ -100,7 +112,15 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    // Get the result
     const result = data[0]
+    if (!result) {
+      console.error('[account/delete] No result from function')
+      return NextResponse.json(
+        { error: 'No response from deletion function' },
+        { status: 500 }
+      )
+
     console.log('[account/delete] Account deletion successful:', {
       deleted_invoices: result.deleted_invoices,
       deleted_clients: result.deleted_clients,
