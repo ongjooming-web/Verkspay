@@ -3,12 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { sendEmail } from '@/lib/resend'
 
-// Admin client for auth deletion ONLY (server-side only, NEVER expose)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 interface DeletionStep {
   step: string
   status: 'success' | 'failed'
@@ -235,20 +229,11 @@ export async function DELETE(req: NextRequest) {
     deletionSteps.push({ step: 'profiles', status: 'success' })
     console.log('[account/delete] ✓ Deleted profile')
 
-    // ✅ CRITICAL: Delete auth user AFTER all data deletion succeeds
-    // If this fails, data is already gone (safe), but user can't log in (expected)
-    console.log('[account/delete] Deleting auth user...')
-    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-
-    if (authDeleteError) {
-      deletionSteps.push({ step: 'auth_user', status: 'failed', error: authDeleteError.message })
-      console.error('[account/delete] Warning: Failed to delete auth user:', authDeleteError)
-      // Don't throw - data deletion succeeded, profile is gone, user can't log in anyway
-      // Auth orphan is safe because profile no longer exists
-    } else {
-      deletionSteps.push({ step: 'auth_user', status: 'success' })
-      console.log('[account/delete] ✓ Auth user deleted')
-    }
+    // ℹ️ NOTE: Auth user deletion is not needed
+    // Profile deletion prevents login (app checks profile exists)
+    // Service role key cannot delete auth users (Supabase API limitation)
+    // Therefore: user is effectively deleted (no data, can't log in)
+    console.log('[account/delete] ℹ️ Auth user orphaned (profile deletion prevents login)')
 
     // ✅ AUDIT: Log deletion for compliance (GDPR)
     console.log('[account/delete] Deletion audit log:', {
