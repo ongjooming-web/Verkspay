@@ -136,10 +136,10 @@ export default function AccountSettings() {
         return
       }
 
-      // Success - redirect to home
+      // Success - redirect to goodbye page
       setSuccess('Your account has been permanently deleted.')
       setTimeout(() => {
-        window.location.href = '/'
+        window.location.href = '/goodbye'
       }, 2000)
     } catch (err) {
       console.error('Error deleting account:', err)

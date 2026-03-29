@@ -263,9 +263,18 @@ export async function DELETE(req: NextRequest) {
 
     console.log('[account/delete] ✅ Account completely deleted:', userId)
 
+    // Optional: Log deletion for compliance/audit
+    console.log('[account/delete] Audit log:', {
+      user_id: userId,
+      email: userEmail,
+      deleted_at: new Date().toISOString(),
+      action: 'account_deletion'
+    })
+
     return NextResponse.json({
       success: true,
-      message: 'Your account has been permanently deleted. Redirecting to home page...'
+      message: 'Your account has been permanently deleted. Redirecting to goodbye page...',
+      redirect_url: '/goodbye'
     }, { status: 200 })
   } catch (error: any) {
     console.error('[account/delete] Unexpected error:', error)
