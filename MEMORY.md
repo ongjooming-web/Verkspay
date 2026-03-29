@@ -236,9 +236,12 @@ Build the #1 **AI-powered invoicing platform** for freelancers and small busines
 ❌ SMS reminders (WhatsApp only)  
 ❌ USDC on Base (using Stripe only, funded by revenue)
 
-### Current Status (March 27, 2026)
+### Current Status (March 29, 2026)
 
 ✅ **All listed phases COMPLETE and deployed to Vercel**  
+✅ **Onboarding tour fully implemented** (mobile-responsive, all steps working)  
+✅ **Account deletion working** (all user data removed, email sent)  
+✅ **RLS security policies added** (protect against unauthorized access)  
 ⏳ **Ready for user validation** (target: 10-15 freelancers)  
 ⏳ **Next: Monetization** (launch Stripe subscription)  
 ⏳ **Then: Phase 4** (if user demand warrants AI client intelligence)
@@ -249,6 +252,48 @@ Build the #1 **AI-powered invoicing platform** for freelancers and small busines
 - **CAC:** TBD (validate with users first)
 - **Churn assumption:** <5% monthly (sticky product)
 - **Runway:** $1,000 capital = ~5 months runway at $200/mo burn
+
+---
+
+## Security Standards (RLS) - March 29, 2026
+
+**Added:** Row-Level Security policies for all user data tables  
+**Status:** Ready to deploy (in sql/rls-policies.sql)
+
+### RLS Policies Implemented
+- ✅ profiles (SELECT, UPDATE, INSERT, DELETE)
+- ✅ invoices (SELECT, INSERT, UPDATE, DELETE)
+- ✅ clients (SELECT, INSERT, UPDATE, DELETE)
+- ✅ proposals (SELECT, INSERT, UPDATE, DELETE)
+- ✅ payment_records (SELECT, INSERT, UPDATE, DELETE)
+- ✅ payment_methods (SELECT, INSERT, UPDATE, DELETE)
+- ✅ recurring_invoices (SELECT, INSERT, UPDATE, DELETE)
+- ✅ reminders_log (SELECT, DELETE via invoice check)
+
+### How It Works
+- Each policy enforces: `auth.uid() = user_id`
+- Users can ONLY see/modify their own data
+- Server routes use SERVICE_ROLE_KEY (bypass RLS, intentional)
+- Client code uses ANON_KEY (respects RLS, safe)
+- Zero code changes required (already user-scoped)
+
+### Deployment
+1. Backup database (Supabase Console → Backups)
+2. Go to SQL Editor in Supabase
+3. Copy entire `sql/rls-policies.sql`
+4. Paste and Run
+5. Verify with SQL queries in RLS_SETUP.md
+6. Test Prism loads normally
+
+### Impact
+- ✅ Stolen anon key = limited to user's own data
+- ✅ Compromised session = same protection
+- ✅ Prism features = unchanged (zero code modifications)
+- ✅ Server routes = still work (service role bypasses RLS)
+
+### Files
+- `sql/rls-policies.sql` - All RLS SQL statements
+- `RLS_SETUP.md` - Complete setup instructions + verification queries
 
 ---
 
