@@ -1,40 +1,21 @@
-<svg viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
   <defs>
-    <!-- Shield gradient: Blue to Teal to Purple -->
-    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0055B8;stop-opacity:1" />
-      <stop offset="60%" style="stop-color:#00A8E8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
-    </linearGradient>
-    
-    <!-- Text gradient: Blue to Purple -->
-    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#0055B8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00A8E8;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Shield (rounded square/shield shape) -->
-  <g>
-    <!-- Main shield body with rounded corners -->
-    <path d="M 150 180 L 150 350 Q 150 480 280 540 Q 410 480 410 350 L 410 180 Q 410 130 360 130 L 200 130 Q 150 130 150 180 Z" 
-          fill="url(#shieldGrad)" stroke="none"/>
-    
-    <!-- Checkmark inside shield -->
-    <g>
-      <!-- Left part of checkmark -->
-      <line x1="200" y1="360" x2="260" y2="420" stroke="white" stroke-width="35" stroke-linecap="round"/>
-      <!-- Right part of checkmark -->
-      <line x1="260" y1="420" x2="380" y2="260" stroke="white" stroke-width="35" stroke-linecap="round"/>
-    </g>
-  </g>
+  <!-- Shield shape (rounded rectangle with pointed bottom) -->
+  <path d="M 80 80 Q 80 60 100 60 L 412 60 Q 432 60 432 80 L 432 240 Q 432 350 256 420 Q 80 350 80 240 Z" 
+        fill="url(#shieldGradient)" stroke="none"/>
   
-  <!-- "Verkspay" text -->
-  <text x="480" y="420" 
-        font-family="'Arial', 'Helvetica', sans-serif" 
-        font-size="140" 
-        font-weight="bold" 
-        fill="url(#textGrad)" 
-        letter-spacing="3"
-        dominant-baseline="middle">Verkspay</text>
+  <!-- White checkmark -->
+  <g stroke="white" stroke-width="50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left diagonal of checkmark -->
+    <path d="M 140 280 L 220 360"/>
+    <!-- Right diagonal of checkmark -->
+    <path d="M 220 360 L 380 160"/>
+  </g>
 </svg>
