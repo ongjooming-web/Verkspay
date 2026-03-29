@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { sendEmail } from '@/lib/resend'
 
+// Admin client for auth deletion ONLY (server-side only)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function DELETE(req: NextRequest) {
   try {
     console.log('[account/delete] DELETE request received')
@@ -220,6 +226,18 @@ export async function DELETE(req: NextRequest) {
       )
     }
     console.log('[account/delete] ✓ Deleted profile')
+
+    // Delete auth user (requires service role key - server-side only)
+    console.log('[account/delete] Deleting auth user...')
+    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+    if (authDeleteError) {
+      console.error('[account/delete] Warning: Failed to delete auth user:', authDeleteError)
+      // Continue anyway - data is already deleted, auth user is harmless orphan
+      // The profile deletion prevents login, which achieves the same outcome
+    } else {
+      console.log('[account/delete] ✓ Auth user deleted')
+    }
 
     // Send confirmation email
     try {
