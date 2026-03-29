@@ -34,7 +34,7 @@ export function Navigation() {
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src="/logo.svg" alt="Verkspay Logo" className="h-12 w-12" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Verkspay</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Verkspay</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -50,7 +50,7 @@ export function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-gray-300 hover:text-blue-400 transition-colors font-medium text-sm"
+                  className="text-blue-700 hover:text-blue-600 transition-colors font-medium text-sm"
                   data-onboarding={onboardingAttr}
                 >
                   {link.label}
@@ -65,7 +65,7 @@ export function Navigation() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            className="md:hidden p-2 text-blue-700 hover:text-blue-600 transition-colors"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,18 +80,18 @@ export function Navigation() {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-white/10 space-y-2">
+          <div className="md:hidden mt-4 pt-4 border-t border-blue-200 space-y-2">
             {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2 text-gray-300 hover:text-blue-400 hover:bg-white/5 transition-colors rounded text-sm"
+                className="block px-4 py-2 text-blue-700 hover:text-blue-600 hover:bg-blue-100/50 transition-colors rounded text-sm"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-2 border-t border-white/10 mt-2">
+            <div className="pt-2 border-t border-blue-200 mt-2">
               <Button
                 variant="outline"
                 size="sm"
