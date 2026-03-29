@@ -65,20 +65,14 @@ export function OnboardingTour() {
     setMounted(true)
   }, [])
 
-  // Refetch onboarding status when pathname changes (user navigates to a new page)
-  // This ensures tour_step updates from the server are reflected in the UI
+  // Refetch status when pathname changes (seamless navigation)
   useEffect(() => {
     if (mounted && pathname) {
-      console.log('[Tour] Pathname changed to:', pathname, 'fetching latest status...')
+      console.log('[Tour] Pathname changed to:', pathname, 'refreshing status...')
       refresh()
     }
   }, [pathname, mounted, refresh])
 
-  // Don't render if:
-  // - Not mounted yet
-  // - Tour shouldn't show (completed or not at step 0)
-  // - Status not loaded yet
-  // - User already completed the tour (onboarding_completed === true)
   if (!mounted || !showTour || !status || status.completed) {
     return null
   }
@@ -87,7 +81,7 @@ export function OnboardingTour() {
   if (!step) return null
 
   const handleNext = () => {
-    console.log('[Tour] Button clicked: Next, step:', tourStep)
+    console.log('[Tour] Next clicked, step:', tourStep)
     if (tourStep === STEPS.length - 1) {
       completeOnboarding()
     } else {
@@ -96,54 +90,65 @@ export function OnboardingTour() {
   }
 
   const handleSkip = () => {
-    console.log('[Tour] Button clicked: Skip Tour, step:', tourStep)
+    console.log('[Tour] Skip clicked')
     completeOnboarding()
   }
 
   const handleNavigate = (path: string, label: string) => {
-    console.log('[Tour] Button clicked:', label, 'step:', tourStep, 'navigating to:', path)
+    console.log('[Tour] Navigate clicked:', label, '→', path)
     updateTourStep(tourStep + 1)
     router.push(path)
   }
 
   const handleLetsGo = () => {
-    console.log('[Tour] Button clicked: Let\'s Go, step:', tourStep)
+    console.log('[Tour] Let\'s Go clicked')
     updateTourStep(1)
   }
 
   const handleGotIt = () => {
-    console.log('[Tour] Button clicked: Got it!, step:', tourStep)
+    console.log('[Tour] Got It clicked')
     updateTourStep(tourStep + 1)
   }
 
   const handleStartUsing = () => {
-    console.log('[Tour] Button clicked: Start Using Verkspay, step:', tourStep)
+    console.log('[Tour] Start Using Verkspay clicked')
     completeOnboarding()
   }
 
   const handleLater = () => {
-    console.log('[Tour] Button clicked: I\'ll do this later, step:', tourStep)
+    console.log('[Tour] I\'ll do this later clicked')
     updateTourStep(tourStep + 1)
   }
 
   return (
     <>
-      {/* Overlay — blocks page interaction but not button clicks within tour */}
-      <div className="fixed inset-0 z-[9998] bg-black/60 pointer-events-auto" />
+      {/* Overlay */}
+      <div className="fixed inset-0 z-[9998] bg-black/60 pointer-events-auto" onClick={handleSkip} />
 
-      {/* Tour content container — positioned above overlay, all clicks go through */}
+      {/* Modal/Tooltip */}
       <div
         className={`fixed z-[9999] pointer-events-auto ${
           step.centered
             ? 'inset-0 flex items-center justify-center p-4'
             : 'top-32 left-1/2 transform -translate-x-1/2 max-w-[90vw] w-full max-w-[400px] px-4'
         }`}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal card */}
         <div className="w-full max-w-[400px] rounded-2xl bg-[#1A1A2E] border border-purple-500/30 p-6 sm:p-8 shadow-2xl">
-          {/* Step counter */}
-          <div className="mb-4 text-xs text-gray-400">
-            Step {tourStep + 1} of {STEPS.length}
+          {/* Step indicator */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-xs text-gray-400">
+              Step {tourStep + 1} of {STEPS.length}
+            </div>
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="text-gray-500 hover:text-gray-300 transition text-lg leading-none p-1"
+              title="Skip tour"
+              aria-label="Close"
+            >
+              ✕
+            </button>
           </div>
 
           {/* Title */}
@@ -152,7 +157,7 @@ export function OnboardingTour() {
           {/* Description */}
           <p className="mb-6 text-sm text-gray-300 leading-relaxed">{step.description}</p>
 
-          {/* Buttons container */}
+          {/* Buttons */}
           <div className="flex flex-col gap-3">
             {/* Step 0: Welcome */}
             {tourStep === 0 && (
@@ -174,7 +179,7 @@ export function OnboardingTour() {
               </>
             )}
 
-            {/* Step 3: Go to Settings */}
+            {/* Step 3: Settings */}
             {tourStep === 3 && (
               <>
                 <button
@@ -194,7 +199,7 @@ export function OnboardingTour() {
               </>
             )}
 
-            {/* Step 4: Go to Clients */}
+            {/* Step 4: Clients */}
             {tourStep === 4 && (
               <>
                 <button
@@ -214,7 +219,7 @@ export function OnboardingTour() {
               </>
             )}
 
-            {/* Step 5: Go to Invoices */}
+            {/* Step 5: Invoices */}
             {tourStep === 5 && (
               <>
                 <button
@@ -234,7 +239,7 @@ export function OnboardingTour() {
               </>
             )}
 
-            {/* Step 6: Got it! */}
+            {/* Step 6: Insights */}
             {tourStep === 6 && (
               <button
                 type="button"
@@ -245,7 +250,7 @@ export function OnboardingTour() {
               </button>
             )}
 
-            {/* Step 7: Start Using Verkspay */}
+            {/* Step 7: Completion */}
             {tourStep === 7 && (
               <button
                 type="button"
@@ -256,8 +261,8 @@ export function OnboardingTour() {
               </button>
             )}
 
-            {/* Steps 1, 2: Default Next button */}
-            {tourStep === 1 || tourStep === 2 ? (
+            {/* Steps 1, 2: Next button */}
+            {(tourStep === 1 || tourStep === 2) && (
               <button
                 type="button"
                 onClick={handleNext}
@@ -265,7 +270,7 @@ export function OnboardingTour() {
               >
                 Next
               </button>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
