@@ -246,6 +246,7 @@ export default function Settings() {
   }
 
   return (
+    <>
     <div className="min-h-screen relative z-10">
       <Navigation />
 
@@ -929,8 +930,11 @@ function BillingSection() {
         </div>
       </CardBody>
     </Card>
+      </div>
+    </div>
 
-    {/* Payment Success Modal */}
-    <PaymentSuccessModal />
+      {/* Payment Success Modal */}
+      <PaymentSuccessModal />
+    </>
   )
 }
