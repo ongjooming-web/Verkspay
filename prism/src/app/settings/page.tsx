@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import { SUPPORTED_COUNTRIES, formatCurrency } from '@/lib/countries'
 import { isMasterAccount } from '@/utils/isMasterAccount'
+import { PaymentSuccessModal } from '@/components/PaymentSuccessModal'
 
 interface UserProfile {
   wallet_address?: string
@@ -928,5 +929,8 @@ function BillingSection() {
         </div>
       </CardBody>
     </Card>
+
+    {/* Payment Success Modal */}
+    <PaymentSuccessModal />
   )
 }
