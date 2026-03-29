@@ -159,16 +159,35 @@ export default function Settings() {
 
     setSaving(true)
     try {
-      // Delete user account
-      const { error } = await supabase.auth.admin.deleteUser(user.id)
-      if (error) throw error
+      // Get fresh token for deletion
+      await supabase.auth.refreshSession()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
 
-      // Sign out
-      await supabase.auth.signOut()
-      router.push('/login')
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
+      // Call API route to delete account (uses service role key server-side)
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: user.email })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Redirect to goodbye page
+      router.push('/goodbye')
     } catch (err) {
       console.error('Error deleting account:', err)
-      setMessage('✗ Failed to delete account')
+      setMessage('✗ ' + (err instanceof Error ? err.message : 'Failed to delete account'))
       setSaving(false)
     }
   }
