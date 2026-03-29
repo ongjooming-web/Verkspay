@@ -96,15 +96,19 @@ export default function AccountSettings() {
         return
       }
 
-      // Call delete account API with authorization token
-      const response = await fetch('/api/account/delete', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ email: user.email })
-      })
+      // Call Supabase Edge Function with authorization token
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/delete-account`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ email: user.email })
+        }
+      )
 
       const data = await response.json()
 
