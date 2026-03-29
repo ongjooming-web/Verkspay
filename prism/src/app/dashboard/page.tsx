@@ -389,8 +389,7 @@ export default function Dashboard() {
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-6 pb-12">
-        {/* Onboarding Progress Bar */}
-        <OnboardingProgress />
+        {/* Onboarding Progress Bar is rendered in (authenticated)/layout.tsx */}
 
         {error && (
           <div className="mb-6 glass border-red-500/50 bg-red-500/10 text-red-300 px-4 py-3 rounded-lg">
