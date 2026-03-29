@@ -105,67 +105,92 @@ export async function POST(req: NextRequest) {
     
     console.log('[Delete] ✓ Email confirmed, proceeding with deletion')
 
-    // 4. Delete user data in order (respecting foreign keys)
+    // 4. Delete user data in correct order (respecting foreign keys)
+    
+    // Step 1: Get all invoice IDs for this user (needed to delete payment_records)
+    console.log('[Delete] Fetching invoice IDs...')
+    const { data: invoices, error: invoicesFetchErr } = await supabaseAdmin
+      .from('invoices')
+      .select('id')
+      .eq('user_id', userId)
+    if (invoicesFetchErr) {
+      console.error('[Delete] Failed to fetch invoices:', invoicesFetchErr)
+      throw new Error(`Failed to fetch invoices: ${invoicesFetchErr.message}`)
+    }
+    const invoiceIds = invoices?.map(inv => inv.id) || []
+    console.log(`[Delete] Found ${invoiceIds.length} invoices`)
+
+    // Step 2: Delete payment_records (linked via invoice_id, NOT user_id)
+    if (invoiceIds.length > 0) {
+      console.log('[Delete] Deleting payment_records for user invoices...')
+      const { error: err1 } = await supabaseAdmin
+        .from('payment_records')
+        .delete()
+        .in('invoice_id', invoiceIds)
+      if (err1) {
+        console.error('[Delete] Failed to delete payment_records:', err1)
+        throw new Error(`Failed to delete payment_records: ${err1.message}`)
+      }
+    }
+
+    // Step 3: Delete payment_intents (linked via invoice_id)
+    if (invoiceIds.length > 0) {
+      console.log('[Delete] Deleting payment_intents for user invoices...')
+      const { error: err2 } = await supabaseAdmin
+        .from('payment_intents')
+        .delete()
+        .in('invoice_id', invoiceIds)
+      if (err2) {
+        console.error('[Delete] Failed to delete payment_intents:', err2)
+        throw new Error(`Failed to delete payment_intents: ${err2.message}`)
+      }
+    }
+
+    // Step 4: Delete client_notes (linked via user_id and client_id)
     console.log('[Delete] Deleting client_notes...')
-    const { error: err1 } = await supabaseAdmin
+    const { error: err3 } = await supabaseAdmin
       .from('client_notes')
       .delete()
       .eq('user_id', userId)
-    if (err1) {
-      console.error('[Delete] Failed to delete client_notes:', err1)
-      throw new Error(`Failed to delete client_notes: ${err1.message}`)
+    if (err3) {
+      console.error('[Delete] Failed to delete client_notes:', err3)
+      throw new Error(`Failed to delete client_notes: ${err3.message}`)
     }
 
-    console.log('[Delete] Deleting client_follow_ups...')
-    const { error: err2 } = await supabaseAdmin
-      .from('client_follow_ups')
-      .delete()
-      .eq('user_id', userId)
-    if (err2) {
-      console.error('[Delete] Failed to delete client_follow_ups:', err2)
-      throw new Error(`Failed to delete client_follow_ups: ${err2.message}`)
-    }
-
+    // Step 5: Delete proposals (linked via user_id)
     console.log('[Delete] Deleting proposals...')
-    const { error: err3 } = await supabaseAdmin
+    const { error: err4 } = await supabaseAdmin
       .from('proposals')
       .delete()
       .eq('user_id', userId)
-    if (err3) {
-      console.error('[Delete] Failed to delete proposals:', err3)
-      throw new Error(`Failed to delete proposals: ${err3.message}`)
+    if (err4) {
+      console.error('[Delete] Failed to delete proposals:', err4)
+      throw new Error(`Failed to delete proposals: ${err4.message}`)
     }
 
+    // Step 6: Delete recurring_invoices (linked via user_id)
     console.log('[Delete] Deleting recurring_invoices...')
-    const { error: err4 } = await supabaseAdmin
+    const { error: err5 } = await supabaseAdmin
       .from('recurring_invoices')
       .delete()
       .eq('user_id', userId)
-    if (err4) {
-      console.error('[Delete] Failed to delete recurring_invoices:', err4)
-      throw new Error(`Failed to delete recurring_invoices: ${err4.message}`)
-    }
-
-    console.log('[Delete] Deleting payment_records...')
-    const { error: err5 } = await supabaseAdmin
-      .from('payment_records')
-      .delete()
-      .eq('user_id', userId)
     if (err5) {
-      console.error('[Delete] Failed to delete payment_records:', err5)
-      throw new Error(`Failed to delete payment_records: ${err5.message}`)
+      console.error('[Delete] Failed to delete recurring_invoices:', err5)
+      throw new Error(`Failed to delete recurring_invoices: ${err5.message}`)
     }
 
-    console.log('[Delete] Deleting payment_intents...')
+    // Step 7: Delete invoices (linked via user_id)
+    console.log('[Delete] Deleting invoices...')
     const { error: err6 } = await supabaseAdmin
-      .from('payment_intents')
+      .from('invoices')
       .delete()
       .eq('user_id', userId)
     if (err6) {
-      console.error('[Delete] Failed to delete payment_intents:', err6)
-      throw new Error(`Failed to delete payment_intents: ${err6.message}`)
+      console.error('[Delete] Failed to delete invoices:', err6)
+      throw new Error(`Failed to delete invoices: ${err6.message}`)
     }
 
+    // Step 8: Delete webhook_config (linked via user_id)
     console.log('[Delete] Deleting webhook_config...')
     const { error: err7 } = await supabaseAdmin
       .from('webhook_config')
@@ -176,34 +201,26 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to delete webhook_config: ${err7.message}`)
     }
 
-    console.log('[Delete] Deleting invoices...')
-    const { error: err8 } = await supabaseAdmin
-      .from('invoices')
-      .delete()
-      .eq('user_id', userId)
-    if (err8) {
-      console.error('[Delete] Failed to delete invoices:', err8)
-      throw new Error(`Failed to delete invoices: ${err8.message}`)
-    }
-
+    // Step 9: Delete clients (linked via user_id)
     console.log('[Delete] Deleting clients...')
-    const { error: err9 } = await supabaseAdmin
+    const { error: err8 } = await supabaseAdmin
       .from('clients')
       .delete()
       .eq('user_id', userId)
-    if (err9) {
-      console.error('[Delete] Failed to delete clients:', err9)
-      throw new Error(`Failed to delete clients: ${err9.message}`)
+    if (err8) {
+      console.error('[Delete] Failed to delete clients:', err8)
+      throw new Error(`Failed to delete clients: ${err8.message}`)
     }
 
+    // Step 10: Delete profile (primary user record)
     console.log('[Delete] Deleting profile...')
-    const { error: err10 } = await supabaseAdmin
+    const { error: err9 } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userId)
-    if (err10) {
-      console.error('[Delete] Failed to delete profile:', err10)
-      throw new Error(`Failed to delete profile: ${err10.message}`)
+    if (err9) {
+      console.error('[Delete] Failed to delete profile:', err9)
+      throw new Error(`Failed to delete profile: ${err9.message}`)
     }
 
     // 5. Delete auth user
