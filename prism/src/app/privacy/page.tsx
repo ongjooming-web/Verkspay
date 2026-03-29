@@ -117,7 +117,7 @@ export default function PrivacyPage() {
               <li><strong>Opt-out:</strong> Unsubscribe from marketing emails anytime</li>
             </ul>
             <p className="text-sm text-gray-400 mt-4">
-              To exercise any of these rights, email us at support@Verkspayops.xyz with "Privacy Request" in the subject line.
+              To exercise any of these rights, email us at support@verkspay.com with "Privacy Request" in the subject line.
             </p>
           </div>
         </section>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
                 This Privacy Policy is governed by Malaysian law and complies with the <strong>PDPA (Personal Data Protection Act)</strong> and <strong>GDPR</strong> where applicable.
               </p>
               <p className="font-semibold text-white mb-2">For privacy questions or concerns:</p>
-              <p className="text-blue-400 font-semibold">support@Verkspayops.xyz</p>
+              <p className="text-blue-400 font-semibold">support@verkspay.com</p>
             </div>
           </div>
         </section>

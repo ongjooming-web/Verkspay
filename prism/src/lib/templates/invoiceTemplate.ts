@@ -183,7 +183,7 @@ export function generateInvoiceHTML(data: InvoiceTemplateData): string {
         Thank you for your business.
       </div>
       <div class="footer-right">
-        Powered by Verkspay · Verkspayops.xyz
+        Powered by Verkspay · verkspay.com
       </div>
     </div>
   </div>

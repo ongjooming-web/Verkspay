@@ -27,7 +27,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 async function fetchInsightsData(userId: string, token: string): Promise<InsightsData> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/api/insights/data`,
+    `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.verkspay.com'}/api/insights/data`,
     {
       method: 'GET',
       headers: {

@@ -150,7 +150,7 @@ export function VerifyEmailContent() {
       {/* Contact support */}
       <p className="text-gray-500 text-xs text-center">
         Having trouble?{' '}
-        <a href="mailto:support@Verkspayops.xyz" className="text-blue-400 hover:text-blue-300 transition">
+        <a href="mailto:support@verkspay.com" className="text-blue-400 hover:text-blue-300 transition">
           Contact support
         </a>
       </p>

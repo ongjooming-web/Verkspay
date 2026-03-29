@@ -824,7 +824,7 @@ export default function Dashboard() {
           <div className="flex justify-center gap-6 mb-4">
             <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
-            <a href="mailto:support@Verkspayops.xyz" className="hover:text-gray-400 transition">Contact</a>
+            <a href="mailto:support@verkspay.com" className="hover:text-gray-400 transition">Contact</a>
           </div>
           <p>© 2026 Verkspay</p>
         </footer>

@@ -59,8 +59,8 @@ export default function GoodbyePage() {
         {/* Contact Info */}
         <p className="text-gray-500 text-sm mb-8">
           Questions? Contact us at{' '}
-          <a href="mailto:support@Verkspayops.xyz" className="text-blue-400 hover:text-blue-300">
-            support@Verkspayops.xyz
+          <a href="mailto:support@verkspay.com" className="text-blue-400 hover:text-blue-300">
+            support@verkspay.com
           </a>
         </p>
 

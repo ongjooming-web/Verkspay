@@ -240,7 +240,7 @@ export default function Signup() {
         <div className="flex justify-center gap-6 mb-2">
           <Link href="/privacy" className="hover:text-gray-400 transition">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-gray-400 transition">Terms of Service</Link>
-          <a href="mailto:support@Verkspayops.xyz" className="hover:text-gray-400 transition">Contact</a>
+          <a href="mailto:support@verkspay.com" className="hover:text-gray-400 transition">Contact</a>
         </div>
         <p className="text-gray-600">© 2026 Verkspay</p>
       </footer>

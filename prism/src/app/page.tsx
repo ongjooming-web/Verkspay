@@ -328,7 +328,7 @@ export default function LandingPage() {
               <div className="flex gap-6 text-sm">
                 <Link href="/privacy" className="text-gray-400 hover:text-white transition">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-400 hover:text-white transition">Terms of Service</Link>
-                <a href="mailto:support@Verkspayops.xyz" className="text-gray-400 hover:text-white transition">Contact</a>
+                <a href="mailto:support@verkspay.com" className="text-gray-400 hover:text-white transition">Contact</a>
               </div>
             </div>
           </div>

@@ -14,7 +14,7 @@
  * 
  * Example cURL (requires Bearer token):
  * 
- * curl -X GET "https://app.Verkspayops.xyz/api/invoices/suggestions?clientId=CLIENT_UUID" \
+ * curl -X GET "https://app.verkspay.com/api/invoices/suggestions?clientId=CLIENT_UUID" \
  *   -H "Authorization: Bearer YOUR_TOKEN"
  * 
  * Example Response (successful):

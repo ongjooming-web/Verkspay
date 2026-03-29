@@ -65,7 +65,7 @@ export function SendInvoiceModal({
       invoice.currency_code || 'MYR'
     )} from ${profile.business_name || profile.full_name || 'Verkspay User'}.\n\nDue date: ${new Date(
       invoice.due_date
-    ).toLocaleDateString()}\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nPay here: ${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/pay/${invoice.id}`
+    ).toLocaleDateString()}\n\nPayment terms: ${invoice.payment_terms || 'Net 30'}\n\nPay here: ${process.env.NEXT_PUBLIC_APP_URL || 'https://app.verkspay.com'}/pay/${invoice.id}`
   )
 
   const handleSendEmail = async () => {
@@ -242,7 +242,7 @@ export function SendInvoiceModal({
                 disabled
                 className="glass w-full px-4 py-3 rounded-lg text-gray-500 bg-gray-900/50 cursor-not-allowed"
               />
-              <p className="text-gray-500 text-xs mt-1">Read-only - emails sent from support@Verkspayops.xyz</p>
+              <p className="text-gray-500 text-xs mt-1">Read-only - emails sent from support@verkspay.com</p>
             </div>
 
             {/* Subject */}

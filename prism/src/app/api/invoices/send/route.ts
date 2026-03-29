@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     // Determine which email template to use
     let emailHtml: string
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.verkspay.com'
     const invoicePdfUrl = `${appUrl}/api/invoices/${invoiceId}/pdf`
     
     if (method === 'email' && emailMessage) {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
                 </a>
               </div>
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-                <p style="margin: 0;">Sent via <strong>Verkspay</strong> · Verkspayops.xyz</p>
+                <p style="margin: 0;">Sent via <strong>Verkspay</strong> · verkspay.com</p>
               </div>
             </div>
           </body>
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 
     // Send email via Resend
     const { data: emailResult, error: emailError } = await resend.emails.send({
-      from: 'support@Verkspayops.xyz',
+      from: 'support@verkspay.com',
       to: clientEmail,
       cc: emailCc || undefined,
       subject: subject || `Invoice ${invoice.invoice_number} from ${finalSenderName}`,

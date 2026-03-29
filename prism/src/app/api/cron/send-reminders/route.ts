@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             'MYR', // TODO: Get from invoice currency_code if available
             invoice.due_date,
             daysOverdue,
-            invoice.payment_link || `https://app.Verkspayops.xyz/pay/${invoice.id}`,
+            invoice.payment_link || `https://app.verkspay.com/pay/${invoice.id}`,
             profile?.business_name || 'Verkspay',
             client.phone
           )
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
         )
 
         const emailResult = await resend.emails.send({
-          from: 'Verkspay Invoicing <support@Verkspayops.xyz>',
+          from: 'Verkspay Invoicing <support@verkspay.com>',
           to: client.email,
           subject,
           html,

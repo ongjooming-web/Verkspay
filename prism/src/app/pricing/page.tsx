@@ -265,7 +265,7 @@ export default function PricingPage() {
                   </ul>
 
                   {plan.button.action === 'enterprise' ? (
-                    <a href="mailto:support@Verkspayops.xyz" className="w-full">
+                    <a href="mailto:support@verkspay.com" className="w-full">
                       <Button className="w-full bg-white text-black hover:opacity-90">
                         {plan.button.text}
                       </Button>

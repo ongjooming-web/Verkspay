@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const senderEmail = profileData?.email || 'noreply@Verkspay.app'
 
     // Format proposal for email
-    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.Verkspayops.xyz'}/proposals/${proposalId}`
+    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.verkspay.com'}/proposals/${proposalId}`
     
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

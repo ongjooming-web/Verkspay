@@ -95,7 +95,7 @@ export default function TermsPage() {
               <li>You have not accessed paid features extensively</li>
             </ul>
             <p className="text-sm text-gray-400">
-              To request a refund, email support@Verkspayops.xyz with your invoice number and reason. Refunds are processed within 5-10 business days.
+              To request a refund, email support@verkspay.com with your invoice number and reason. Refunds are processed within 5-10 business days.
             </p>
             <p className="text-sm text-gray-400 mt-4">
               After 7 days, no refunds are available. You may cancel at any time to avoid future charges.
@@ -179,7 +179,7 @@ export default function TermsPage() {
           <h2 className="text-3xl font-bold mb-4 text-orange-400">Questions?</h2>
           <div className="glass rounded-lg p-6 border border-orange-400/20 text-gray-300">
             <p className="mb-2">For questions about these Terms, please contact:</p>
-            <p className="text-orange-400 font-semibold">support@Verkspayops.xyz</p>
+            <p className="text-orange-400 font-semibold">support@verkspay.com</p>
           </div>
         </section>
 
