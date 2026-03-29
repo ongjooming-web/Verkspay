@@ -934,6 +934,5 @@ function BillingSection() {
         </div>
       </CardBody>
     </Card>
-  </>
   )
 }
