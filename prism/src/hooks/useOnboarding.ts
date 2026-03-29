@@ -94,6 +94,10 @@ export function useOnboarding() {
         // Update local state immediately for instant UI feedback
         setStatus(prev => prev ? { ...prev, tour_step: step } : null)
         console.log('[useOnboarding] Tour step updated to:', step)
+        
+        // Trigger a refresh to get latest task completion status
+        // This ensures the tour shows the next step with updated task completion
+        setTimeout(() => refresh(), 100)
       }
     } catch (err) {
       console.error('[useOnboarding] Error updating tour step:', err)
