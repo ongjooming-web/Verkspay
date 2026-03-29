@@ -3,13 +3,22 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { sendEmail } from '@/lib/resend'
 
-// Admin client for auth deletion ONLY (server-side only)
+// Admin client for auth deletion ONLY (server-side only, NEVER expose)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+interface DeletionStep {
+  step: string
+  status: 'success' | 'failed'
+  count?: number
+  error?: string
+}
+
 export async function DELETE(req: NextRequest) {
+  const deletionSteps: DeletionStep[] = []
+
   try {
     console.log('[account/delete] DELETE request received')
     const authHeader = req.headers.get('authorization')
@@ -36,7 +45,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // Verify auth
+    // ✅ CRITICAL: Verify auth first - NEVER trust request body for userId
     console.log('[account/delete] Verifying auth with user token...')
     const { user, error: authError } = await requireAuth(req)
     
@@ -56,11 +65,12 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    // ✅ Use userId from token, NOT from request body
     const userId = user.id
     const userEmail = user.email
     console.log('[account/delete] Auth successful. User:', userId, 'Email:', userEmail)
 
-    // Verify email confirmation matches
+    // ✅ Verify email confirmation matches
     if (emailFromBody !== userEmail) {
       console.warn('[account/delete] Email mismatch. Expected:', userEmail, 'Got:', emailFromBody)
       return NextResponse.json(
@@ -69,7 +79,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // Extract token for Supabase client
+    // Extract token for user-scoped client
     const token = authHeader?.substring(7) || ''
     
     if (!token) {
@@ -94,122 +104,121 @@ export async function DELETE(req: NextRequest) {
 
     console.log('[account/delete] Starting account deletion for user:', userId)
 
-    // Deletion order matters - delete children before parents
+    // ✅ Deletion order matters - delete children before parents
     
     // 1. Delete reminders_log (depends on invoices)
     console.log('[account/delete] Deleting reminders...')
-    const { error: remindersError } = await supabase
-      .from('reminders_log')
-      .delete()
-      .in('invoice_id', (await supabase
-        .from('invoices')
-        .select('id')
-        .eq('user_id', userId)).data?.map(inv => inv.id) || [])
+    const remindersQuery = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('user_id', userId)
+    
+    const invoiceIds = remindersQuery.data?.map(inv => inv.id) || []
+    
+    if (invoiceIds.length > 0) {
+      const { error: remindersError, count } = await supabase
+        .from('reminders_log')
+        .delete()
+        .in('invoice_id', invoiceIds)
 
-    if (remindersError) {
-      console.error('[account/delete] Failed to delete reminders:', remindersError)
-      return NextResponse.json(
-        { error: 'Failed to delete reminders' },
-        { status: 500 }
-      )
+      if (remindersError) {
+        deletionSteps.push({ step: 'reminders_log', status: 'failed', error: remindersError.message })
+        console.error('[account/delete] Failed to delete reminders:', remindersError)
+        throw new Error(`Reminders deletion failed: ${remindersError.message}`)
+      }
+      deletionSteps.push({ step: 'reminders_log', status: 'success', count })
+      console.log('[account/delete] ✓ Deleted reminders:', count || 0)
     }
-    console.log('[account/delete] ✓ Deleted reminders')
 
     // 2. Delete payment_records
     console.log('[account/delete] Deleting payment records...')
-    const { error: paymentRecordsError } = await supabase
+    const { error: paymentRecordsError, count: paymentRecordsCount } = await supabase
       .from('payment_records')
       .delete()
       .eq('user_id', userId)
 
     if (paymentRecordsError) {
+      deletionSteps.push({ step: 'payment_records', status: 'failed', error: paymentRecordsError.message })
       console.error('[account/delete] Failed to delete payment_records:', paymentRecordsError)
-      return NextResponse.json(
-        { error: 'Failed to delete payment records' },
-        { status: 500 }
-      )
+      throw new Error(`Payment records deletion failed: ${paymentRecordsError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted payment_records')
+    deletionSteps.push({ step: 'payment_records', status: 'success', count: paymentRecordsCount })
+    console.log('[account/delete] ✓ Deleted payment_records:', paymentRecordsCount || 0)
 
     // 3. Delete payment_methods
     console.log('[account/delete] Deleting payment methods...')
-    const { error: paymentMethodsError } = await supabase
+    const { error: paymentMethodsError, count: paymentMethodsCount } = await supabase
       .from('payment_methods')
       .delete()
       .eq('user_id', userId)
 
     if (paymentMethodsError) {
+      deletionSteps.push({ step: 'payment_methods', status: 'failed', error: paymentMethodsError.message })
       console.error('[account/delete] Failed to delete payment_methods:', paymentMethodsError)
-      return NextResponse.json(
-        { error: 'Failed to delete payment methods' },
-        { status: 500 }
-      )
+      throw new Error(`Payment methods deletion failed: ${paymentMethodsError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted payment_methods')
+    deletionSteps.push({ step: 'payment_methods', status: 'success', count: paymentMethodsCount })
+    console.log('[account/delete] ✓ Deleted payment_methods:', paymentMethodsCount || 0)
 
     // 4. Delete recurring_invoices
     console.log('[account/delete] Deleting recurring invoices...')
-    const { error: recurringError } = await supabase
+    const { error: recurringError, count: recurringCount } = await supabase
       .from('recurring_invoices')
       .delete()
       .eq('user_id', userId)
 
     if (recurringError) {
+      deletionSteps.push({ step: 'recurring_invoices', status: 'failed', error: recurringError.message })
       console.error('[account/delete] Failed to delete recurring_invoices:', recurringError)
-      return NextResponse.json(
-        { error: 'Failed to delete recurring invoices' },
-        { status: 500 }
-      )
+      throw new Error(`Recurring invoices deletion failed: ${recurringError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted recurring_invoices')
+    deletionSteps.push({ step: 'recurring_invoices', status: 'success', count: recurringCount })
+    console.log('[account/delete] ✓ Deleted recurring_invoices:', recurringCount || 0)
 
     // 5. Delete invoices
     console.log('[account/delete] Deleting invoices...')
-    const { error: invoicesError } = await supabase
+    const { error: invoicesError, count: invoicesCount } = await supabase
       .from('invoices')
       .delete()
       .eq('user_id', userId)
 
     if (invoicesError) {
+      deletionSteps.push({ step: 'invoices', status: 'failed', error: invoicesError.message })
       console.error('[account/delete] Failed to delete invoices:', invoicesError)
-      return NextResponse.json(
-        { error: 'Failed to delete invoices' },
-        { status: 500 }
-      )
+      throw new Error(`Invoices deletion failed: ${invoicesError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted invoices')
+    deletionSteps.push({ step: 'invoices', status: 'success', count: invoicesCount })
+    console.log('[account/delete] ✓ Deleted invoices:', invoicesCount || 0)
 
     // 6. Delete clients
     console.log('[account/delete] Deleting clients...')
-    const { error: clientsError } = await supabase
+    const { error: clientsError, count: clientsCount } = await supabase
       .from('clients')
       .delete()
       .eq('user_id', userId)
 
     if (clientsError) {
+      deletionSteps.push({ step: 'clients', status: 'failed', error: clientsError.message })
       console.error('[account/delete] Failed to delete clients:', clientsError)
-      return NextResponse.json(
-        { error: 'Failed to delete clients' },
-        { status: 500 }
-      )
+      throw new Error(`Clients deletion failed: ${clientsError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted clients')
+    deletionSteps.push({ step: 'clients', status: 'success', count: clientsCount })
+    console.log('[account/delete] ✓ Deleted clients:', clientsCount || 0)
 
     // 7. Delete proposals
     console.log('[account/delete] Deleting proposals...')
-    const { error: proposalsError } = await supabase
+    const { error: proposalsError, count: proposalsCount } = await supabase
       .from('proposals')
       .delete()
       .eq('user_id', userId)
 
     if (proposalsError) {
+      deletionSteps.push({ step: 'proposals', status: 'failed', error: proposalsError.message })
       console.error('[account/delete] Failed to delete proposals:', proposalsError)
-      return NextResponse.json(
-        { error: 'Failed to delete proposals' },
-        { status: 500 }
-      )
+      throw new Error(`Proposals deletion failed: ${proposalsError.message}`)
     }
-    console.log('[account/delete] ✓ Deleted proposals')
+    deletionSteps.push({ step: 'proposals', status: 'success', count: proposalsCount })
+    console.log('[account/delete] ✓ Deleted proposals:', proposalsCount || 0)
 
     // 8. Delete profile (final step)
     console.log('[account/delete] Deleting profile...')
@@ -219,25 +228,36 @@ export async function DELETE(req: NextRequest) {
       .eq('id', userId)
 
     if (profileError) {
+      deletionSteps.push({ step: 'profiles', status: 'failed', error: profileError.message })
       console.error('[account/delete] Failed to delete profile:', profileError)
-      return NextResponse.json(
-        { error: 'Failed to delete profile' },
-        { status: 500 }
-      )
+      throw new Error(`Profile deletion failed: ${profileError.message}`)
     }
+    deletionSteps.push({ step: 'profiles', status: 'success' })
     console.log('[account/delete] ✓ Deleted profile')
 
-    // Delete auth user (requires service role key - server-side only)
+    // ✅ CRITICAL: Delete auth user AFTER all data deletion succeeds
+    // If this fails, data is already gone (safe), but user can't log in (expected)
     console.log('[account/delete] Deleting auth user...')
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (authDeleteError) {
+      deletionSteps.push({ step: 'auth_user', status: 'failed', error: authDeleteError.message })
       console.error('[account/delete] Warning: Failed to delete auth user:', authDeleteError)
-      // Continue anyway - data is already deleted, auth user is harmless orphan
-      // The profile deletion prevents login, which achieves the same outcome
+      // Don't throw - data deletion succeeded, profile is gone, user can't log in anyway
+      // Auth orphan is safe because profile no longer exists
     } else {
+      deletionSteps.push({ step: 'auth_user', status: 'success' })
       console.log('[account/delete] ✓ Auth user deleted')
     }
+
+    // ✅ AUDIT: Log deletion for compliance (GDPR)
+    console.log('[account/delete] Deletion audit log:', {
+      user_id: userId,
+      email: userEmail,
+      deleted_at: new Date().toISOString(),
+      action: 'account_deletion',
+      steps: deletionSteps
+    })
 
     // Send confirmation email
     try {
@@ -281,23 +301,25 @@ export async function DELETE(req: NextRequest) {
 
     console.log('[account/delete] ✅ Account completely deleted:', userId)
 
-    // Optional: Log deletion for compliance/audit
-    console.log('[account/delete] Audit log:', {
-      user_id: userId,
-      email: userEmail,
-      deleted_at: new Date().toISOString(),
-      action: 'account_deletion'
-    })
-
     return NextResponse.json({
       success: true,
       message: 'Your account has been permanently deleted. Redirecting to goodbye page...',
-      redirect_url: '/goodbye'
+      redirect_url: '/goodbye',
+      deletion_summary: {
+        total_steps: deletionSteps.length,
+        successful_steps: deletionSteps.filter(s => s.status === 'success').length,
+        failed_steps: deletionSteps.filter(s => s.status === 'failed').length
+      }
     }, { status: 200 })
   } catch (error: any) {
     console.error('[account/delete] Unexpected error:', error)
+    console.error('[account/delete] Deletion steps completed before error:', deletionSteps)
+    
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: error.message || 'Internal server error',
+        deletion_steps: deletionSteps
+      },
       { status: 500 }
     )
   }
