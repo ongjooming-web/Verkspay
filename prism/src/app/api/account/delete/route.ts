@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServer } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/auth'
 import { sendEmail } from '@/lib/resend'
 
@@ -30,8 +30,8 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // Verify auth
-    console.log('[account/delete] Verifying auth...')
+    // Verify auth using the user's own token (NOT service role key)
+    console.log('[account/delete] Verifying auth with user token...')
     const { user, error: authError } = await requireAuth(req)
     
     if (authError) {
@@ -63,140 +63,56 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseServer()
-
-    console.log('[account/delete] Starting account deletion for user:', userId)
-
-    // Step 1: Get all invoice IDs for this user (needed for reminders_log cleanup)
-    const { data: invoices, error: invoicesError } = await supabase
-      .from('invoices')
-      .select('id')
-      .eq('user_id', userId)
-
-    if (invoicesError) {
-      console.error('[account/delete] Failed to fetch invoices:', invoicesError)
-      return NextResponse.json(
-        { error: 'Failed to fetch invoices' },
-        { status: 500 }
-      )
-    }
-
-    const invoiceIds = invoices?.map(inv => inv.id) || []
-
-    // Step 2: Delete reminders_log entries for user's invoices (must be first due to foreign key)
-    if (invoiceIds.length > 0) {
-      const { error: remindersError } = await supabase
-        .from('reminders_log')
-        .delete()
-        .in('invoice_id', invoiceIds)
-
-      if (remindersError) {
-        console.error('[account/delete] Failed to delete reminders_log:', remindersError)
-        return NextResponse.json(
-          { error: 'Failed to delete reminders' },
-          { status: 500 }
-        )
+    // Create a client with the USER'S OWN TOKEN (not service role key!)
+    // This is secure because the token is already validated and scoped to that user
+    const token = authHeader?.substring(7) || ''
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       }
-      console.log('[account/delete] ✓ Deleted reminders_log entries')
-    }
+    )
 
-    // Step 3: Delete payment_records
-    const { error: paymentRecordsError } = await supabase
-      .from('payment_records')
-      .delete()
-      .eq('user_id', userId)
+    console.log('[account/delete] Calling delete_user_account function...')
 
-    if (paymentRecordsError) {
-      console.error('[account/delete] Failed to delete payment_records:', paymentRecordsError)
+    // Call the database function that handles deletion securely
+    const { data, error: functionError } = await supabase
+      .rpc('delete_user_account', { p_user_id: userId })
+
+    if (functionError) {
+      console.error('[account/delete] Function error:', functionError)
       return NextResponse.json(
-        { error: 'Failed to delete payment records' },
+        { error: `Deletion failed: ${functionError.message}` },
         { status: 500 }
       )
     }
-    console.log('[account/delete] ✓ Deleted payment_records')
 
-    // Step 4: Delete payment_methods
-    const { error: paymentMethodsError } = await supabase
-      .from('payment_methods')
-      .delete()
-      .eq('user_id', userId)
-
-    if (paymentMethodsError) {
-      console.error('[account/delete] Failed to delete payment_methods:', paymentMethodsError)
+    if (!data || !data[0]?.success) {
+      console.error('[account/delete] Function returned failure:', data)
       return NextResponse.json(
-        { error: 'Failed to delete payment methods' },
+        { error: data?.[0]?.message || 'Account deletion failed' },
         { status: 500 }
       )
     }
-    console.log('[account/delete] ✓ Deleted payment_methods')
 
-    // Step 5: Delete invoices
-    const { error: invoicesDeleteError } = await supabase
-      .from('invoices')
-      .delete()
-      .eq('user_id', userId)
+    const result = data[0]
+    console.log('[account/delete] Account deletion successful:', {
+      deleted_invoices: result.deleted_invoices,
+      deleted_clients: result.deleted_clients,
+      deleted_proposals: result.deleted_proposals,
+      deleted_payments: result.deleted_payments,
+      deleted_methods: result.deleted_methods,
+      deleted_recurring: result.deleted_recurring,
+      deleted_reminders: result.deleted_reminders,
+      deleted_profile: result.deleted_profile
+    })
 
-    if (invoicesDeleteError) {
-      console.error('[account/delete] Failed to delete invoices:', invoicesDeleteError)
-      return NextResponse.json(
-        { error: 'Failed to delete invoices' },
-        { status: 500 }
-      )
-    }
-    console.log('[account/delete] ✓ Deleted invoices')
-
-    // Step 6: Delete clients
-    const { error: clientsError } = await supabase
-      .from('clients')
-      .delete()
-      .eq('user_id', userId)
-
-    if (clientsError) {
-      console.error('[account/delete] Failed to delete clients:', clientsError)
-      return NextResponse.json(
-        { error: 'Failed to delete clients' },
-        { status: 500 }
-      )
-    }
-    console.log('[account/delete] ✓ Deleted clients')
-
-    // Step 7: Delete proposals
-    const { error: proposalsError } = await supabase
-      .from('proposals')
-      .delete()
-      .eq('user_id', userId)
-
-    if (proposalsError) {
-      console.error('[account/delete] Failed to delete proposals:', proposalsError)
-      return NextResponse.json(
-        { error: 'Failed to delete proposals' },
-        { status: 500 }
-      )
-    }
-    console.log('[account/delete] ✓ Deleted proposals')
-
-    // Step 8: Delete profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId)
-
-    if (profileError) {
-      console.error('[account/delete] Failed to delete profile:', profileError)
-      return NextResponse.json(
-        { error: 'Failed to delete profile' },
-        { status: 500 }
-      )
-    }
-    console.log('[account/delete] ✓ Deleted profile')
-
-    // Step 9: Auth user deletion
-    // Note: We cannot delete auth users with the service role key due to Supabase permissions.
-    // However, since the profile is deleted, the user cannot access the app anyway.
-    // The auth user record becomes orphaned but poses no security risk.
-    console.log('[account/delete] Note: Auth user record cannot be deleted (service role limitation), but user data is fully removed')
-
-    // Step 10: Send confirmation email
+    // Send confirmation email
     try {
       await sendEmail({
         to: userEmail,
@@ -212,11 +128,12 @@ export async function DELETE(req: NextRequest) {
             <div style="background: #f9f9f9; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
               <p style="margin: 0; color: #666;">
                 <strong>What was deleted:</strong><br/>
-                ✓ All invoices and proposals<br/>
-                ✓ All client information<br/>
-                ✓ Payment details and settings<br/>
-                ✓ Payment history and records<br/>
-                ✓ Account profile
+                ✓ ${result.deleted_invoices} invoices and reminders<br/>
+                ✓ ${result.deleted_clients} clients<br/>
+                ✓ ${result.deleted_proposals} proposals<br/>
+                ✓ ${result.deleted_payments} payment records<br/>
+                ✓ ${result.deleted_methods} payment methods<br/>
+                ✓ Account profile and all data
               </p>
             </div>
 
@@ -240,7 +157,12 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Your account has been permanently deleted. Redirecting to home page...'
+      message: 'Your account has been permanently deleted. Redirecting to home page...',
+      details: {
+        deleted_invoices: result.deleted_invoices,
+        deleted_clients: result.deleted_clients,
+        deleted_proposals: result.deleted_proposals
+      }
     }, { status: 200 })
   } catch (error: any) {
     console.error('[account/delete] Unexpected error:', error)
