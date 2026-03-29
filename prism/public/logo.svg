@@ -1,40 +1,46 @@
-<svg viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Shield gradient: Blue to Teal to Purple -->
-    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0055B8;stop-opacity:1" />
-      <stop offset="60%" style="stop-color:#00A8E8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF4500;stop-opacity:1" />
     </linearGradient>
-    
-    <!-- Text gradient: Blue to Purple -->
-    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#0055B8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    <linearGradient id="grad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#D63031;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E84393;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad3" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD93D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad4" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00BFA5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1ABC9C;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad5" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#00BCD4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00897B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad6" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" style="stop-color:#0D47A1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Shield (rounded square/shield shape) -->
-  <g>
-    <!-- Main shield body with rounded corners -->
-    <path d="M 150 180 L 150 350 Q 150 480 280 540 Q 410 480 410 350 L 410 180 Q 410 130 360 130 L 200 130 Q 150 130 150 180 Z" 
-          fill="url(#shieldGrad)" stroke="none"/>
-    
-    <!-- Checkmark inside shield -->
-    <g>
-      <!-- Left part of checkmark -->
-      <line x1="200" y1="360" x2="260" y2="420" stroke="white" stroke-width="35" stroke-linecap="round"/>
-      <!-- Right part of checkmark -->
-      <line x1="260" y1="420" x2="380" y2="260" stroke="white" stroke-width="35" stroke-linecap="round"/>
-    </g>
-  </g>
+  <!-- Top face (red-orange) -->
+  <polygon points="100,50 140,75 100,100 60,75" fill="url(#grad1)" />
   
-  <!-- "Verkspay" text -->
-  <text x="480" y="420" 
-        font-family="'Arial', 'Helvetica', sans-serif" 
-        font-size="140" 
-        font-weight="bold" 
-        fill="url(#textGrad)" 
-        letter-spacing="3"
-        dominant-baseline="middle">Verkspay</text>
+  <!-- Top-right face (red-pink) -->
+  <polygon points="140,75 170,95 140,135 100,100" fill="url(#grad2)" />
+  
+  <!-- Top-left face (orange) -->
+  <polygon points="60,75 100,100 70,135 30,95" fill="url(#grad3)" />
+  
+  <!-- Bottom-left face (teal-green) -->
+  <polygon points="30,95 70,135 70,160 30,135" fill="url(#grad4)" />
+  
+  <!-- Bottom-right face (cyan-teal) -->
+  <polygon points="140,135 170,95 170,135 140,160" fill="url(#grad5)" />
+  
+  <!-- Bottom face (dark blue) -->
+  <polygon points="70,135 70,160 140,160 140,135" fill="url(#grad6)" />
 </svg>
