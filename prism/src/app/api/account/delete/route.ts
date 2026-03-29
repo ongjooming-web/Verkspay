@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Check environment variables
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.error('[Delete] NEXT_PUBLIC_SUPABASE_URL is not set')
+}
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[Delete] SUPABASE_SERVICE_ROLE_KEY is not set - account deletion will fail')
+}
+
 // Admin client for deletion (service role key - server-side only)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 )
 
 // User-authenticated client for token verification
 const supabaseUser = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 )
 
 interface DeleteRequest {
@@ -18,9 +38,14 @@ interface DeleteRequest {
 }
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now()
+  console.log(`[Delete] POST /api/account/delete - Request started at ${new Date().toISOString()}`)
+
   try {
     // 1. Verify authentication
     const authHeader = req.headers.get('Authorization')
+    console.log('[Delete] Auth header present:', !!authHeader)
+    
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('[Delete] Missing or invalid Authorization header')
       return NextResponse.json(
@@ -30,15 +55,17 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.substring(7)
+    console.log('[Delete] Token extracted, length:', token.length)
 
     // 2. Verify JWT token and get user
+    console.log('[Delete] Verifying JWT token...')
     const { data, error: authError } = await supabaseUser.auth.getUser(token)
     const user = data?.user
 
     if (authError || !user) {
-      console.error('[Delete] Token verification failed:', authError)
+      console.error('[Delete] Token verification failed:', authError?.message || 'No user in token')
       return NextResponse.json(
-        { error: 'Unauthorized - invalid token' },
+        { error: 'Unauthorized - invalid token', details: authError?.message },
         { status: 401 }
       )
     }
@@ -46,16 +73,19 @@ export async function POST(req: NextRequest) {
     const userId = user.id
     const userEmail = user.email
 
-    console.log('[Delete] Starting account deletion for:', userId, userEmail)
+    console.log('[Delete] ✓ User authenticated:', userId, userEmail)
 
     // 3. Verify email confirmation
+    console.log('[Delete] Parsing request body...')
     let emailFromBody: string | null = null
     try {
       const body = await req.json() as DeleteRequest
       emailFromBody = body.email
-    } catch {
+      console.log('[Delete] Email from body:', emailFromBody)
+    } catch (err) {
+      console.error('[Delete] Failed to parse request body:', err)
       return NextResponse.json(
-        { error: 'Invalid request body' },
+        { error: 'Invalid request body', details: err instanceof Error ? err.message : String(err) },
         { status: 400 }
       )
     }
@@ -67,6 +97,8 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       )
     }
+    
+    console.log('[Delete] ✓ Email confirmed, proceeding with deletion')
 
     // 4. Delete user data in order (respecting foreign keys)
     console.log('[Delete] Deleting client_notes...')
@@ -179,7 +211,9 @@ export async function POST(req: NextRequest) {
       console.log('[Delete] Auth user deleted successfully')
     }
 
-    console.log('[Delete] Account deleted successfully:', userId, userEmail)
+    console.log('[Delete] ✅ Account deleted successfully:', userId, userEmail)
+    const duration = Date.now() - startTime
+    console.log(`[Delete] Total duration: ${duration}ms`)
 
     return NextResponse.json({
       success: true,
@@ -188,10 +222,17 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Internal server error'
-    console.error('[Delete] Error during account deletion:', errorMsg)
+    console.error('[Delete] ❌ Error during account deletion:', errorMsg)
+    console.error('[Delete] Stack:', error instanceof Error ? error.stack : 'N/A')
+    
+    const duration = Date.now() - startTime
+    console.log(`[Delete] Failed after ${duration}ms`)
 
     return NextResponse.json(
-      { error: errorMsg },
+      { 
+        error: errorMsg,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     )
   }

@@ -74,29 +74,36 @@ export default function AccountSettings() {
 
     try {
       // Get current session to retrieve auth token
-      console.log('[Settings] Getting auth session for account deletion...')
+      console.log('[Settings] 📍 Getting auth session for account deletion...')
+      console.log('[Settings] Current time:', new Date().toISOString())
       
       // Refresh session first to ensure token is fresh
-      await supabase.auth.refreshSession()
+      console.log('[Settings] Refreshing session...')
+      const refreshResult = await supabase.auth.refreshSession()
+      console.log('[Settings] Refresh result:', !!refreshResult.data?.session)
       
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
 
-      console.log('[Settings] Session retrieved:', {
+      console.log('[Settings] ✓ Session retrieved:', {
         hasSession: !!session,
         hasToken: !!token,
+        tokenLength: token?.length,
         userEmail: session?.user?.email
       })
 
       if (!token) {
         const errorMsg = 'Not authenticated. Please log in again.'
-        console.error('[Settings] Delete failed: no token found')
+        console.error('[Settings] ❌ Delete failed: no token found')
         setError(errorMsg)
         setModal({ ...modal, isDeleting: false })
         return
       }
 
       // Call Next.js API route with authorization token
+      console.log('[Settings] 🚀 Calling /api/account/delete...')
+      const startTime = Date.now()
+      
       const response = await fetch(
         '/api/account/delete',
         {
@@ -109,6 +116,9 @@ export default function AccountSettings() {
         }
       )
 
+      const duration = Date.now() - startTime
+      console.log(`[Settings] Response received in ${duration}ms:`, { status: response.status, ok: response.ok })
+      
       const data = await response.json()
 
       console.log('[Settings] Delete account response:', {
