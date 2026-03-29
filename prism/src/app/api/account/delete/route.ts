@@ -146,15 +146,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Step 4: Delete client_notes (linked via user_id and client_id)
-    console.log('[Delete] Deleting client_notes...')
-    const { error: err3 } = await supabaseAdmin
-      .from('client_notes')
-      .delete()
-      .eq('user_id', userId)
-    if (err3) {
-      console.error('[Delete] Failed to delete client_notes:', err3)
-      throw new Error(`Failed to delete client_notes: ${err3.message}`)
+    // Step 4: Delete reminders_log (linked via invoice_id)
+    if (invoiceIds.length > 0) {
+      console.log('[Delete] Deleting reminders_log for user invoices...')
+      const { error: err3 } = await supabaseAdmin
+        .from('reminders_log')
+        .delete()
+        .in('invoice_id', invoiceIds)
+      if (err3) {
+        console.error('[Delete] Failed to delete reminders_log:', err3)
+        throw new Error(`Failed to delete reminders_log: ${err3.message}`)
+      }
     }
 
     // Step 5: Delete proposals (linked via user_id)
@@ -190,15 +192,15 @@ export async function POST(req: NextRequest) {
       throw new Error(`Failed to delete invoices: ${err6.message}`)
     }
 
-    // Step 8: Delete webhook_config (linked via user_id)
-    console.log('[Delete] Deleting webhook_config...')
+    // Step 8: Delete contracts (linked via user_id)
+    console.log('[Delete] Deleting contracts...')
     const { error: err7 } = await supabaseAdmin
-      .from('webhook_config')
+      .from('contracts')
       .delete()
       .eq('user_id', userId)
     if (err7) {
-      console.error('[Delete] Failed to delete webhook_config:', err7)
-      throw new Error(`Failed to delete webhook_config: ${err7.message}`)
+      console.error('[Delete] Failed to delete contracts:', err7)
+      throw new Error(`Failed to delete contracts: ${err7.message}`)
     }
 
     // Step 9: Delete clients (linked via user_id)
