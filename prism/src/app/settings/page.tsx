@@ -934,8 +934,6 @@ function BillingSection() {
         </div>
       </CardBody>
     </Card>
-      </div>
-    </div>
 
       {/* Payment Success Modal */}
       <PaymentSuccessModal />
