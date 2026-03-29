@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Check environment variables
+console.log('[Delete Init] Checking environment variables...')
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.error('[Delete] NEXT_PUBLIC_SUPABASE_URL is not set')
+  console.error('[Delete Init] NEXT_PUBLIC_SUPABASE_URL is not set')
 }
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[Delete] SUPABASE_SERVICE_ROLE_KEY is not set - account deletion will fail')
+  console.error('[Delete Init] SUPABASE_SERVICE_ROLE_KEY is not set - account deletion will fail')
+} else {
+  console.log('[Delete Init] Service role key found, first 10 chars:', process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10))
 }
 
 // Admin client for deletion (service role key - server-side only)
+console.log('[Delete Init] Creating Supabase admin client with service role key...')
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -20,6 +24,7 @@ const supabaseAdmin = createClient(
     },
   }
 )
+console.log('[Delete Init] Admin client created')
 
 // User-authenticated client for token verification
 const supabaseUser = createClient(
@@ -203,9 +208,19 @@ export async function POST(req: NextRequest) {
 
     // 5. Delete auth user
     console.log('[Delete] Deleting auth user...')
+    console.log('[Delete] Admin client has auth.admin:', !!supabaseAdmin.auth.admin)
+    console.log('[Delete] Admin client has auth.admin.deleteUser:', !!supabaseAdmin.auth.admin.deleteUser)
+    console.log('[Delete] Service role key being used (first 10 chars):', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10))
+    
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+    
     if (authDeleteError) {
-      console.error('[Delete] Warning - failed to delete auth user:', authDeleteError)
+      console.error('[Delete] Warning - failed to delete auth user:', {
+        message: authDeleteError.message,
+        status: (authDeleteError as any).status,
+        code: (authDeleteError as any).code,
+        error: (authDeleteError as any).error
+      })
       // Don't throw - auth user deletion can fail after data is already gone
     } else {
       console.log('[Delete] Auth user deleted successfully')
