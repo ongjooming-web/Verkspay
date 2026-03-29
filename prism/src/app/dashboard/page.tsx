@@ -16,12 +16,10 @@ import { useCurrency } from '@/hooks/useCurrency'
 import { RevenueForecastWidget } from '@/components/RevenueForecastWidget'
 import { FollowUpsWidget } from '@/components/FollowUpsWidget'
 import { SafeWidgetWrapper } from '@/components/SafeWidgetWrapper'
-import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
-import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
 import type { ClaudeInsights, InsightsResponse } from '@/app/api/insights/generate/route'
 
-// OnboardingTour is now simple and non-crashing
-// No need for SafeWidgetWrapper wrapper
+// Note: OnboardingTour and OnboardingProgress are rendered in (authenticated)/layout.tsx
+// Do not duplicate them here to avoid state conflicts on navigation
 
 interface RecentActivity {
   id: string
@@ -832,9 +830,6 @@ export default function Dashboard() {
           <p>© 2026 Prism</p>
         </footer>
       </div>
-
-      {/* Onboarding Tour - Only on authenticated pages */}
-      <OnboardingTour />
     </div>
   )
 }

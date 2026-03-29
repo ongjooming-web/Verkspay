@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useOnboarding } from '@/hooks/useOnboarding'
 
 const STEPS = [
@@ -56,13 +56,23 @@ const STEPS = [
 ]
 
 export function OnboardingTour() {
-  const { showTour, tourStep, updateTourStep, completeOnboarding, status } = useOnboarding()
+  const { showTour, tourStep, updateTourStep, completeOnboarding, status, refresh } = useOnboarding()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Refetch onboarding status when pathname changes (user navigates to a new page)
+  // This ensures tour_step updates from the server are reflected in the UI
+  useEffect(() => {
+    if (mounted && pathname) {
+      console.log('[Tour] Pathname changed to:', pathname, 'fetching latest status...')
+      refresh()
+    }
+  }, [pathname, mounted, refresh])
 
   // Don't render if:
   // - Not mounted yet

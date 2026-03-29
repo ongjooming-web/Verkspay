@@ -13,6 +13,9 @@ import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
  * - Tour shows across all authenticated pages
  * - Progress bar shows across all authenticated pages
  * - Auto-hides when onboarding_completed = true
+ * 
+ * The OnboardingTour and OnboardingProgress components use the useOnboarding hook,
+ * which fetches the saved tour_step from the database on mount and after navigation.
  */
 export default function AuthenticatedLayout({
   children,
@@ -21,6 +24,7 @@ export default function AuthenticatedLayout({
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     setMounted(true)
@@ -40,6 +44,10 @@ export default function AuthenticatedLayout({
 
     return () => subscription?.unsubscribe()
   }, [])
+
+  // Key insight: The OnboardingTour and OnboardingProgress components are mounted here in the layout,
+  // so they persist across page navigations. Their useOnboarding hook fetches fresh status on mount
+  // and after route changes. No special handling needed here — just keep them mounted.
 
   if (!mounted) {
     return children
