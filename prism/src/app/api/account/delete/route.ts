@@ -126,7 +126,7 @@ export async function DELETE(req: NextRequest) {
         console.error('[account/delete] Failed to delete reminders:', remindersError)
         throw new Error(`Reminders deletion failed: ${remindersError.message}`)
       }
-      deletionSteps.push({ step: 'reminders_log', status: 'success', count })
+      deletionSteps.push({ step: 'reminders_log', status: 'success', count: count ?? undefined })
       console.log('[account/delete] ✓ Deleted reminders:', count || 0)
     }
 
@@ -142,7 +142,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete payment_records:', paymentRecordsError)
       throw new Error(`Payment records deletion failed: ${paymentRecordsError.message}`)
     }
-    deletionSteps.push({ step: 'payment_records', status: 'success', count: paymentRecordsCount })
+    deletionSteps.push({ step: 'payment_records', status: 'success', count: paymentRecordsCount ?? undefined })
     console.log('[account/delete] ✓ Deleted payment_records:', paymentRecordsCount || 0)
 
     // 3. Delete payment_methods
@@ -157,7 +157,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete payment_methods:', paymentMethodsError)
       throw new Error(`Payment methods deletion failed: ${paymentMethodsError.message}`)
     }
-    deletionSteps.push({ step: 'payment_methods', status: 'success', count: paymentMethodsCount })
+    deletionSteps.push({ step: 'payment_methods', status: 'success', count: paymentMethodsCount ?? undefined })
     console.log('[account/delete] ✓ Deleted payment_methods:', paymentMethodsCount || 0)
 
     // 4. Delete recurring_invoices
@@ -172,7 +172,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete recurring_invoices:', recurringError)
       throw new Error(`Recurring invoices deletion failed: ${recurringError.message}`)
     }
-    deletionSteps.push({ step: 'recurring_invoices', status: 'success', count: recurringCount })
+    deletionSteps.push({ step: 'recurring_invoices', status: 'success', count: recurringCount ?? undefined })
     console.log('[account/delete] ✓ Deleted recurring_invoices:', recurringCount || 0)
 
     // 5. Delete invoices
@@ -187,7 +187,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete invoices:', invoicesError)
       throw new Error(`Invoices deletion failed: ${invoicesError.message}`)
     }
-    deletionSteps.push({ step: 'invoices', status: 'success', count: invoicesCount })
+    deletionSteps.push({ step: 'invoices', status: 'success', count: invoicesCount ?? undefined })
     console.log('[account/delete] ✓ Deleted invoices:', invoicesCount || 0)
 
     // 6. Delete clients
@@ -202,7 +202,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete clients:', clientsError)
       throw new Error(`Clients deletion failed: ${clientsError.message}`)
     }
-    deletionSteps.push({ step: 'clients', status: 'success', count: clientsCount })
+    deletionSteps.push({ step: 'clients', status: 'success', count: clientsCount ?? undefined })
     console.log('[account/delete] ✓ Deleted clients:', clientsCount || 0)
 
     // 7. Delete proposals
@@ -217,7 +217,7 @@ export async function DELETE(req: NextRequest) {
       console.error('[account/delete] Failed to delete proposals:', proposalsError)
       throw new Error(`Proposals deletion failed: ${proposalsError.message}`)
     }
-    deletionSteps.push({ step: 'proposals', status: 'success', count: proposalsCount })
+    deletionSteps.push({ step: 'proposals', status: 'success', count: proposalsCount ?? undefined })
     console.log('[account/delete] ✓ Deleted proposals:', proposalsCount || 0)
 
     // 8. Delete profile (final step)
