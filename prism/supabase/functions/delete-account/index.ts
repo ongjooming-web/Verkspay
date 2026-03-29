@@ -92,51 +92,20 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // ✅ Delete in correct order (children before parents)
-    console.log("[delete-account] Deleting reminders...");
-    const invoiceIds = (
-      await supabaseAdmin
-        .from("invoices")
-        .select("id")
-        .eq("user_id", userId)
-    ).data?.map((inv) => inv.id) || [];
-
-    if (invoiceIds.length > 0) {
-      await supabaseAdmin
-        .from("reminders_log")
-        .delete()
-        .in("invoice_id", invoiceIds);
+    // ✅ All tables have ON DELETE CASCADE on user_id/id FKs
+    // Deleting from auth.users cascades to all user data automatically
+    // But we'll delete profile explicitly to ensure it's gone before auth deletion
+    
+    console.log("[delete-account] Deleting profile (cascades to all related data)...");
+    const { error: profileDeleteErr } = await supabaseAdmin
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+    
+    if (profileDeleteErr) {
+      console.error("[delete-account] Failed to delete profile:", profileDeleteErr);
+      throw profileDeleteErr;
     }
-
-    console.log("[delete-account] Deleting payment records...");
-    await supabaseAdmin
-      .from("payment_records")
-      .delete()
-      .eq("user_id", userId);
-
-    console.log("[delete-account] Deleting payment methods...");
-    await supabaseAdmin
-      .from("payment_methods")
-      .delete()
-      .eq("user_id", userId);
-
-    console.log("[delete-account] Deleting recurring invoices...");
-    await supabaseAdmin
-      .from("recurring_invoices")
-      .delete()
-      .eq("user_id", userId);
-
-    console.log("[delete-account] Deleting invoices...");
-    await supabaseAdmin.from("invoices").delete().eq("user_id", userId);
-
-    console.log("[delete-account] Deleting clients...");
-    await supabaseAdmin.from("clients").delete().eq("user_id", userId);
-
-    console.log("[delete-account] Deleting proposals...");
-    await supabaseAdmin.from("proposals").delete().eq("user_id", userId);
-
-    console.log("[delete-account] Deleting profile...");
-    await supabaseAdmin.from("profiles").delete().eq("id", userId);
 
     // ✅ Delete auth user (service role can do this in Edge Function)
     console.log("[delete-account] Deleting auth user...");
