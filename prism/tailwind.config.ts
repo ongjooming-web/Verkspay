@@ -8,6 +8,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {
+        // New blue/green theme
+        'verkspay-primary': '#0055B8', // Deep shield blue
+        'verkspay-accent': '#00A8E8', // Gradient teal
+        'verkspay-success': '#4CAF50', // Checkmark green
+        'verkspay-dark': '#1A1A2E', // Dark text
+        'verkspay-light': '#F8FAFC', // Light background
+      },
       keyframes: {
         'loading-bar': {
           '0%': { width: '0%', marginLeft: '0%' },
