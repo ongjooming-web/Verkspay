@@ -119,18 +119,10 @@ export default function ClientDetail() {
 
     setGeneratingLink(true)
     try {
-      // Get auth token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError || !session) {
-        throw new Error('Not authenticated')
-      }
-
       const response = await fetch('/api/client-portal/generate-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           client_id: client.id,
