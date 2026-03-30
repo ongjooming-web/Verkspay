@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify token exists and is not expired
-    const { data: portalToken, error: tokenError } = await supabaseAdmin
+    const supabase = getSupabaseServer()
+    const { data: portalToken, error: tokenError } = await supabase
       .from('client_portal_tokens')
       .select('client_id, expires_at, used_at')
       .eq('token', token)
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const clientId = portalToken.client_id
 
     // Get client info
-    const { data: client, error: clientError } = await supabaseAdmin
+    const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, name, email, business_name')
       .eq('id', clientId)
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get invoices for this client
-    const { data: invoices, error: invoicesError } = await supabaseAdmin
+    const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
       .select('id, invoice_number, created_at, due_date, amount, status, currency')
       .eq('client_id', clientId)
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // Log access if first time
     if (!portalToken.used_at) {
-      await supabaseAdmin
+      await supabase
         .from('client_portal_tokens')
         .update({ used_at: new Date().toISOString() })
         .eq('token', token)

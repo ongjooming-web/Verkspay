@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { formatCurrency } from '@/lib/currency-helper'
+import { formatCurrency } from '@/lib/countries'
 
 interface Invoice {
   id: string

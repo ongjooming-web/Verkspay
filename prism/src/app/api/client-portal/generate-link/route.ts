@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 const PORTAL_TOKEN_EXPIRY_DAYS = 30
 
@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify client exists and email matches
-    const { data: client, error: clientError } = await supabaseAdmin
+    const supabase = getSupabaseServer()
+    const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, email, name')
       .eq('id', client_id)
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(Date.now() + PORTAL_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
 
     // Save token to database
-    const { data: portalToken, error: tokenError } = await supabaseAdmin
+    const { data: portalToken, error: tokenError } = await supabase
       .from('client_portal_tokens')
       .insert({
         client_id,
