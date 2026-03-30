@@ -85,10 +85,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get invoices for this client
+    // Get invoices for this client with payment records
     const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('id, invoice_number, created_at, due_date, amount, status, currency_code, description, line_items')
+      .select('id, invoice_number, created_at, due_date, amount, status, currency_code, description, line_items, payment_records(amount)')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
 
@@ -113,14 +113,23 @@ export async function POST(req: NextRequest) {
     // Calculate summary stats
     const totalAmount = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
     
-    // Paid: only fully paid invoices
-    const paidAmount = invoices
-      .filter(inv => inv.status === 'paid')
-      .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+    // Paid: fully paid invoices + actual paid amounts for partial
+    let paidAmount = 0
+    invoices.forEach(inv => {
+      if (inv.status === 'paid') {
+        // Fully paid
+        paidAmount += inv.amount || 0
+      } else if (inv.status === 'paid_partial' && inv.payment_records) {
+        // Partial: sum actual payments
+        const actualPaid = (inv.payment_records as any[])
+          .reduce((sum, pr) => sum + (pr.amount || 0), 0)
+        paidAmount += actualPaid
+      }
+    })
     
-    // Unpaid: includes unpaid, partial, and overdue invoices (anything not fully paid)
+    // Unpaid: only fully unpaid invoices (not partial, not paid)
     const unpaidAmount = invoices
-      .filter(inv => inv.status !== 'paid')
+      .filter(inv => inv.status === 'unpaid' || inv.status === 'overdue')
       .reduce((sum, inv) => sum + (inv.amount || 0), 0)
 
     // Overdue: invoices with status 'overdue' OR unpaid/partial past due date

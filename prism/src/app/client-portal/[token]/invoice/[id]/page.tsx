@@ -12,6 +12,10 @@ interface LineItem {
   amount: number
 }
 
+interface PaymentRecord {
+  amount: number
+}
+
 interface Invoice {
   id: string
   invoice_number: string
@@ -22,6 +26,7 @@ interface Invoice {
   currency_code: string
   description?: string
   line_items?: LineItem[]
+  payment_records?: PaymentRecord[]
 }
 
 interface Client {
@@ -242,12 +247,44 @@ export default function InvoiceDetail() {
               <div className="flex justify-end mt-6 pt-6 border-t border-blue-200">
                 <div className="w-64">
                   <div className="flex justify-between py-2 mb-4">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600">Total Amount</span>
                     <span className="text-gray-900 font-semibold">{formatCurrency(invoice.amount, invoice.currency_code)}</span>
                   </div>
+
+                  {/* Show paid amount if partial or paid */}
+                  {invoice.status === 'paid_partial' && invoice.payment_records && (
+                    <div className="flex justify-between py-2 mb-4">
+                      <span className="text-gray-600">Amount Paid</span>
+                      <span className="text-green-600 font-semibold">
+                        {formatCurrency(
+                          invoice.payment_records.reduce((sum, pr) => sum + (pr.amount || 0), 0),
+                          invoice.currency_code
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  {invoice.status === 'paid' && (
+                    <div className="flex justify-between py-2 mb-4">
+                      <span className="text-gray-600">Amount Paid</span>
+                      <span className="text-green-600 font-semibold">{formatCurrency(invoice.amount, invoice.currency_code)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between py-3 bg-blue-50 px-4 rounded-lg">
-                    <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-blue-600">{formatCurrency(invoice.amount, invoice.currency_code)}</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {invoice.status === 'paid' ? 'Status' : 'Outstanding'}
+                    </span>
+                    <span className="text-lg font-bold text-blue-600">
+                      {invoice.status === 'paid'
+                        ? '✓ Paid'
+                        : invoice.status === 'paid_partial'
+                        ? formatCurrency(
+                            invoice.amount - (invoice.payment_records?.reduce((sum, pr) => sum + (pr.amount || 0), 0) || 0),
+                            invoice.currency_code
+                          )
+                        : formatCurrency(invoice.amount, invoice.currency_code)}
+                    </span>
                   </div>
                 </div>
               </div>
