@@ -119,10 +119,18 @@ export default function ClientDetail() {
 
     setGeneratingLink(true)
     try {
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        throw new Error('Not authenticated')
+      }
+
       const response = await fetch('/api/client-portal/generate-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           client_id: client.id,
@@ -271,13 +279,17 @@ export default function ClientDetail() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-8">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            📄 New Invoice
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            📋 New Proposal
-          </Button>
+        <div className="flex gap-3 mt-8 flex-wrap">
+          <Link href={`/invoices/new?client_id=${clientId}`}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              📄 New Invoice
+            </Button>
+          </Link>
+          <Link href={`/proposals/new?client_id=${clientId}`}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              📋 New Proposal
+            </Button>
+          </Link>
           <Button 
             onClick={generatePortalLink}
             disabled={generatingLink}
@@ -285,9 +297,15 @@ export default function ClientDetail() {
           >
             {generatingLink ? '⏳ Generating...' : '🔗 Share Portal Link'}
           </Button>
-          <Button className="bg-cyan-600 hover:bg-cyan-700">
-            💬 WhatsApp
-          </Button>
+          <a
+            href={`https://wa.me/${client.phone?.replace(/[^0-9]/g, '') || ''}?text=${encodeURIComponent(`Hi ${client.name},\n\nI have some invoices for you to review.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button className="bg-green-600 hover:bg-green-700">
+              💬 WhatsApp
+            </Button>
+          </a>
         </div>
 
         {/* Portal Link Modal */}
