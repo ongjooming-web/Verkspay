@@ -12,8 +12,8 @@ interface Client {
   name: string
   email: string
   phone?: string
-  business_name?: string
-  address?: string
+  company?: string
+  industry?: string
 }
 
 export default function EditClient() {
@@ -26,8 +26,8 @@ export default function EditClient() {
     name: '',
     email: '',
     phone: '',
-    business_name: '',
-    address: '',
+    company: '',
+    industry: '',
   })
 
   const [loading, setLoading] = useState(true)
@@ -99,8 +99,8 @@ export default function EditClient() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone || null,
-          business_name: formData.business_name || null,
-          address: formData.address || null,
+          company: formData.company || null,
+          industry: formData.industry || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', clientId)
@@ -214,33 +214,33 @@ export default function EditClient() {
                 />
               </div>
 
-              {/* Business Name */}
+              {/* Company */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Business Name
+                  Company
                 </label>
                 <input
                   type="text"
-                  name="business_name"
-                  value={formData.business_name || ''}
+                  name="company"
+                  value={formData.company || ''}
                   onChange={handleChange}
                   placeholder="Acme Corporation"
                   className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
 
-              {/* Address */}
+              {/* Industry */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Address
+                  Industry
                 </label>
-                <textarea
-                  name="address"
-                  value={formData.address || ''}
+                <input
+                  type="text"
+                  name="industry"
+                  value={formData.industry || ''}
                   onChange={handleChange}
-                  placeholder="Street address, city, postal code"
-                  rows={3}
-                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                  placeholder="e.g., Technology, Design, etc."
+                  className="glass px-4 py-3 rounded-lg text-white placeholder-gray-400 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
 
