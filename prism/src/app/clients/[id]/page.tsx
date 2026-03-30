@@ -38,6 +38,9 @@ export default function ClientDetail() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showPortalModal, setShowPortalModal] = useState(false)
+  const [portalLink, setPortalLink] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -110,6 +113,42 @@ export default function ClientDetail() {
 
     fetchClientData()
   }, [clientId, router])
+
+  const generatePortalLink = async () => {
+    if (!client) return
+
+    setGeneratingLink(true)
+    try {
+      const response = await fetch('/api/client-portal/generate-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: client.id,
+          client_email: client.email,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate link')
+      }
+
+      const data = await response.json()
+      setPortalLink(data.portal_url)
+      setShowPortalModal(true)
+    } catch (err) {
+      console.error('[ClientDetail] Error:', err)
+      alert('Failed to generate portal link')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const copyToClipboard = () => {
+    if (portalLink) {
+      navigator.clipboard.writeText(portalLink)
+      alert('Link copied to clipboard!')
+    }
+  }
 
   if (loading) {
     return (
@@ -236,10 +275,67 @@ export default function ClientDetail() {
           <Button className="bg-blue-600 hover:bg-blue-700">
             📋 New Proposal
           </Button>
+          <Button 
+            onClick={generatePortalLink}
+            disabled={generatingLink}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {generatingLink ? '⏳ Generating...' : '🔗 Share Portal Link'}
+          </Button>
           <Button className="bg-cyan-600 hover:bg-cyan-700">
             💬 WhatsApp
           </Button>
         </div>
+
+        {/* Portal Link Modal */}
+        {showPortalModal && portalLink && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <h2 className="text-xl font-bold text-white">Share Portal Link</h2>
+              </CardHeader>
+              <CardBody>
+                <div className="space-y-4">
+                  <p className="text-gray-300 text-sm">
+                    Share this link with {client?.name} to let them view their invoices:
+                  </p>
+
+                  {/* Link Display */}
+                  <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                    <p className="text-xs text-gray-400 mb-2">Portal Link:</p>
+                    <p className="text-white text-sm break-all font-mono">{portalLink}</p>
+                  </div>
+
+                  {/* Copy Button */}
+                  <button
+                    onClick={copyToClipboard}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
+                  >
+                    📋 Copy Link
+                  </button>
+
+                  {/* WhatsApp Share */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Hi! Here's your invoice portal:\n\n${portalLink}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition block text-center"
+                  >
+                    💬 Share via WhatsApp
+                  </a>
+
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setShowPortalModal(false)}
+                    className="w-full glass px-4 py-2 rounded-lg text-gray-300 hover:text-gray-200 font-medium transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
