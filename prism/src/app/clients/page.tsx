@@ -408,11 +408,11 @@ export default function ClientsPage() {
           <div className="space-y-3">
             {filteredClients.map((client) => {
               return (
-                <Link key={client.id} href={`/clients/${client.id}`}>
-                  <Card className="border-gray-700/50 hover:border-gray-600/50 cursor-pointer transition">
+                <div key={client.id} className="group">
+                  <Card className="border-gray-700/50 hover:border-gray-600/50 transition">
                     <CardBody>
                       <div className="space-y-3">
-                        {/* Name + Company + Tags (top row with tags on right) */}
+                        {/* Name + Company + Tags (top row with tags and edit button on right) */}
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="text-base md:text-lg font-semibold text-white truncate">{client.name}</h3>
@@ -421,20 +421,40 @@ export default function ClientsPage() {
                             )}
                           </div>
 
-                          {/* Tags on the right */}
-                          {client.tags && client.tags.length > 0 && (
-                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                              {client.tags.slice(0, 2).map((tag) => (
-                                <TagBadge key={tag.id} tag={tag} />
-                              ))}
-                              {client.tags.length > 2 && (
-                                <span className="text-xs text-gray-400 whitespace-nowrap">
-                                  +{client.tags.length - 2}
-                                </span>
-                              )}
-                            </div>
-                          )}
+                          {/* Tags and Edit Button on the right */}
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            {/* Edit Button */}
+                            <Link 
+                              href={`/clients/${client.id}/edit`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <button
+                                type="button"
+                                className="text-xs px-2 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 transition"
+                              >
+                                ✏️ Edit
+                              </button>
+                            </Link>
+
+                            {/* Tags */}
+                            {client.tags && client.tags.length > 0 && (
+                              <div className="flex flex-col items-end gap-1">
+                                {client.tags.slice(0, 2).map((tag) => (
+                                  <TagBadge key={tag.id} tag={tag} />
+                                ))}
+                                {client.tags.length > 2 && (
+                                  <span className="text-xs text-gray-400 whitespace-nowrap">
+                                    +{client.tags.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Make card clickable to view details */}
+                        <Link key={client.id} href={`/clients/${client.id}`} className="absolute inset-0 z-0" />
 
                         {/* Contact Info - Grid Layout */}
                         <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
@@ -476,7 +496,7 @@ export default function ClientsPage() {
                       </div>
                     </CardBody>
                   </Card>
-                </Link>
+                </div>
               )
             })}
           </div>
