@@ -136,7 +136,7 @@ export default function InvoiceDetail() {
 
     setGeneratingLink(true)
     try {
-      const response = await fetch('/api/invoices/payment-link', {
+      const response = await fetch('/api/client-portal/payment-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,8 +146,8 @@ export default function InvoiceDetail() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate payment link')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate payment link')
       }
 
       const data = await response.json()
