@@ -280,12 +280,12 @@ export default function ClientDetail() {
 
         {/* Action Buttons */}
         <div className="flex gap-3 mt-8 flex-wrap">
-          <Link href={`/invoices/new?client_id=${clientId}`}>
+          <Link href={`/invoices?client=${clientId}`}>
             <Button className="bg-blue-600 hover:bg-blue-700">
               📄 New Invoice
             </Button>
           </Link>
-          <Link href={`/proposals/new?client_id=${clientId}`}>
+          <Link href="/proposals">
             <Button className="bg-blue-600 hover:bg-blue-700">
               📋 New Proposal
             </Button>
