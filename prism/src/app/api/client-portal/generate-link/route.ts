@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServer } from '@/lib/supabase-server'
+import { getSupabaseServer, getSupabaseAuth } from '@/lib/supabase-server'
 
 const PORTAL_TOKEN_EXPIRY_DAYS = 30
 
@@ -14,17 +14,39 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify client exists and email matches
+    // Verify user is authenticated by checking auth header
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - no token' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7)
+    const supabaseAuth = getSupabaseAuth()
+    const { data: { user }, error: authError } = await supabaseAuth.getUser(token)
+
+    if (authError || !user) {
+      console.error('[ClientPortal] Auth failed:', authError)
+      return NextResponse.json(
+        { error: 'Unauthorized - invalid token' },
+        { status: 401 }
+      )
+    }
+
+    // Verify client exists, email matches, AND user owns it
     const supabase = getSupabaseServer()
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, email, name')
+      .select('id, email, name, user_id')
       .eq('id', client_id)
       .eq('email', client_email)
+      .eq('user_id', user.id)
       .single()
 
     if (clientError || !client) {
-      console.error('[ClientPortal] Client not found:', { client_id, client_email })
+      console.error('[ClientPortal] Client not found:', { client_id, client_email, user_id: user.id, error: clientError })
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }

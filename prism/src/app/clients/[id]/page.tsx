@@ -119,9 +119,19 @@ export default function ClientDetail() {
 
     setGeneratingLink(true)
     try {
+      // Get auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        throw new Error('Not authenticated')
+      }
+
       const response = await fetch('/api/client-portal/generate-link', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           client_id: client.id,
           client_email: client.email,
@@ -129,7 +139,8 @@ export default function ClientDetail() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate link')
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate link')
       }
 
       const data = await response.json()
@@ -137,7 +148,7 @@ export default function ClientDetail() {
       setShowPortalModal(true)
     } catch (err) {
       console.error('[ClientDetail] Error:', err)
-      alert('Failed to generate portal link')
+      alert(`Failed to generate portal link: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setGeneratingLink(false)
     }
