@@ -38,7 +38,7 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2 md:gap-0">
             <Link href="/" className="flex items-center gap-2">
               <img src="/logo.svg" alt="Verkspay Logo" className="h-12 md:h-12 w-auto" />
-              <span className="text-xl font-bold text-blue-400">Verkspay</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Verkspay</span>
             </Link>
             <nav className="hidden md:flex gap-6 items-center">
               <a href="#features" className="text-gray-300 hover:text-white transition text-sm">Features</a>

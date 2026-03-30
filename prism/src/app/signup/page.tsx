@@ -134,7 +134,7 @@ export default function Signup() {
               <img src="/logo.svg" alt="Verkspay Logo" className="h-12 w-auto relative z-10" />
             </div>
             {/* Brand Name */}
-            <h1 className="text-xl font-bold text-blue-400 -mt-2">Verkspay</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent -mt-2">Verkspay</h1>
           </Link>
           
           {/* Subtitle - secondary visual hierarchy */}
