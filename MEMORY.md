@@ -125,6 +125,37 @@ Every new API route must have:
 
 ---
 
+## Client Portal Architecture (CRITICAL - March 30, 2026)
+
+**Two Completely Separate Systems:**
+
+### Generate Link (Dashboard)
+- Endpoint: `POST /api/client-portal/generate-link`
+- Auth: YES (verifyAuth - user must be logged in)
+- Validates: User owns the client
+- Creates: Magic link token
+- Returns: Portal URL
+
+### View Invoices (Client Portal)
+- Endpoint: `POST /api/client-portal/invoices`
+- Auth: NO (token-based, no login needed)
+- Validates: Token is valid & not expired
+- Returns: Client's invoices + summary stats
+
+**Key Rule:**
+```
+generate-link: Uses verifyAuth() (dashboard user)
+invoices: Validates TOKEN only (anyone with link)
+```
+
+This separation ensures:
+✅ Portal link works in incognito
+✅ No Supabase auth mixed in portal
+✅ Clean security model
+✅ Client sees invoices without login
+
+---
+
 ## Prism: Complete Roadmap (March 27, 2026)
 
 ### Mission
