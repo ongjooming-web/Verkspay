@@ -73,7 +73,7 @@ export default function ClientPortal() {
       <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Loading your invoices...</p>
+          <p className="text-gray-600">Fetching your invoices...</p>
         </div>
       </div>
     )
