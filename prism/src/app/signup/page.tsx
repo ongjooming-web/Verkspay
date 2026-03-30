@@ -127,7 +127,7 @@ export default function Signup() {
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/20">
         <CardHeader className="text-center">
           <Link href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Verkspay Logo" className="w-16 h-16" />
+            <img src="/logo.svg" alt="Verkspay Logo" className="w-24 h-24" />
           </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Verkspay
