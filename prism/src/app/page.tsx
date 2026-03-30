@@ -37,7 +37,7 @@ export default function LandingPage() {
         <header className="backdrop-blur-xl border-b border-white/10 sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2 md:gap-0">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Verkspay Logo" className="h-20 md:h-28 w-auto" />
+              <img src="/logo.svg" alt="Verkspay Logo" className="h-20 md:h-20 w-auto" />
               <span className="text-lg md:text-xl font-bold text-blue-400">Verkspay</span>
             </Link>
             <nav className="hidden md:flex gap-6 items-center">
