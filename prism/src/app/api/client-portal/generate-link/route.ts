@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServer, getSupabaseAuth } from '@/lib/supabase-server'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
 const PORTAL_TOKEN_EXPIRY_DAYS = 30
 
@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
     }
 
     const authToken = authHeader.substring(7)
-    const supabaseAuth = getSupabaseAuth()
-    const { data: { user }, error: authError } = await supabaseAuth.getUser(authToken)
+    const supabase = getSupabaseServer()
+    
+    // Verify the token by trying to get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authToken)
 
     if (authError || !user) {
       console.error('[ClientPortal] Auth failed:', authError)
@@ -36,7 +38,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify client exists, email matches, AND user owns it
-    const supabase = getSupabaseServer()
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, email, name, user_id')
