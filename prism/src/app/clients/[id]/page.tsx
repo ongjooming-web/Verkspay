@@ -1,621 +1,244 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navigation } from '@/components/Navigation'
-import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
-import { TagBadge } from '@/components/TagBadge'
-import { useCurrency } from '@/hooks/useCurrency'
-import { useClientTags } from '@/hooks/useClientTags'
-import { useClientNotes } from '@/hooks/useClientNotes'
-import { useClientStats } from '@/hooks/useClientStats'
+import { Card, CardBody, CardHeader } from '@/components/Card'
 import { formatCurrency } from '@/lib/countries'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface Client {
   id: string
   name: string
   email: string
-  phone: string | null
-  company: string | null
-  industry: string | null
-  total_revenue: number
-  total_outstanding: number
-  last_invoice_date: string | null
-  invoice_count: number
-  health_score: number | null
+  phone?: string
+  company?: string
+  industry?: string
+  created_at: string
 }
 
-export default function ClientProfilePage() {
+interface Stats {
+  totalRevenue: number
+  totalOutstanding: number
+  avgInvoice: number
+  paymentSpeed: number
+  invoiceCount: number
+}
+
+export default function ClientDetail() {
   const router = useRouter()
   const params = useParams()
   const clientId = params.id as string
-
-  const [user, setUser] = useState<any>(null)
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'activity' | 'notes'>('activity')
-  const [invoices, setInvoices] = useState<any[]>([])
-  const [proposals, setProposals] = useState<any[]>([])
-
   const { currencyCode } = useCurrency()
-  const { tags } = useClientTags(clientId)
-  const { notes, addNote, updateNote, deleteNote } = useClientNotes(clientId)
-  const { triggerAggregation } = useClientStats(clientId)
 
-
-  const [newNoteContent, setNewNoteContent] = useState('')
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
-  const [editingNoteContent, setEditingNoteContent] = useState('')
-  const [showIndustrySelector, setShowIndustrySelector] = useState(false)
-  const [selectedIndustry, setSelectedIndustry] = useState('')
-  const [customIndustry, setCustomIndustry] = useState('')
-  const [savingIndustry, setSavingIndustry] = useState(false)
+  const [client, setClient] = useState<Client | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchClientData = async () => {
       try {
-        const { data: userData } = await supabase.auth.getUser()
-        if (!userData?.user) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
           router.push('/login')
           return
         }
-
-        setUser(userData.user)
 
         // Fetch client
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('*')
           .eq('id', clientId)
-          .eq('user_id', userData.user.id)
+          .eq('user_id', user.id)
           .single()
 
         if (clientError || !clientData) {
-          router.push('/clients')
+          setError('Client not found')
           return
         }
 
         setClient(clientData)
 
-        // Fetch invoices for this client
-        const { data: invoicesData } = await supabase
+        // Fetch invoices for stats
+        const { data: invoices, error: invoicesError } = await supabase
           .from('invoices')
-          .select('id, invoice_number, status, amount, amount_paid, created_at')
+          .select('amount, status, created_at, due_date, paid_date')
           .eq('client_id', clientId)
-          .order('created_at', { ascending: false })
+          .eq('user_id', user.id)
 
-        setInvoices(invoicesData || [])
+        if (!invoicesError && invoices) {
+          const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+          const paidInvoices = invoices.filter(inv => inv.status === 'paid')
+          const totalOutstanding = invoices
+            .filter(inv => inv.status === 'unpaid' || inv.status === 'overdue')
+            .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+          const avgInvoice = invoices.length > 0 ? totalRevenue / invoices.length : 0
 
-        // Fetch proposals for this client
-        const { data: proposalsData } = await supabase
-          .from('proposals')
-          .select('id, proposal_number, status, total_amount, created_at')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false })
+          // Calculate payment speed (days between invoice and payment)
+          let totalDays = 0
+          let paidCount = 0
+          invoices.forEach(inv => {
+            if (inv.paid_date && inv.created_at) {
+              const created = new Date(inv.created_at).getTime()
+              const paid = new Date(inv.paid_date).getTime()
+              totalDays += Math.floor((paid - created) / (1000 * 60 * 60 * 24))
+              paidCount++
+            }
+          })
+          const paymentSpeed = paidCount > 0 ? Math.round(totalDays / paidCount) : 0
 
-        setProposals(proposalsData || [])
+          setStats({
+            totalRevenue,
+            totalOutstanding,
+            avgInvoice,
+            paymentSpeed,
+            invoiceCount: invoices.length,
+          })
+        }
       } catch (err) {
-        console.error('[ClientProfile] Error:', err)
-        router.push('/clients')
+        console.error('[ClientDetail] Error:', err)
+        setError('Failed to load client')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
+    fetchClientData()
   }, [clientId, router])
 
-  if (loading || !client) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen relative z-10">
         <Navigation />
-        <div className="max-w-7xl mx-auto p-6 flex justify-center items-center h-96">
-          <div className="text-gray-400">Loading client profile...</div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading client...</p>
+          </div>
         </div>
       </div>
     )
   }
 
-  const calculatePaymentSpeed = () => {
-    if (invoices.length === 0) return null
-    // Placeholder: actual calculation would need payment_records
-    return 7 // days average
-  }
-
-  const paymentSpeed = calculatePaymentSpeed()
-
-  const handleAddNote = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newNoteContent.trim()) return
-
-    try {
-      await addNote(newNoteContent)
-      setNewNoteContent('')
-    } catch (err) {
-      console.error('[ClientProfile] Error adding note:', err)
-    }
-  }
-
-  const handleEditNote = async (noteId: string) => {
-    if (!editingNoteContent.trim()) return
-
-    try {
-      await updateNote(noteId, editingNoteContent)
-      setEditingNoteId(null)
-      setEditingNoteContent('')
-    } catch (err) {
-      console.error('[ClientProfile] Error editing note:', err)
-    }
-  }
-
-  const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Delete this note?')) return
-
-    try {
-      await deleteNote(noteId)
-    } catch (err) {
-      console.error('[ClientProfile] Error deleting note:', err)
-    }
-  }
-
-  const handleSaveIndustry = async () => {
-    if (!client) return
-
-    try {
-      setSavingIndustry(true)
-      const industry = selectedIndustry === 'Other' ? customIndustry : selectedIndustry
-
-      if (!industry) {
-        console.error('[ClientProfile] Industry is empty')
-        return
-      }
-
-      const { error } = await supabase
-        .from('clients')
-        .update({ industry })
-        .eq('id', clientId)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('[ClientProfile] Error saving industry:', error)
-        return
-      }
-
-      // Update local state
-      setClient({ ...client, industry })
-      setShowIndustrySelector(false)
-      setSelectedIndustry('')
-      setCustomIndustry('')
-    } catch (err) {
-      console.error('[ClientProfile] Error saving industry:', err)
-    } finally {
-      setSavingIndustry(false)
-    }
+  if (error || !client) {
+    return (
+      <div className="min-h-screen relative z-10">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{error || 'Client not found'}</p>
+            <Link href="/clients">
+              <Button>← Back to Clients</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen relative z-10">
       <Navigation />
 
-      <div className="max-w-6xl mx-auto p-6 md:p-8">
-        {/* Client Header */}
-        <Card className="mb-8 border-blue-500/30">
-          <CardHeader>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-2">{client.name}</h1>
-                <p className="text-gray-400">{client.company || 'No company listed'}</p>
-                {client.industry && (
-                  <p className="text-sm text-gray-400 mt-1">Industry: {client.industry}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {client.email && (
-                <div>
-                  <p className="text-gray-400 text-xs uppercase">Email</p>
-                  <p className="text-white">{client.email}</p>
-                </div>
-              )}
-              {client.phone && (
-                <div>
-                  <p className="text-gray-400 text-xs uppercase">Phone</p>
-                  <Link href={`https://wa.me/${client.phone.replace(/[^\d]/g, '')}`} target="_blank">
-                    <p className="text-blue-400 hover:text-blue-300">{client.phone}</p>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {tags.map((tag) => (
-                  <TagBadge key={tag.id} tag={tag} />
-                ))}
-              </div>
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        {/* Header with Edit Button */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <Link href="/clients" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              ← Back to Clients
+            </Link>
+            <h1 className="text-4xl font-bold text-white mt-2">{client.name}</h1>
+            {client.company && (
+              <p className="text-gray-400 text-lg mt-1">{client.company}</p>
             )}
+            {client.industry && (
+              <p className="text-gray-400 text-sm mt-1">Industry: {client.industry}</p>
+            )}
+          </div>
 
-            {/* Quick Actions */}
-            <div className="flex gap-3 flex-wrap">
-              <Link href={`/invoices?client=${clientId}`}>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">📄 New Invoice</Button>
-              </Link>
-              <Link href={`/proposals/new?client=${clientId}`}>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white">📋 New Proposal</Button>
-              </Link>
-              {client.phone && (
-                <Link href={`https://wa.me/${client.phone.replace(/[^\d]/g, '')}`} target="_blank">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white">💬 WhatsApp</Button>
-                </Link>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Industry Selector Banner */}
-        {!client.industry && !showIndustrySelector && (
-          <Card className="mb-8 border-amber-500/30 bg-amber-500/5">
-            <CardBody>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-amber-400 font-semibold mb-1">📊 Add industry to unlock insights</p>
-                  <p className="text-gray-400 text-sm">Industry classification helps AI provide better business recommendations and client segmentation.</p>
-                </div>
-                <button
-                  onClick={() => setShowIndustrySelector(true)}
-                  className="text-amber-400 hover:text-amber-300 text-sm font-semibold whitespace-nowrap mt-1"
-                >
-                  Add now →
-                </button>
-              </div>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Inline Industry Selector */}
-        {showIndustrySelector && !client.industry && (
-          <Card className="mb-8 border-blue-500/30 bg-blue-500/5">
-            <CardBody>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Select Industry</label>
-                  <select
-                    value={selectedIndustry}
-                    onChange={(e) => {
-                      setSelectedIndustry(e.target.value)
-                      if (e.target.value !== 'Other') {
-                        setCustomIndustry('')
-                      }
-                    }}
-                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white"
-                  >
-                    <option value="">-- Select an industry --</option>
-                    <option value="Technology">Technology</option>
-                    <option value="F&B / Hospitality">F&B / Hospitality</option>
-                    <option value="Education / Training">Education / Training</option>
-                    <option value="Retail / E-commerce">Retail / E-commerce</option>
-                    <option value="Marketing / Advertising">Marketing / Advertising</option>
-                    <option value="Design / Creative">Design / Creative</option>
-                    <option value="Construction / Property">Construction / Property</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Professional Services">Professional Services</option>
-                    <option value="Manufacturing">Manufacturing</option>
-                    <option value="Other">Other (custom)</option>
-                  </select>
-                </div>
-
-                {selectedIndustry === 'Other' && (
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">Enter custom industry</label>
-                    <input
-                      type="text"
-                      value={customIndustry}
-                      onChange={(e) => setCustomIndustry(e.target.value)}
-                      placeholder="e.g., Agriculture, Logistics"
-                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white placeholder-gray-600"
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleSaveIndustry}
-                    disabled={!selectedIndustry || (selectedIndustry === 'Other' && !customIndustry) || savingIndustry}
-                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                  >
-                    {savingIndustry ? 'Saving...' : 'Save Industry'}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowIndustrySelector(false)
-                      setSelectedIndustry('')
-                      setCustomIndustry('')
-                    }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="border-gray-700/50">
-            <CardBody>
-              <p className="text-gray-400 text-xs uppercase">Total Revenue</p>
-              <p className="text-2xl font-bold text-green-400">
-                {formatCurrency(client.total_revenue, currencyCode)}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="border-gray-700/50">
-            <CardBody>
-              <p className="text-gray-400 text-xs uppercase">Outstanding</p>
-              <p className="text-2xl font-bold text-yellow-400">
-                {formatCurrency(client.total_outstanding, currencyCode)}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="border-gray-700/50">
-            <CardBody>
-              <p className="text-gray-400 text-xs uppercase">Avg Invoice</p>
-              <p className="text-2xl font-bold text-white">
-                {formatCurrency(
-                  client.invoice_count > 0 ? client.total_revenue / client.invoice_count : 0,
-                  currencyCode
-                )}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="border-gray-700/50">
-            <CardBody>
-              <p className="text-gray-400 text-xs uppercase">Payment Speed</p>
-              <p className="text-2xl font-bold text-blue-400">
-                {paymentSpeed ? `${paymentSpeed} days` : 'N/A'}
-              </p>
-            </CardBody>
-          </Card>
+          {/* Edit Button */}
+          <Link href={`/clients/${clientId}/edit`}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              ✏️ Edit Client
+            </Button>
+          </Link>
         </div>
 
-        {/* Tabs */}
-        <Card className="border-gray-700/50">
+        {/* Contact Info */}
+        <Card className="mb-8">
           <CardBody>
-            {/* Tab Buttons */}
-            <div className="flex gap-4 border-b border-gray-700/50 pb-4 mb-6">
-              <button
-                onClick={() => setActiveTab('activity')}
-                className={`pb-2 px-1 transition ${
-                  activeTab === 'activity'
-                    ? 'border-b-2 border-blue-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Activity Timeline
-              </button>
-              <button
-                onClick={() => setActiveTab('notes')}
-                className={`pb-2 px-1 transition ${
-                  activeTab === 'notes'
-                    ? 'border-b-2 border-blue-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Notes
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <p className="text-gray-400 text-sm uppercase mb-2">Email</p>
+                <p className="text-white text-lg">{client.email}</p>
+              </div>
+              {client.phone && (
+                <div>
+                  <p className="text-gray-400 text-sm uppercase mb-2">Phone</p>
+                  <p className="text-white text-lg">{client.phone}</p>
+                </div>
+              )}
             </div>
-
-            {/* Activity Tab */}
-            {activeTab === 'activity' && (
-              <div className="space-y-4">
-                {[...invoices, ...proposals].length === 0 ? (
-                  <p className="text-gray-400 text-sm">No activity yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {[...invoices.map((inv) => ({ type: 'invoice', ...inv })), ...proposals.map((prop) => ({ type: 'proposal', ...prop }))]
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                      .map((item, idx) => (
-                        <Link
-                          key={idx}
-                          href={
-                            item.type === 'invoice'
-                              ? `/invoices/${item.id}`
-                              : `/proposals/${item.id}`
-                          }
-                        >
-                          <div className="p-3 bg-gray-900/50 rounded hover:bg-gray-800/50 cursor-pointer transition">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-white font-mono text-sm">
-                                  {item.type === 'invoice' ? item.invoice_number : item.proposal_number}
-                                </p>
-                                <p className="text-gray-400 text-xs mt-1">
-                                  {new Date(item.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-white font-semibold">
-                                  {formatCurrency(item.total_amount || item.amount || 0, currencyCode)}
-                                </p>
-                                <span className="text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-300">
-                                  {item.status}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Notes Tab */}
-            {activeTab === 'notes' && (
-              <div className="space-y-4">
-                {/* Add Note Form */}
-                <form onSubmit={handleAddNote} className="space-y-3 pb-6 border-b border-gray-700/50">
-                  <textarea
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    placeholder="Add a note..."
-                    className="w-full bg-gray-900/50 border border-gray-700/50 rounded px-3 py-2 text-white placeholder-gray-500 text-sm resize-none"
-                    rows={3}
-                  />
-                  <Button
-                    disabled={!newNoteContent.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                  >
-                    Add Note
-                  </Button>
-                </form>
-
-                {/* Notes List */}
-                {notes.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No notes yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {notes.map((note) => (
-                      <div key={note.id} className="p-3 bg-gray-900/50 rounded">
-                        {editingNoteId === note.id ? (
-                          <div className="space-y-2">
-                            <textarea
-                              value={editingNoteContent}
-                              onChange={(e) => setEditingNoteContent(e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm resize-none"
-                              rows={3}
-                            />
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => handleEditNote(note.id)}
-                                className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                onClick={() => setEditingNoteId(null)}
-                                className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-white text-sm mb-2">{note.content}</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-gray-500 text-xs">
-                                {new Date(note.created_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingNoteId(note.id)
-                                    setEditingNoteContent(note.content)
-                                  }}
-                                  className="text-blue-400 hover:text-blue-300 text-xs"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteNote(note.id)}
-                                  className="text-red-400 hover:text-red-300 text-xs"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-
           </CardBody>
         </Card>
 
-        {/* Recent Activity Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <Card className="border-gray-700/50">
-            <CardHeader>
-              <h3 className="text-lg font-bold text-white">Recent Invoices</h3>
-            </CardHeader>
-            <CardBody>
-              {invoices.slice(0, 5).length === 0 ? (
-                <p className="text-gray-400 text-sm">No invoices</p>
-              ) : (
-                <div className="space-y-2">
-                  {invoices.slice(0, 5).map((inv) => (
-                    <Link key={inv.id} href={`/invoices/${inv.id}`}>
-                      <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
-                        <span className="text-white font-mono">{inv.invoice_number}</span>
-                        <span className="text-gray-400">
-                          {formatCurrency(inv.amount, currencyCode)}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                  {invoices.length > 5 && (
-                    <Link href={`/invoices?client=${clientId}`}>
-                      <p className="text-blue-400 hover:text-blue-300 text-sm">View All →</p>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </CardBody>
-          </Card>
+        {/* Stats Grid */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardBody>
+                <p className="text-gray-400 text-sm uppercase mb-2">Total Revenue</p>
+                <p className="text-2xl font-bold text-green-400">
+                  {formatCurrency(stats.totalRevenue, currencyCode)}
+                </p>
+              </CardBody>
+            </Card>
 
-          <Card className="border-gray-700/50">
-            <CardHeader>
-              <h3 className="text-lg font-bold text-white">Recent Proposals</h3>
-            </CardHeader>
-            <CardBody>
-              {proposals.slice(0, 5).length === 0 ? (
-                <p className="text-gray-400 text-sm">No proposals</p>
-              ) : (
-                <div className="space-y-2">
-                  {proposals.slice(0, 5).map((prop) => (
-                    <Link key={prop.id} href={`/proposals/${prop.id}`}>
-                      <div className="flex justify-between text-sm hover:bg-gray-900/50 p-2 rounded cursor-pointer">
-                        <span className="text-white font-mono">{prop.proposal_number}</span>
-                        <span className="text-gray-400">
-                          {formatCurrency(prop.total_amount, currencyCode)}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                  {proposals.length > 5 && (
-                    <Link href={`/proposals?client=${clientId}`}>
-                      <p className="text-blue-400 hover:text-blue-300 text-sm">View All →</p>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </CardBody>
-          </Card>
+            <Card>
+              <CardBody>
+                <p className="text-gray-400 text-sm uppercase mb-2">Outstanding</p>
+                <p className="text-2xl font-bold text-yellow-400">
+                  {formatCurrency(stats.totalOutstanding, currencyCode)}
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <p className="text-gray-400 text-sm uppercase mb-2">Avg Invoice</p>
+                <p className="text-2xl font-bold text-white">
+                  {formatCurrency(stats.avgInvoice, currencyCode)}
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <p className="text-gray-400 text-sm uppercase mb-2">Payment Speed</p>
+                <p className="text-2xl font-bold text-blue-400">
+                  {stats.paymentSpeed} days
+                </p>
+              </CardBody>
+            </Card>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 mt-8">
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            📄 New Invoice
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            📋 New Proposal
+          </Button>
+          <Button className="bg-cyan-600 hover:bg-cyan-700">
+            💬 WhatsApp
+          </Button>
         </div>
       </div>
     </div>
