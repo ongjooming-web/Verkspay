@@ -112,10 +112,26 @@ export async function POST(req: NextRequest) {
 
     // Calculate summary stats
     const totalAmount = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+    
+    // Paid: only fully paid invoices
     const paidAmount = invoices
       .filter(inv => inv.status === 'paid')
       .reduce((sum, inv) => sum + (inv.amount || 0), 0)
-    const unpaidAmount = totalAmount - paidAmount
+    
+    // Unpaid: includes unpaid, partial, and overdue invoices (anything not fully paid)
+    const unpaidAmount = invoices
+      .filter(inv => inv.status !== 'paid')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+
+    // Overdue: invoices with status 'overdue' OR unpaid/partial past due date
+    const now = new Date()
+    const overdueCount = invoices.filter(inv => {
+      if (inv.status === 'paid') return false // Paid invoices can't be overdue
+      if (inv.status === 'overdue') return true // Already marked overdue
+      // Check if unpaid/partial and past due date
+      return (inv.status === 'unpaid' || inv.status === 'paid_partial') && 
+             new Date(inv.due_date) < now
+    }).length
 
     return NextResponse.json({
       client,
@@ -126,9 +142,7 @@ export async function POST(req: NextRequest) {
           total_amount: totalAmount,
           paid_amount: paidAmount,
           unpaid_amount: unpaidAmount,
-          overdue_count: invoices.filter(inv => 
-            inv.status === 'unpaid' && new Date(inv.due_date) < new Date()
-          ).length,
+          overdue_count: overdueCount,
         },
       },
     })
