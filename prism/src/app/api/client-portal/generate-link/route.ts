@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const token = authHeader.substring(7)
+    const authToken = authHeader.substring(7)
     const supabaseAuth = getSupabaseAuth()
-    const { data: { user }, error: authError } = await supabaseAuth.getUser(token)
+    const { data: { user }, error: authError } = await supabaseAuth.getUser(authToken)
 
     if (authError || !user) {
       console.error('[ClientPortal] Auth failed:', authError)
