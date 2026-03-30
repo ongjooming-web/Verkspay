@@ -33,7 +33,7 @@ export function Navigation() {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Verkspay Logo" className="h-14 w-auto" />
+            <img src="/logo.svg" alt="Verkspay Logo" className="h-12 w-auto" />
             <span className="text-xl font-bold text-blue-400">Verkspay</span>
           </Link>
 
