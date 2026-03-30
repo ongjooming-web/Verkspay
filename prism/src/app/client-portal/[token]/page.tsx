@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/countries'
 
 interface Invoice {
@@ -32,7 +33,9 @@ interface PortalData {
   }
 }
 
-export default function ClientPortal({ params }: { params: { token: string } }) {
+export default function ClientPortal() {
+  const params = useParams()
+  const token = params.token as string
   const [data, setData] = useState<PortalData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +46,7 @@ export default function ClientPortal({ params }: { params: { token: string } }) 
         const response = await fetch('/api/client-portal/invoices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: params.token }),
+          body: JSON.stringify({ token }),
         })
 
         if (!response.ok) {
@@ -60,8 +63,10 @@ export default function ClientPortal({ params }: { params: { token: string } }) 
       }
     }
 
-    fetchPortalData()
-  }, [params.token])
+    if (token) {
+      fetchPortalData()
+    }
+  }, [token])
 
   if (loading) {
     return (
@@ -164,7 +169,7 @@ export default function ClientPortal({ params }: { params: { token: string } }) 
                 {data.invoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-blue-50 transition">
                     <td className="px-6 py-4 font-semibold text-blue-600">
-                      <Link href={`/client-portal/invoice/${invoice.id}?token=${params.token}`} className="hover:underline">
+                      <Link href={`/client-portal/invoice/${invoice.id}?token=${token}`} className="hover:underline">
                         {invoice.invoice_number}
                       </Link>
                     </td>
