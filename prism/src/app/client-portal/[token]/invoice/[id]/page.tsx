@@ -181,9 +181,14 @@ export default function InvoiceDetail() {
               <h1 className="text-3xl font-bold text-gray-900">{invoice.invoice_number}</h1>
               <p className="text-gray-600 mt-1">Invoice Details</p>
             </div>
-            <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(invoice.status)}`}>
-              {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-            </span>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {formatCurrency(invoice.amount, invoice.currency_code)}
+              </div>
+              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(invoice.status)}`}>
+                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
