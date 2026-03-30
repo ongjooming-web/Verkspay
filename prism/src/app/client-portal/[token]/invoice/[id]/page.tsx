@@ -20,6 +20,7 @@ interface Invoice {
   amount: number
   status: 'paid' | 'unpaid' | 'paid_partial' | 'overdue'
   currency_code: string
+  description?: string
   line_items?: LineItem[]
 }
 
@@ -204,6 +205,14 @@ export default function InvoiceDetail() {
               </div>
             </div>
           </div>
+
+          {/* Description */}
+          {invoice.description && (
+            <div className="border-t border-blue-100 pt-8">
+              <p className="text-sm text-gray-600 uppercase mb-3">Description</p>
+              <p className="text-gray-900 text-base">{invoice.description}</p>
+            </div>
+          )}
 
           {/* Line Items */}
           {invoice.line_items && invoice.line_items.length > 0 && (
