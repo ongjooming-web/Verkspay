@@ -102,7 +102,7 @@ export default function PricingPage() {
         'Client management',
         'Auto-tagging',
         '5 AI Business Insights/month',
-        'Client Portal (share invoices via magic link)',
+        'Client Portal',
         'Reports with PDF & CSV export',
         'Email support'
       ],
@@ -125,7 +125,6 @@ export default function PricingPage() {
         'Proposals & Contracts',
         '30 AI Business Insights/month',
         'Smart Follow-up Suggestions',
-        'Advanced Client Portal (custom branding coming soon)',
         'Advanced reporting',
         'Priority email support'
       ],
@@ -145,7 +144,7 @@ export default function PricingPage() {
         'Revenue Forecasting',
         'Receivables aging reports',
         'Team management (3 users)',
-        'Custom Client Portal branding',
+        'Custom branding',
         'Priority support'
       ],
       button: { text: 'Start Free Trial', action: 'enterprise' },

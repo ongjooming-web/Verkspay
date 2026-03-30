@@ -813,7 +813,6 @@ function BillingSection() {
               >
                 <div className="mb-3">
                   <h4 className="text-white font-bold text-base md:text-sm">{plan.name}</h4>
-                  <p className="text-gray-400 text-xs mt-2 line-clamp-3">{plan.features}</p>
                 </div>
                 <p className="text-3xl md:text-2xl font-bold text-blue-300 mb-3">
                   ${billingPeriod === 'monthly' ? plan.monthlyPrice : plan.annualPrice}
