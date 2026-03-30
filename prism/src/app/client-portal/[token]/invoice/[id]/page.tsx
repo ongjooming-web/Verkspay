@@ -39,6 +39,8 @@ export default function InvoiceDetail() {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [paymentLink, setPaymentLink] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -129,6 +131,35 @@ export default function InvoiceDetail() {
     }
   }
 
+  const generatePaymentLink = async () => {
+    if (!invoice) return
+
+    setGeneratingLink(true)
+    try {
+      const response = await fetch('/api/invoices/payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: invoice.amount,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate payment link')
+      }
+
+      const data = await response.json()
+      setPaymentLink(data.payment_link)
+    } catch (err) {
+      console.error('[PaymentLink] Error:', err)
+      alert(`Failed to generate payment link: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
   const urlToken = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('token') || token
 
   return (
@@ -215,15 +246,55 @@ export default function InvoiceDetail() {
           )}
         </div>
 
-        {/* Notes */}
+        {/* Payment Section */}
         <div className="bg-white rounded-lg border border-blue-200 p-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-6">
             {invoice.status === 'paid' && 'This invoice has been paid. Thank you!'}
             {invoice.status === 'unpaid' && 'This invoice is awaiting payment.'}
             {invoice.status === 'overdue' && 'This invoice is overdue. Please arrange payment at your earliest convenience.'}
             {invoice.status === 'paid_partial' && 'This invoice has been partially paid. Outstanding balance is still due.'}
           </p>
+
+          {/* Payment Link or Button */}
+          {paymentLink ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800 mb-3">✓ Payment link generated!</p>
+                <div className="bg-white rounded p-3 border border-green-100 mb-3">
+                  <p className="text-xs text-gray-500 mb-1">Payment Link:</p>
+                  <p className="text-sm font-mono break-all text-gray-700">{paymentLink}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(paymentLink)
+                    alert('Payment link copied to clipboard!')
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition"
+                >
+                  📋 Copy Payment Link
+                </button>
+              </div>
+              <a
+                href={paymentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-center transition"
+              >
+                💳 Pay Now
+              </a>
+            </div>
+          ) : (
+            invoice.status !== 'paid' && (
+              <button
+                onClick={generatePaymentLink}
+                disabled={generatingLink}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition"
+              >
+                {generatingLink ? '⏳ Generating Payment Link...' : '💳 Pay Invoice'}
+              </button>
+            )
+          )}
         </div>
       </div>
     </div>
