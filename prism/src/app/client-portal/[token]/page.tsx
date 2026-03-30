@@ -182,7 +182,7 @@ export default function ClientPortal() {
                       {new Date(invoice.due_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right font-semibold text-gray-900">
-                      {formatCurrency(invoice.amount, invoice.currency)}
+                      {formatCurrency(invoice.amount, invoice.currency_code)}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(invoice.status)}`}>
