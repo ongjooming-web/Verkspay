@@ -16,13 +16,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user is authenticated (dashboard user generating the link)
-    const user = await verifyAuth(req)
-    if (!user) {
+    const authResult = await verifyAuth(req)
+    if (authResult.error || !authResult.user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authResult.error?.message || 'Unauthorized' },
+        { status: authResult.error?.status || 401 }
       )
     }
+
+    const user = authResult.user
 
     // Verify client exists, email matches, AND user owns it
     const supabase = getSupabaseServer()
