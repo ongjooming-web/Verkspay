@@ -170,8 +170,10 @@ export default function ClientPortal() {
               <tbody className="divide-y divide-blue-100">
                 {data.data.invoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-blue-50 transition">
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      {invoice.invoice_number}
+                    <td className="px-6 py-4 font-semibold text-blue-600">
+                      <Link href={`/client-portal/${token}/invoice/${invoice.id}`} className="hover:underline">
+                        {invoice.invoice_number}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {new Date(invoice.created_at).toLocaleDateString()}
