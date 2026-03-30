@@ -127,14 +127,14 @@ export default function Signup() {
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl border border-white/20">
         <CardHeader className="text-center pt-10 pb-2">
           {/* Logo + Brand Name as cohesive unit */}
-          <Link href="/" className="flex flex-col items-center gap-1 mb-6 hover:opacity-80 transition-opacity group">
+          <Link href="/" className="flex flex-col items-center gap-0 mb-6 hover:opacity-80 transition-opacity group">
             {/* Logo with subtle glow */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
               <img src="/logo.svg" alt="Verkspay Logo" className="h-36 w-auto relative z-10" />
             </div>
             {/* Brand Name */}
-            <h1 className="text-2xl font-bold text-blue-400">Verkspay</h1>
+            <h1 className="text-2xl font-bold text-blue-400 -mt-2">Verkspay</h1>
           </Link>
           
           {/* Subtitle - secondary visual hierarchy */}
