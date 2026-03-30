@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabase-server'
+import { verifyTokenHash } from '@/lib/token-crypto'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,16 +13,38 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify token exists and is not expired
+    // Verify token against stored hash and check expiry
     const supabase = getSupabaseServer()
-    const { data: portalToken, error: tokenError } = await supabase
+    
+    // Fetch all tokens (we need to verify hash client-side due to hashing)
+    const { data: portalTokens, error: tokenError } = await supabase
       .from('client_portal_tokens')
-      .select('client_id, expires_at, used_at')
-      .eq('token', token)
-      .single()
+      .select('id, client_id, token_hash, expires_at, first_accessed_at, access_count')
 
-    if (tokenError || !portalToken) {
-      console.error('[ClientPortal] Invalid token:', token)
+    if (tokenError || !portalTokens || portalTokens.length === 0) {
+      console.error('[ClientPortal] No tokens found')
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      )
+    }
+
+    // Find matching token by hash
+    let portalToken = null
+    for (const pt of portalTokens) {
+      try {
+        if (verifyTokenHash(token, pt.token_hash)) {
+          portalToken = pt
+          break
+        }
+      } catch (e) {
+        // Timing attack prevention: continue checking
+        continue
+      }
+    }
+
+    if (!portalToken) {
+      console.error('[ClientPortal] Invalid token')
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
@@ -30,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // Check if token is expired
     if (new Date(portalToken.expires_at) < new Date()) {
-      console.error('[ClientPortal] Token expired:', token)
+      console.error('[ClientPortal] Token expired')
       return NextResponse.json(
         { error: 'Token expired' },
         { status: 401 }
@@ -39,10 +62,10 @@ export async function POST(req: NextRequest) {
 
     const clientId = portalToken.client_id
 
-    // Get client info
+    // Get client info (select only needed fields)
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, name, email, business_name')
+      .select('id, name, email, company')
       .eq('id', clientId)
       .single()
 
@@ -69,13 +92,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Log access if first time
-    if (!portalToken.used_at) {
-      await supabase
-        .from('client_portal_tokens')
-        .update({ used_at: new Date().toISOString() })
-        .eq('token', token)
-    }
+    // Update access tracking
+    await supabase
+      .from('client_portal_tokens')
+      .update({
+        first_accessed_at: portalToken.first_accessed_at || new Date().toISOString(),
+        last_accessed_at: new Date().toISOString(),
+        access_count: (portalToken.access_count || 0) + 1,
+      })
+      .eq('id', portalToken.id)
 
     // Calculate summary stats
     const totalAmount = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
@@ -86,15 +111,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       client,
-      invoices,
-      summary: {
-        total_invoices: invoices.length,
-        total_amount: totalAmount,
-        paid_amount: paidAmount,
-        unpaid_amount: unpaidAmount,
-        overdue_count: invoices.filter(inv => 
-          inv.status === 'unpaid' && new Date(inv.due_date) < new Date()
-        ).length,
+      data: {
+        invoices,
+        summary: {
+          total_invoices: invoices.length,
+          total_amount: totalAmount,
+          paid_amount: paidAmount,
+          unpaid_amount: unpaidAmount,
+          overdue_count: invoices.filter(inv => 
+            inv.status === 'unpaid' && new Date(inv.due_date) < new Date()
+          ).length,
+        },
       },
     })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/auth'
 import { getSupabaseServer } from '@/lib/supabase-server'
+import { generateToken, hashToken } from '@/lib/token-crypto'
 
 const PORTAL_TOKEN_EXPIRY_DAYS = 30
 
@@ -44,17 +45,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate secure token
-    const token = Buffer.from(`${client_id}-${Date.now()}-${Math.random()}`).toString('base64url')
+    // Generate secure token and hash for storage
+    const token = generateToken()  // Raw token sent to client
+    const tokenHash = hashToken(token)  // Hash stored in database
     const expiresAt = new Date(Date.now() + PORTAL_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
 
-    // Save token to database
+    // Save hashed token to database (never store raw token)
     const { data: portalToken, error: tokenError } = await supabase
       .from('client_portal_tokens')
       .insert({
         client_id,
-        token,
+        token_hash: tokenHash,
         expires_at: expiresAt.toISOString(),
+        first_accessed_at: null,
+        last_accessed_at: null,
+        access_count: 0,
       })
       .select()
       .single()

@@ -23,13 +23,15 @@ interface Client {
 
 interface PortalData {
   client: Client
-  invoices: Invoice[]
-  summary: {
-    total_invoices: number
-    total_amount: number
-    paid_amount: number
-    unpaid_amount: number
-    overdue_count: number
+  data: {
+    invoices: Invoice[]
+    summary: {
+      total_invoices: number
+      total_amount: number
+      paid_amount: number
+      unpaid_amount: number
+      overdue_count: number
+    }
   }
 }
 
@@ -132,28 +134,28 @@ export default function ClientPortal() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
           <div className="bg-white rounded-lg p-4 border border-blue-200">
             <p className="text-sm text-gray-600">Total Invoices</p>
-            <p className="text-2xl font-bold text-gray-900">{data.summary.total_invoices}</p>
+            <p className="text-2xl font-bold text-gray-900">{data.data.summary.total_invoices}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-green-200">
             <p className="text-sm text-gray-600">Paid</p>
             <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.summary.paid_amount, data.invoices[0]?.currency || 'USD')}
+              {formatCurrency(data.data.summary.paid_amount, data.data.invoices[0]?.currency || 'USD')}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-red-200">
             <p className="text-sm text-gray-600">Unpaid</p>
             <p className="text-2xl font-bold text-red-600">
-              {formatCurrency(data.summary.unpaid_amount, data.invoices[0]?.currency || 'USD')}
+              {formatCurrency(data.data.summary.unpaid_amount, data.data.invoices[0]?.currency || 'USD')}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-yellow-200">
             <p className="text-sm text-gray-600">Overdue</p>
-            <p className="text-2xl font-bold text-yellow-600">{data.summary.overdue_count}</p>
+            <p className="text-2xl font-bold text-yellow-600">{data.data.summary.overdue_count}</p>
           </div>
         </div>
 
         {/* Invoices Table */}
-        {data.invoices.length > 0 ? (
+        {data.data.invoices.length > 0 ? (
           <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-blue-50 border-b border-blue-200">
@@ -166,7 +168,7 @@ export default function ClientPortal() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-blue-100">
-                {data.invoices.map((invoice) => (
+                {data.data.invoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-blue-50 transition">
                     <td className="px-6 py-4 font-semibold text-blue-600">
                       <Link href={`/client-portal/invoice/${invoice.id}?token=${token}`} className="hover:underline">
