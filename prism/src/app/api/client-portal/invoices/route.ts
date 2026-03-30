@@ -13,33 +13,41 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify token against stored hash and check expiry
+    // Verify token against stored hash (or raw token for backward compatibility)
     const supabase = getSupabaseServer()
     
-    // Fetch all tokens (we need to verify hash client-side due to hashing)
-    const { data: portalTokens, error: tokenError } = await supabase
+    // Try to fetch by token_hash first (new way)
+    let portalToken = null
+    
+    // First try: look up by token_hash (secure, new tokens)
+    const { data: hashedTokens, error: hashError } = await supabase
       .from('client_portal_tokens')
       .select('id, client_id, token_hash, expires_at, first_accessed_at, access_count')
+      .not('token_hash', 'is', null)
 
-    if (tokenError || !portalTokens || portalTokens.length === 0) {
-      console.error('[ClientPortal] No tokens found')
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
+    if (!hashError && hashedTokens && hashedTokens.length > 0) {
+      for (const pt of hashedTokens) {
+        try {
+          if (verifyTokenHash(token, pt.token_hash)) {
+            portalToken = pt
+            break
+          }
+        } catch (e) {
+          continue
+        }
+      }
     }
 
-    // Find matching token by hash
-    let portalToken = null
-    for (const pt of portalTokens) {
-      try {
-        if (verifyTokenHash(token, pt.token_hash)) {
-          portalToken = pt
-          break
-        }
-      } catch (e) {
-        // Timing attack prevention: continue checking
-        continue
+    // Fallback: look up by raw token (backward compatibility, old tokens)
+    if (!portalToken) {
+      const { data: rawTokens, error: rawError } = await supabase
+        .from('client_portal_tokens')
+        .select('id, client_id, token_hash, expires_at, first_accessed_at, access_count')
+        .eq('token', token)
+        .single()
+
+      if (!rawError && rawTokens) {
+        portalToken = rawTokens
       }
     }
 
