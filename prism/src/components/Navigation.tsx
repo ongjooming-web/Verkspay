@@ -32,9 +32,9 @@ export function Navigation() {
         {/* Desktop & Mobile Header */}
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Verkspay Logo" className="h-16 w-16" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Verkspay</span>
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <img src="/logo.svg" alt="Verkspay Logo" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-blue-400">Verkspay</span>
           </Link>
 
           {/* Desktop Navigation */}
