@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Get invoices for this client
     const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('id, invoice_number, created_at, due_date, amount, status, currency')
+      .select('id, invoice_number, created_at, due_date, amount, status, currency_code')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
 

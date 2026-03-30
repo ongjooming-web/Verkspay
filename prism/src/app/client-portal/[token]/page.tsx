@@ -12,7 +12,7 @@ interface Invoice {
   due_date: string
   amount: number
   status: 'paid' | 'unpaid' | 'paid_partial' | 'overdue'
-  currency: string
+  currency_code: string
 }
 
 interface Client {
@@ -139,13 +139,13 @@ export default function ClientPortal() {
           <div className="bg-white rounded-lg p-4 border border-green-200">
             <p className="text-sm text-gray-600">Paid</p>
             <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.data.summary.paid_amount, data.data.invoices[0]?.currency || 'USD')}
+              {formatCurrency(data.data.summary.paid_amount, data.data.invoices[0]?.currency_code || 'USD')}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-red-200">
             <p className="text-sm text-gray-600">Unpaid</p>
             <p className="text-2xl font-bold text-red-600">
-              {formatCurrency(data.data.summary.unpaid_amount, data.data.invoices[0]?.currency || 'USD')}
+              {formatCurrency(data.data.summary.unpaid_amount, data.data.invoices[0]?.currency_code || 'USD')}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-yellow-200">
