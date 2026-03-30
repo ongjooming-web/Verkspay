@@ -41,6 +41,7 @@ export default function ClientDetail() {
   const [showPortalModal, setShowPortalModal] = useState(false)
   const [portalLink, setPortalLink] = useState<string | null>(null)
   const [generatingLink, setGeneratingLink] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -278,34 +279,63 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 mt-8 flex-wrap">
-          <Link href={`/invoices?client=${clientId}`}>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              📄 New Invoice
-            </Button>
-          </Link>
-          <Link href="/proposals">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              📋 New Proposal
-            </Button>
-          </Link>
-          <Button 
-            onClick={generatePortalLink}
-            disabled={generatingLink}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            {generatingLink ? '⏳ Generating...' : '🔗 Share Portal Link'}
-          </Button>
-          <a
-            href={`https://wa.me/${client.phone?.replace(/[^0-9]/g, '') || ''}?text=${encodeURIComponent(`Hi ${client.name},\n\nI have some invoices for you to review.`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button className="bg-green-600 hover:bg-green-700">
-              💬 WhatsApp
-            </Button>
-          </a>
+        {/* Action Menu Button */}
+        <div className="flex gap-3 mt-8">
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="glass border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+            >
+              <span>⋮</span>
+              <span className="text-sm font-medium">Actions</span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-56 glass border border-gray-600 rounded-lg shadow-xl z-50">
+                {/* New Invoice */}
+                <Link
+                  href={`/invoices?client=${clientId}`}
+                  className="block px-4 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 border-b border-gray-700 transition"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="text-lg">📄</span> New Invoice
+                </Link>
+
+                {/* New Proposal */}
+                <Link
+                  href="/proposals"
+                  className="block px-4 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 border-b border-gray-700 transition"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="text-lg">📋</span> New Proposal
+                </Link>
+
+                {/* Share Portal Link */}
+                <button
+                  onClick={() => {
+                    generatePortalLink()
+                    setMenuOpen(false)
+                  }}
+                  disabled={generatingLink}
+                  className="w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-purple-600/20 border-b border-gray-700 transition disabled:opacity-50"
+                >
+                  <span className="text-lg">🔗</span> {generatingLink ? 'Generating...' : 'Share Portal Link'}
+                </button>
+
+                {/* WhatsApp */}
+                <a
+                  href={`https://wa.me/${client?.phone?.replace(/[^0-9]/g, '') || ''}?text=${encodeURIComponent(`Hi ${client?.name},\n\nI have some invoices for you to review.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-4 py-3 text-gray-300 hover:text-white hover:bg-green-600/20 transition"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="text-lg">💬</span> WhatsApp
+                </a>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Portal Link Modal */}
