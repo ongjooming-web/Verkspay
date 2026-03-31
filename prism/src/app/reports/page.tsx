@@ -112,7 +112,7 @@ export default function ReportsPage() {
         // Set default dates (This month) - will be formatted properly via formatDateToString in a moment
         setDatePreset('this_month')
         // The useEffect below will handle fetching once user is set
-        
+
         console.log('[Reports] Page initialized, ready to fetch default report')
       } catch (err) {
         console.error('[Reports] Init error:', err)
@@ -131,10 +131,10 @@ export default function ReportsPage() {
       const now = new Date()
       const from = new Date(now.getFullYear(), now.getMonth(), 1)
       const to = new Date(now)
-      
+
       const fromStr = formatDateToString(from)
       const toStr = formatDateToString(to)
-      
+
       console.log('[Reports] Auto-fetching default report on user load:', { fromStr, toStr, selectedReport })
       setCustomFrom(fromStr)
       setCustomTo(toStr)
@@ -185,7 +185,7 @@ export default function ReportsPage() {
   const handlePresetClick = (preset: string) => {
     console.log('[Reports] Preset clicked:', preset)
     setDatePreset(preset)
-    
+
     // Calculate date range for this preset
     const now = new Date()
     let from = new Date()
@@ -249,7 +249,7 @@ export default function ReportsPage() {
       }
 
       let invoices: any[] = []
-      
+
       // Build base query
       let query = supabase
         .from('invoices')
@@ -548,8 +548,8 @@ export default function ReportsPage() {
       // Determine payment type
       const amount = inv.amount || 0
       const amountPaid = inv.amount_paid || 0
-      let paymentType = '—'
-      
+      let paymentType = '-'
+
       if (amountPaid > 0 && amount > 0) {
         if (amountPaid === amount) {
           paymentType = 'Full payment'
@@ -573,7 +573,7 @@ export default function ReportsPage() {
             }),
         client: inv.clients?.name || 'Unknown',
         amount: amountPaid,
-        method: inv.payment_method || '—',
+        method: inv.payment_method || '-',
         type: paymentType,
       }
     })
@@ -650,8 +650,15 @@ export default function ReportsPage() {
     }
   }
 
-  // Currency label for display — selected filter currency, or preferred currency as fallback
-  const activeCurrencyLabel = selectedCurrency !== 'all' ? selectedCurrency : (currencyCode || 'MYR')
+  // When a specific currency is filtered, use it as the label.
+  // When 'all', each row uses its own currency_code — activeCurrencyLabel is only used
+  // for summary cards/totals where we need a single label (we show 'Mixed' in that case).
+  const activeCurrencyLabel = selectedCurrency !== 'all' ? selectedCurrency : 'Mixed'
+  // Helper: format a monetary amount with the correct currency code
+  const fmtAmt = (amount: number, rowCurrencyCode?: string) => {
+    const code = selectedCurrency !== 'all' ? selectedCurrency : (rowCurrencyCode || currencyCode || 'MYR')
+    return `${code} ${(amount || 0).toFixed(0)}`
+  }
 
   const formatAmount = (amount: number, isOutstanding: boolean = false, rowCode?: string) => {
     const value = amount || 0
@@ -673,7 +680,7 @@ export default function ReportsPage() {
     try {
       // Load html2pdf library dynamically
       const html2pdfLib = await import('html2pdf.js').then(m => m.default)
-      
+
       if (!html2pdfLib) {
         console.error('PDF export library not available')
         return
@@ -681,7 +688,7 @@ export default function ReportsPage() {
 
       const reportTitle = getReportTitle()
       const dateRange = getDateRangeString()
-      const totalInvoicedValue = (selectedReport === 'revenue' || selectedReport === 'aging') 
+      const totalInvoicedValue = (selectedReport === 'revenue' || selectedReport === 'aging')
         ? activeCurrencyLabel + ' ' + (summaryMetrics?.totalInvoiced || 0).toFixed(0)
         : (summaryMetrics?.totalInvoiced || 0).toFixed(0)
 
@@ -749,7 +756,7 @@ export default function ReportsPage() {
 
     htmlContent += `
         <h2 style="color: #111111; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #E0E0E8; padding-bottom: 10px;">Report Data</h2>
-        
+
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <thead>
             <tr style="background-color: #2D2B55; border-bottom: 2px solid #2D2B55;">
@@ -865,8 +872,8 @@ export default function ReportsPage() {
                 }}
                 disabled={false}
                 className={`p-4 rounded-lg text-center transition duration-200 ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-500 text-white shadow-lg' 
+                  isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-500 text-white shadow-lg'
                     : 'bg-gray-800/40 border border-gray-700/50 text-gray-400 hover:border-gray-600'
                 } ${isGated ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
@@ -925,6 +932,19 @@ export default function ReportsPage() {
                 />
               </div>
               <div>
+                <label className="text-sm text-gray-400 mb-2 block">Currency</label>
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="w-full glass px-3 py-2 rounded text-white text-sm appearance-none cursor-pointer"
+                >
+                  <option value="all" className="bg-slate-900">All currencies</option>
+                  {availableCurrencies.map((code) => (
+                    <option key={code} value={code} className="bg-slate-900">{code}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="text-sm text-gray-400 mb-2 block">Client</label>
                 <select
                   value={selectedClient}
@@ -951,14 +971,14 @@ export default function ReportsPage() {
               >
                 {reportLoading ? '⏳ Generating...' : '📈 Generate Report'}
               </Button>
-              <Button 
+              <Button
                 onClick={exportToPDF}
                 disabled={tableData.length === 0}
                 variant="outline"
               >
                 📥 Export PDF
               </Button>
-              <Button 
+              <Button
                 onClick={exportToCSV}
                 disabled={tableData.length === 0}
                 variant="outline"
@@ -975,7 +995,7 @@ export default function ReportsPage() {
             <Card className="bg-gray-900/50 border-gray-800">
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Total Revenue</p>
-                <p className="text-3xl font-bold text-green-500">{activeCurrencyLabel} {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
+                <p className="text-3xl font-bold text-green-500">{fmtAmt(summaryMetrics?.totalRevenue || 0)}</p>
                 <p className="text-xs text-green-400 flex items-center gap-1">
                   <span>↑</span> +3.5% vs last quarter
                 </p>
@@ -985,13 +1005,13 @@ export default function ReportsPage() {
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Total Invoiced</p>
                 <p className="text-3xl font-bold text-white">
-                  {selectedReport === 'revenue' || selectedReport === 'aging' 
-                    ? `${activeCurrencyLabel} ${(summaryMetrics?.totalInvoiced || 0).toFixed(0)}`
+                  {selectedReport === 'revenue' || selectedReport === 'aging'
+                    ? fmtAmt(summaryMetrics?.totalInvoiced || 0)
                     : (summaryMetrics?.totalInvoiced || 0).toFixed(0)
                   }
                 </p>
                 <p className="text-xs text-gray-400">
-                  {selectedReport === 'revenue' || selectedReport === 'aging' 
+                  {selectedReport === 'revenue' || selectedReport === 'aging'
                     ? `${tableData?.length || 0} invoices`
                     : `${tableData?.length || 0} items`
                   }
@@ -1018,7 +1038,7 @@ export default function ReportsPage() {
             <Card className="bg-gray-900/50 border-gray-800">
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Avg Invoice Size</p>
-                <p className="text-3xl font-bold text-white">{activeCurrencyLabel} {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
+                <p className="text-3xl font-bold text-white">{fmtAmt(summaryMetrics?.avgInvoiceSize || 0)}</p>
                 <p className="text-xs text-green-400 flex items-center gap-1">
                   <span>↑</span> +7% vs last quarter
                 </p>
@@ -1072,12 +1092,12 @@ export default function ReportsPage() {
                             <td className="py-3 px-4 text-gray-300 text-sm">{row?.dateIssued || row?.month || '-'}</td>
                             <td className="py-3 px-4 text-white text-sm font-medium">{row?.client || '-'}</td>
                             <td className="py-3 px-4 text-gray-400 truncate text-sm">{row?.description || '-'}</td>
-                            <td className="text-right py-3 px-4 text-white text-sm">{row?.currency_code || activeCurrencyLabel} {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-white text-sm">{fmtAmt((row?.amount ?? row?.invoiced ?? 0) || 0, row?.currency_code)}</td>
                             <td className="text-right py-3 px-4 text-sm">
-                              {formatAmount((row?.paid ?? row?.collected ?? 0) || 0, false)}
+                              {formatAmount((row?.paid ?? row?.collected ?? 0) || 0, false, row?.currency_code)}
                             </td>
                             <td className="text-right py-3 px-4 text-sm">
-                              {formatAmount((row?.outstanding ?? 0) || 0, true)}
+                              {formatAmount((row?.outstanding ?? 0) || 0, true, row?.currency_code)}
                             </td>
                             <td className="py-3 px-4 text-xs">
                               {getStatusBadge(row?.status || row?.count)}
@@ -1092,13 +1112,13 @@ export default function ReportsPage() {
                               Total ({tableData.length} rows)
                             </td>
                             <td className="text-right py-3 px-4 text-white font-bold">
-                              {activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)).toFixed(0)}
+                              {selectedCurrency !== 'all' ? fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)) : <span className="text-gray-500 text-xs">multi-currency</span>}
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              <span className="text-green-400">{activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0)).toFixed(0)}</span>
+                              {selectedCurrency !== 'all' ? <span className="text-green-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0))}</span> : <span className="text-gray-500 text-xs">—</span>}
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              <span className="text-orange-400">{activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0)).toFixed(0)}</span>
+                              {selectedCurrency !== 'all' ? <span className="text-orange-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0))}</span> : <span className="text-gray-500 text-xs">—</span>}
                             </td>
                             <td></td>
                           </tr>
@@ -1217,15 +1237,15 @@ export default function ReportsPage() {
                         <tr key={idx} className={`border-b border-gray-700/50 transition ${
                           idx % 2 === 0 ? 'bg-gray-900/20' : 'bg-gray-800/5'
                         } hover:bg-gray-700/10`}>
-                          <td className="py-3 px-4 text-gray-300 text-sm">{row.date || '—'}</td>
+                          <td className="py-3 px-4 text-gray-300 text-sm">{row.date || '-'}</td>
                           <td className="py-3 px-4 text-white font-mono text-sm">{row.invoiceNumber}</td>
                           <td className="py-3 px-4 text-white text-sm font-medium">{row.client}</td>
-                          <td className="text-right py-3 px-4 text-green-400 text-sm font-medium">{row.currency_code || activeCurrencyLabel} {((row.amount || 0)).toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400 text-sm font-medium">{fmtAmt(row.amount || 0, row.currency_code)}</td>
                           <td className="py-3 px-4 text-gray-300 text-sm">{row.method}</td>
                           <td className="py-3 px-4 text-sm">
                             {row.type === 'Full payment' && <span className="text-green-400">✓ Full payment</span>}
                             {row.type === 'Partial payment' && <span className="text-yellow-400">⊘ Partial payment</span>}
-                            {row.type === '—' && <span className="text-gray-500">—</span>}
+                            {row.type === '-' && <span className="text-gray-500">-</span>}
                           </td>
                         </tr>
                       ))}
@@ -1237,7 +1257,7 @@ export default function ReportsPage() {
                             Total ({tableData.length} payments)
                           </td>
                           <td className="text-right py-3 px-4 text-green-400 font-bold">
-                            {activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)).toFixed(0)}
+                            {selectedCurrency !== 'all' ? fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)) : <span className="text-gray-500 text-xs">multi-currency</span>}
                           </td>
                           <td colSpan={2}></td>
                         </tr>
