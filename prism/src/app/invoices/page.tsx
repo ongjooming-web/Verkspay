@@ -265,26 +265,29 @@ export default function Invoices() {
     // Subscription limits removed - all features unlocked for all users
 
     // Generate sequential invoice number
-    let invoiceNumber: string
-    try {
-      invoiceNumber = await generateInvoiceNumber(userId, supabase)
-    } catch (err) {
-      console.error('[InvoicesList] Failed to generate invoice number:', err)
-      alert('Error generating invoice number. Please try again.')
-      return
-    }
-
     const paymentTerms = formData.payment_terms === 'Custom' 
       ? formData.custom_payment_terms 
       : formData.payment_terms
 
-    // Calculate total from line items
     const totalAmount = lineItems.reduce((sum, item) => sum + (item.amount || 0), 0)
 
-    const { data, error } = await supabase
-      .from('invoices')
-      .insert([
-        {
+    // Retry loop: generate number → insert → if 23505 (duplicate) → generate next number → retry
+    let data: any = null
+    let insertError: any = null
+    const maxInsertAttempts = 5
+
+    for (let attempt = 0; attempt < maxInsertAttempts; attempt++) {
+      let invoiceNumber: string
+      try {
+        invoiceNumber = await generateInvoiceNumber(userId, supabase)
+      } catch (err) {
+        alert('Error generating invoice number. Please try again.')
+        return
+      }
+
+      const result = await supabase
+        .from('invoices')
+        .insert([{
           user_id: userId,
           invoice_number: invoiceNumber,
           client_id: formData.client_id,
@@ -295,19 +298,28 @@ export default function Invoices() {
           currency_code: currencyCode,
           payment_terms: paymentTerms,
           line_items: lineItems,
-        },
-      ])
-      .select()
+        }])
+        .select()
 
-    if (error) {
-      console.error('[InvoicesList] Error creating invoice:', JSON.stringify(error))
-      const errMsg = error.message || error.details || error.hint || error.code || JSON.stringify(error)
+      if (result.error?.code === '23505') {
+        // Duplicate invoice number — retry with next number
+        console.warn('[InvoicesList] Duplicate invoice number, retrying... attempt', attempt + 1)
+        continue
+      }
+
+      data = result.data
+      insertError = result.error
+      break
+    }
+
+    if (insertError) {
+      console.error('[InvoicesList] Error creating invoice:', JSON.stringify(insertError))
+      const errMsg = insertError.message || insertError.details || insertError.hint || insertError.code || JSON.stringify(insertError)
       alert(`Error creating invoice: ${errMsg}`)
       return
     }
 
     if (data && data.length > 0) {
-      console.log('[InvoicesList] Invoice created successfully:', data[0])
       setInvoices([{ ...data[0], client_name: clients.find(c => c.id === formData.client_id)?.name || 'Unknown' }, ...invoices])
       setFormData({ client_id: '', due_date: '', description: '', payment_terms: 'Net 30', custom_payment_terms: '' })
       setLineItems([{ description: '', quantity: 1, rate: 0, amount: 0 }])
