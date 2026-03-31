@@ -279,7 +279,7 @@ export default function InvoiceDetail() {
     }
 
     const businessName = profile?.business_name || profile?.full_name || userEmail?.split('@')[0] || 'Business'
-    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verkspay.com'}/pay/${invoice.id}`
 
     const whatsappLink = generateInvoiceWhatsAppLink(
       invoice.clients.name || 'Client',
@@ -307,7 +307,7 @@ export default function InvoiceDetail() {
     }
 
     const businessName = profile?.business_name || profile?.full_name || userEmail?.split('@')[0] || 'Business'
-    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verkspay.com'}/pay/${invoice.id}`
 
     const dueDate = new Date(invoice.due_date)
     const now = new Date()
@@ -545,7 +545,7 @@ export default function InvoiceDetail() {
                 onDownloadPDF={handleDownloadPDF}
                 onSendToClient={handleOpenSendModal}
                 onSharePaymentLink={() => {
-                  const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'}/pay/${invoice.id}`
+                  const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://verkspay.com'}/pay/${invoice.id}`
                   navigator.clipboard.writeText(paymentUrl)
                   alert('Payment link copied to clipboard!')
                 }}

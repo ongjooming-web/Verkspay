@@ -153,7 +153,7 @@ export async function POST(
 
     const tagNames = tags?.map((t: any) => `${t.client_tags.name}${t.client_tags.is_auto ? ' (auto)' : ''}`) || []
 
-    const systemPrompt = `You are a business growth analyst for Prism. Analyze client data and identify specific, actionable growth opportunities and upsell candidates.
+    const systemPrompt = `You are a business growth analyst for Verkspay. Analyze client data and identify specific, actionable growth opportunities and upsell candidates.
 
 Format your response EXACTLY as follows:
 

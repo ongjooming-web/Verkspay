@@ -175,7 +175,7 @@ export async function POST(
     const tagNames = tags?.map((t: any) => `${t.client_tags.name}${t.client_tags.is_auto ? ' (auto)' : ''}`) || []
     const notesList = notes?.map((n: any) => `- ${n.content}`) || []
 
-    const systemPrompt = `You are an AI assistant for Prism, an invoicing platform used by freelancers and small businesses. You analyze client data and provide actionable business insights.
+    const systemPrompt = `You are an AI assistant for Verkspay, an invoicing platform used by freelancers and small businesses. You analyze client data and provide actionable business insights.
 
 Format your response EXACTLY as follows:
 

@@ -245,7 +245,7 @@ export default function PaymentPage() {
           </Card>
 
           <div className="text-center text-gray-400 text-sm">
-            <p>Powered by <span className="text-blue-400 font-semibold">Prism</span></p>
+            <p>Powered by <span className="text-blue-400 font-semibold">Verkspay</span></p>
           </div>
         </div>
       </div>
@@ -450,7 +450,7 @@ export default function PaymentPage() {
 
         {/* Footer */}
         <div className="text-center text-gray-400 text-sm">
-          <p>Powered by <span className="text-blue-400 font-semibold">Prism</span></p>
+          <p>Powered by <span className="text-blue-400 font-semibold">Verkspay</span></p>
         </div>
       </div>
     </div>

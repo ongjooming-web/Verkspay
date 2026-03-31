@@ -82,7 +82,7 @@ export async function GET(
     const taxAmount = taxRate > 0 ? Math.round((subtotal * taxRate) / 100 * 100) / 100 : 0
     const total = subtotal + taxAmount
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prismops.xyz'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verkspay.com'
     const paymentUrl = `${appUrl}/pay/${invoice.id}`
 
     // Prepare template data
