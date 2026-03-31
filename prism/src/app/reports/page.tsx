@@ -142,22 +142,27 @@ export default function ReportsPage() {
   }, [router])
 
   // Auto-fetch default report when user loads (This month preset)
+  // Auto-fetch when user first loads
   useEffect(() => {
     if (user && selectedReport) {
-      // Calculate "this month" dates using local timezone
       const now = new Date()
       const from = new Date(now.getFullYear(), now.getMonth(), 1)
       const to = new Date(now)
-
       const fromStr = formatDateToString(from)
       const toStr = formatDateToString(to)
-
-      console.log('[Reports] Auto-fetching default report on user load:', { fromStr, toStr, selectedReport })
       setCustomFrom(fromStr)
       setCustomTo(toStr)
       fetchReportData(selectedReport, fromStr, toStr, 'all')
     }
   }, [user])
+
+  // Re-fetch whenever currency filter changes (with current date range)
+  useEffect(() => {
+    if (!user) return
+    const from = customFrom || formatDateToString(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+    const to = customTo || formatDateToString(new Date())
+    fetchReportData(selectedReport, from, to, selectedClient)
+  }, [selectedCurrency])
 
   const getDateRange = () => {
     const now = new Date()

@@ -74,6 +74,27 @@ export default function Invoices() {
     fetchClients()
   }, [refreshTrigger])
 
+  // Realtime: auto-refresh when invoices change (create, update, delete)
+  useEffect(() => {
+    let userId: string
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      userId = data.user.id
+      const channel = supabase
+        .channel('invoices-realtime')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${userId}`,
+        }, () => {
+          fetchInvoices()
+        })
+        .subscribe()
+      return () => { supabase.removeChannel(channel) }
+    })
+  }, [])
+
   const fetchInvoices = async () => {
     console.log('[InvoicesList] Fetching invoices...')
     setLoading(true)

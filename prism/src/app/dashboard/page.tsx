@@ -316,6 +316,32 @@ export default function Dashboard() {
     fetchDashboard()
   }, [router])
 
+  // Realtime: re-fetch dashboard when invoices or proposals change
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      const userId = data.user.id
+      const channel = supabase
+        .channel('dashboard-realtime')
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'invoices',
+          filter: `user_id=eq.${userId}`,
+        }, () => router.refresh())
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'proposals',
+          filter: `user_id=eq.${userId}`,
+        }, () => router.refresh())
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'clients',
+          filter: `user_id=eq.${userId}`,
+        }, () => router.refresh())
+        .subscribe()
+      cleanup = () => supabase.removeChannel(channel)
+    })
+    return () => cleanup?.()
+  }, [])
+
   const generateInsights = async () => {
     if (!token) return
 

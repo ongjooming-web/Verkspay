@@ -66,6 +66,28 @@ export default function ClientsPage() {
     fetchClients()
   }, [])
 
+  // Realtime: auto-refresh when clients or invoices change
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      const userId = data.user.id
+      const channel = supabase
+        .channel('clients-realtime')
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'clients',
+          filter: `user_id=eq.${userId}`,
+        }, () => fetchClients())
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'invoices',
+          filter: `user_id=eq.${userId}`,
+        }, () => fetchClients())
+        .subscribe()
+      cleanup = () => supabase.removeChannel(channel)
+    })
+    return () => cleanup?.()
+  }, [])
+
   useEffect(() => {
     applyFilters()
   }, [clients, searchTerm, selectedTags, sortBy])
