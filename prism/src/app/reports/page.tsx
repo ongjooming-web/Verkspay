@@ -57,6 +57,8 @@ export default function ReportsPage() {
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [selectedClient, setSelectedClient] = useState('all')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('all')
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>([])
   const [clients, setClients] = useState<any[]>([])
 
   // Report data
@@ -651,7 +653,7 @@ export default function ReportsPage() {
   const formatAmount = (amount: number, isOutstanding: boolean = false) => {
     const value = amount || 0
     const textColor = value > 0 ? (isOutstanding ? 'text-orange-400' : 'text-green-400') : 'text-gray-500'
-    return <span className={textColor}>MYR {value.toFixed(0)}</span>
+    return <span className={textColor}>{code || activeCurrencyLabel} {value.toFixed(0)}</span>
   }
 
   const getReportTitle = () => {
@@ -677,7 +679,7 @@ export default function ReportsPage() {
       const reportTitle = getReportTitle()
       const dateRange = getDateRangeString()
       const totalInvoicedValue = (selectedReport === 'revenue' || selectedReport === 'aging') 
-        ? 'MYR ' + (summaryMetrics?.totalInvoiced || 0).toFixed(0)
+        ? activeCurrencyLabel + ' ' + (summaryMetrics?.totalInvoiced || 0).toFixed(0)
         : (summaryMetrics?.totalInvoiced || 0).toFixed(0)
 
     let htmlContent = `
@@ -690,7 +692,7 @@ export default function ReportsPage() {
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
           <div style="border: 1px solid #E0E0E8; padding: 15px; border-radius: 8px; background-color: #FFFFFF;">
             <p style="color: #555555; font-size: 12px; margin: 0;">Total Revenue</p>
-            <p style="color: #111111; font-size: 20px; font-weight: bold; margin: 5px 0;">MYR ${summaryMetrics.totalRevenue.toFixed(0)}</p>
+            <p style="color: #111111; font-size: 20px; font-weight: bold; margin: 5px 0;">${activeCurrencyLabel} ${summaryMetrics.totalRevenue.toFixed(0)}</p>
           </div>
           <div style="border: 1px solid #E0E0E8; padding: 15px; border-radius: 8px; background-color: #FFFFFF;">
             <p style="color: #555555; font-size: 12px; margin: 0;">Total Invoiced</p>
@@ -702,7 +704,7 @@ export default function ReportsPage() {
           </div>
           <div style="border: 1px solid #E0E0E8; padding: 15px; border-radius: 8px; background-color: #FFFFFF;">
             <p style="color: #555555; font-size: 12px; margin: 0;">Avg Size</p>
-            <p style="color: #111111; font-size: 20px; font-weight: bold; margin: 5px 0;">MYR ${summaryMetrics.avgInvoiceSize.toFixed(0)}</p>
+            <p style="color: #111111; font-size: 20px; font-weight: bold; margin: 5px 0;">${activeCurrencyLabel} ${summaryMetrics.avgInvoiceSize.toFixed(0)}</p>
           </div>
         </div>`
     }
@@ -729,15 +731,15 @@ export default function ReportsPage() {
       const rowBg = idx % 2 === 0 ? 'background-color: #F8F8FC;' : 'background-color: #FFFFFF;'
       let rowContent = ''
       if (selectedReport === 'revenue') {
-        rowContent = `<td style="${tdStyle}">${row.month}</td><td style="${tdStyle} text-align: right;">MYR ${row.invoiced.toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row.collected.toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row.outstanding.toFixed(0)}</td>`
+        rowContent = `<td style="${tdStyle}">${row.month}</td><td style="${tdStyle} text-align: right;">${row.currency_code || activeCurrencyLabel} ${row.invoiced.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${row.currency_code || activeCurrencyLabel} ${row.collected.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${row.currency_code || activeCurrencyLabel} ${row.outstanding.toFixed(0)}</td>`
       } else if (selectedReport === 'aging') {
-        rowContent = `<td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">MYR ${row.current.toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row['1-30'].toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row['31-60'].toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row.total.toFixed(0)}</td>`
+        rowContent = `<td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row.current.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row['1-30'].toFixed(0)}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row['31-60'].toFixed(0)}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row.total.toFixed(0)}</td>`
       } else if (selectedReport === 'client') {
-        rowContent = `<td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">${row.count}</td><td style="${tdStyle} text-align: right;">MYR ${row.paid.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${row.percentage.toFixed(1)}%</td>`
+        rowContent = `<td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">${row.count}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row.paid.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${row.percentage.toFixed(1)}%</td>`
       } else if (selectedReport === 'tax') {
-        rowContent = `<td style="${tdStyle}">${row.month}</td><td style="${tdStyle} text-align: right;">MYR ${row.income.toFixed(0)}</td><td style="${tdStyle} text-align: right;">MYR ${row.cumulative.toFixed(0)}</td>`
+        rowContent = `<td style="${tdStyle}">${row.month}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row.income.toFixed(0)}</td><td style="${tdStyle} text-align: right;">${activeCurrencyLabel} ${row.cumulative.toFixed(0)}</td>`
       } else {
-        rowContent = `<td style="${tdStyle}">${row.date}</td><td style="${tdStyle}">${row.invoiceNumber}</td><td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">MYR ${row.amount.toFixed(0)}</td>`
+        rowContent = `<td style="${tdStyle}">${row.date}</td><td style="${tdStyle}">${row.invoiceNumber}</td><td style="${tdStyle}">${row.client}</td><td style="${tdStyle} text-align: right;">${row.currency_code || activeCurrencyLabel} ${row.amount.toFixed(0)}</td>`
       }
       tableRows += `<tr style="border-bottom: 1px solid #E0E0E8; ${rowBg}">${rowContent}</tr>`
     })
@@ -778,7 +780,7 @@ export default function ReportsPage() {
   }
 
   const exportToCSV = () => {
-    const reportTitle = getReportTitle()
+    const reportTitle = getReportTitle() + (selectedCurrency !== 'all' ? `(${selectedCurrency})` : '')
     const dateRange = getDateRangeString()
 
     let csvContent = `Report: ${reportTitle}\nDate Range: ${dateRange}\n\n`
@@ -892,7 +894,7 @@ export default function ReportsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">From</label>
                 <input
@@ -970,7 +972,7 @@ export default function ReportsPage() {
             <Card className="bg-gray-900/50 border-gray-800">
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Total Revenue</p>
-                <p className="text-3xl font-bold text-green-500">MYR {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
+                <p className="text-3xl font-bold text-green-500">{activeCurrencyLabel} {(summaryMetrics?.totalRevenue || 0).toFixed(0)}</p>
                 <p className="text-xs text-green-400 flex items-center gap-1">
                   <span>↑</span> +3.5% vs last quarter
                 </p>
@@ -981,7 +983,7 @@ export default function ReportsPage() {
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Total Invoiced</p>
                 <p className="text-3xl font-bold text-white">
                   {selectedReport === 'revenue' || selectedReport === 'aging' 
-                    ? `MYR ${(summaryMetrics?.totalInvoiced || 0).toFixed(0)}`
+                    ? `${activeCurrencyLabel} ${(summaryMetrics?.totalInvoiced || 0).toFixed(0)}`
                     : (summaryMetrics?.totalInvoiced || 0).toFixed(0)
                   }
                 </p>
@@ -1013,7 +1015,7 @@ export default function ReportsPage() {
             <Card className="bg-gray-900/50 border-gray-800">
               <CardBody className="space-y-2">
                 <p className="text-gray-400 text-xs uppercase tracking-wide">Avg Invoice Size</p>
-                <p className="text-3xl font-bold text-white">MYR {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
+                <p className="text-3xl font-bold text-white">{activeCurrencyLabel} {(summaryMetrics?.avgInvoiceSize || 0).toFixed(0)}</p>
                 <p className="text-xs text-green-400 flex items-center gap-1">
                   <span>↑</span> +7% vs last quarter
                 </p>
@@ -1067,7 +1069,7 @@ export default function ReportsPage() {
                             <td className="py-3 px-4 text-gray-300 text-sm">{row?.dateIssued || row?.month || '-'}</td>
                             <td className="py-3 px-4 text-white text-sm font-medium">{row?.client || '-'}</td>
                             <td className="py-3 px-4 text-gray-400 truncate text-sm">{row?.description || '-'}</td>
-                            <td className="text-right py-3 px-4 text-white text-sm">MYR {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-white text-sm">{row?.currency_code || activeCurrencyLabel} {((row?.amount ?? row?.invoiced ?? 0) || 0).toFixed(0)}</td>
                             <td className="text-right py-3 px-4 text-sm">
                               {formatAmount((row?.paid ?? row?.collected ?? 0) || 0, false)}
                             </td>
@@ -1087,13 +1089,13 @@ export default function ReportsPage() {
                               Total ({tableData.length} rows)
                             </td>
                             <td className="text-right py-3 px-4 text-white font-bold">
-                              MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)).toFixed(0)}
+                              {activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)).toFixed(0)}
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              <span className="text-green-400">MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0)).toFixed(0)}</span>
+                              <span className="text-green-400">{activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0)).toFixed(0)}</span>
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              <span className="text-orange-400">MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0)).toFixed(0)}</span>
+                              <span className="text-orange-400">{activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0)).toFixed(0)}</span>
                             </td>
                             <td></td>
                           </tr>
@@ -1122,12 +1124,12 @@ export default function ReportsPage() {
                       {tableData.map((row: any, idx) => (
                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                           <td className="py-3 px-4 text-white">{row.client}</td>
-                          <td className="text-right py-3 px-4 text-green-400">MYR {row.current.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-yellow-400">MYR {row['1-30'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-orange-400">MYR {row['31-60'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-red-400">MYR {row['61-90'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-red-600">MYR {row['90+'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-white font-semibold">MYR {row.total.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.current.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">{activeCurrencyLabel} {row['1-30'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-orange-400">{activeCurrencyLabel} {row['31-60'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-red-400">{activeCurrencyLabel} {row['61-90'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-red-600">{activeCurrencyLabel} {row['90+'].toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-white font-semibold">{activeCurrencyLabel} {row.total.toFixed(0)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1153,9 +1155,9 @@ export default function ReportsPage() {
                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                           <td className="py-3 px-4 text-white">{row.client}</td>
                           <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
-                          <td className="text-right py-3 px-4 text-white">MYR {row.invoiced.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-green-400">MYR {row.paid.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-yellow-400">MYR {row.outstanding.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-white">{activeCurrencyLabel} {row.invoiced.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.paid.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">{activeCurrencyLabel} {row.outstanding.toFixed(0)}</td>
                           <td className="text-right py-3 px-4 text-blue-400">{row.percentage.toFixed(1)}%</td>
                         </tr>
                       ))}
@@ -1183,9 +1185,9 @@ export default function ReportsPage() {
                         {tableData.map((row: any, idx) => (
                           <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                             <td className="py-3 px-4 text-white">{row.month}</td>
-                            <td className="text-right py-3 px-4 text-green-400">MYR {row.income.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.income.toFixed(0)}</td>
                             <td className="text-right py-3 px-4 text-gray-300">{row.paidCount}</td>
-                            <td className="text-right py-3 px-4 text-blue-400">MYR {row.cumulative.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-blue-400">{activeCurrencyLabel} {row.cumulative.toFixed(0)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1215,7 +1217,7 @@ export default function ReportsPage() {
                           <td className="py-3 px-4 text-gray-300 text-sm">{row.date || '—'}</td>
                           <td className="py-3 px-4 text-white font-mono text-sm">{row.invoiceNumber}</td>
                           <td className="py-3 px-4 text-white text-sm font-medium">{row.client}</td>
-                          <td className="text-right py-3 px-4 text-green-400 text-sm font-medium">MYR {((row.amount || 0)).toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400 text-sm font-medium">{row.currency_code || activeCurrencyLabel} {((row.amount || 0)).toFixed(0)}</td>
                           <td className="py-3 px-4 text-gray-300 text-sm">{row.method}</td>
                           <td className="py-3 px-4 text-sm">
                             {row.type === 'Full payment' && <span className="text-green-400">✓ Full payment</span>}
@@ -1232,7 +1234,7 @@ export default function ReportsPage() {
                             Total ({tableData.length} payments)
                           </td>
                           <td className="text-right py-3 px-4 text-green-400 font-bold">
-                            MYR {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)).toFixed(0)}
+                            {activeCurrencyLabel} {(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)).toFixed(0)}
                           </td>
                           <td colSpan={2}></td>
                         </tr>
