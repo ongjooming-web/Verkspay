@@ -501,7 +501,7 @@ export default function Invoices() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-gray-400 text-sm mb-2 block">Due Date *</label>
+                    <label className="text-gray-400 text-sm mb-2 block">Date Created *</label>
                     <input
                       type="date"
                       value={formData.due_date}

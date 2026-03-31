@@ -71,16 +71,22 @@ export default function ClientDetail() {
         // Fetch invoices for stats
         const { data: invoices, error: invoicesError } = await supabase
           .from('invoices')
-          .select('amount, status, created_at, due_date, paid_date')
+          .select('amount, amount_paid, remaining_balance, status, created_at, due_date, paid_date, currency_code')
           .eq('client_id', clientId)
           .eq('user_id', user.id)
 
         if (!invoicesError && invoices) {
-          const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+          // Total revenue = sum of amount_paid across all invoices
+          const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
           const paidInvoices = invoices.filter(inv => inv.status === 'paid')
+          // Outstanding = remaining_balance for unpaid/partial/overdue invoices
+          // Fall back to full amount if remaining_balance is null (new invoice)
           const totalOutstanding = invoices
-            .filter(inv => inv.status === 'unpaid' || inv.status === 'overdue')
-            .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+            .filter(inv => inv.status !== 'paid' && inv.status !== 'draft')
+            .reduce((sum, inv) => {
+              const balance = inv.remaining_balance != null ? inv.remaining_balance : inv.amount
+              return sum + (balance || 0)
+            }, 0)
           const avgInvoice = invoices.length > 0 ? totalRevenue / invoices.length : 0
 
           // Calculate payment speed (days between invoice and payment)
