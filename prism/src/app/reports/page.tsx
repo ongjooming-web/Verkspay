@@ -68,12 +68,22 @@ export default function ReportsPage() {
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
-  // Utility function to format dates as YYYY-MM-DD in local timezone
+  // Format date as YYYY-MM-DD in local timezone
   const formatDateToString = (date: Date): string => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
+  }
+
+  // Format the "to" date as end-of-day timestamp so today's invoices are included
+  // Supabase stores created_at as UTC — using YYYY-MM-DDT23:59:59+08:00 ensures
+  // all invoices created anywhere on that calendar day (MYT) are captured
+  const formatToDate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}T23:59:59+08:00`
   }
 
   useEffect(() => {
@@ -149,7 +159,7 @@ export default function ReportsPage() {
       const from = new Date(now.getFullYear(), now.getMonth(), 1)
       const to = new Date(now)
       const fromStr = formatDateToString(from)
-      const toStr = formatDateToString(to)
+      const toStr = formatToDate(to)
       setCustomFrom(fromStr)
       setCustomTo(toStr)
       fetchReportData(selectedReport, fromStr, toStr, 'all')
@@ -160,7 +170,7 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!user) return
     const from = customFrom || formatDateToString(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
-    const to = customTo || formatDateToString(new Date())
+    const to = customTo || formatToDate(new Date())
     fetchReportData(selectedReport, from, to, selectedClient)
   }, [selectedCurrency])
 
@@ -198,8 +208,8 @@ export default function ReportsPage() {
         break
     }
 
-    const fromStr = from.toISOString().split('T')[0]
-    const toStr = to.toISOString().split('T')[0]
+    const fromStr = formatDateToString(from)
+    const toStr = formatToDate(to)
 
     return { from: fromStr, to: toStr }
   }
@@ -242,9 +252,8 @@ export default function ReportsPage() {
         break
     }
 
-    // Use local timezone formatting, not UTC
     const fromStr = formatDateToString(from)
-    const toStr = formatDateToString(to)
+    const toStr = formatToDate(to)
 
     console.log('[Reports] Preset date range calculated:', { preset, fromStr, toStr, now: formatDateToString(now) })
 
