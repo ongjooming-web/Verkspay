@@ -22,12 +22,14 @@ export async function GET(request: NextRequest) {
 
     const userId = data.user.id
 
-    // Check plan gating - Enterprise only
+    // Check plan gating - Enterprise only, and fetch preferred currency
     const { data: profile } = await supabase
       .from('profiles')
-      .select('plan')
+      .select('plan, currency_code')
       .eq('id', userId)
       .single()
+
+    const preferredCurrency = profile?.currency_code || 'MYR'
 
     const plan = profile?.plan || 'trial'
 
@@ -50,23 +52,29 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .eq('status', 'active')
 
-    // Get all outstanding invoices (unpaid + paid_partial)
-    const { data: outstandingInvoices } = await supabase
+    // Get outstanding invoices in preferred currency only (unpaid + paid_partial)
+    const { data: outstandingInvoicesRaw } = await supabase
       .from('invoices')
-      .select('id, client_id, amount, remaining_balance, due_date, status')
+      .select('id, client_id, amount, remaining_balance, due_date, status, currency_code')
       .eq('user_id', userId)
       .in('status', ['unpaid', 'paid_partial', 'overdue'])
+    const outstandingInvoices = (outstandingInvoicesRaw || []).filter(
+      inv => (inv.currency_code || 'MYR') === preferredCurrency
+    )
 
-    // Get historical invoices for trend analysis (last 6 months)
+    // Get historical invoices in preferred currency for trend analysis (last 6 months)
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    const { data: historicalInvoices } = await supabase
+    const { data: historicalInvoicesRaw } = await supabase
       .from('invoices')
-      .select('id, amount, created_at, status')
+      .select('id, amount, created_at, status, currency_code')
       .eq('user_id', userId)
       .eq('status', 'paid')
       .gte('created_at', sixMonthsAgo.toISOString())
+    const historicalInvoices = (historicalInvoicesRaw || []).filter(
+      inv => (inv.currency_code || 'MYR') === preferredCurrency
+    )
 
     // Calculate forecasts
     const now = new Date()

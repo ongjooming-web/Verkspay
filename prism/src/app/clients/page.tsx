@@ -33,6 +33,9 @@ interface Client {
   invoice_count: number
   health_score: number | null
   tags?: Tag[]
+  // Per-currency breakdowns calculated from live invoices
+  revenue_by_currency?: Record<string, number>
+  outstanding_by_currency?: Record<string, number>
 }
 
 type SortBy = 'name' | 'revenue' | 'outstanding' | 'last_invoice'
@@ -110,10 +113,46 @@ export default function ClientsPage() {
           tagMap.get(clientId)!.push(tag)
         })
 
-        // Attach tags to clients
+        // Batch fetch all invoices for these clients to compute per-currency revenue/outstanding
+        const { data: invoicesData } = await supabase
+          .from('invoices')
+          .select('client_id, amount, amount_paid, remaining_balance, status, currency_code')
+          .in('client_id', clientIds)
+
+        // Build per-currency maps per client
+        const revenueByCurrencyMap = new Map<string, Record<string, number>>()
+        const outstandingByCurrencyMap = new Map<string, Record<string, number>>()
+
+        invoicesData?.forEach((inv: any) => {
+          const cid = inv.client_id
+          const code = inv.currency_code || 'MYR'
+
+          if (!revenueByCurrencyMap.has(cid)) revenueByCurrencyMap.set(cid, {})
+          if (!outstandingByCurrencyMap.has(cid)) outstandingByCurrencyMap.set(cid, {})
+
+          const rev = revenueByCurrencyMap.get(cid)!
+          const out = outstandingByCurrencyMap.get(cid)!
+
+          // Revenue = amount_paid (what's been collected)
+          if ((inv.amount_paid || 0) > 0) {
+            rev[code] = (rev[code] || 0) + (inv.amount_paid || 0)
+          }
+
+          // Outstanding = remaining_balance (or full amount for new invoices) for unpaid
+          if (inv.status !== 'paid' && inv.status !== 'draft') {
+            const balance = inv.remaining_balance != null ? inv.remaining_balance : inv.amount
+            if ((balance || 0) > 0) {
+              out[code] = (out[code] || 0) + (balance || 0)
+            }
+          }
+        })
+
+        // Attach tags and per-currency data to clients
         const clientsWithTags = data.map((c: any) => ({
           ...c,
-          tags: tagMap.get(c.id) || []
+          tags: tagMap.get(c.id) || [],
+          revenue_by_currency: revenueByCurrencyMap.get(c.id) || {},
+          outstanding_by_currency: outstandingByCurrencyMap.get(c.id) || {},
         }))
 
         setClients(clientsWithTags as Client[])
@@ -478,19 +517,31 @@ export default function ClientsPage() {
                           )}
                         </div>
 
-                        {/* Revenue + Outstanding Grid */}
+                        {/* Revenue + Outstanding Grid — per invoice currency */}
                         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
                           <div>
                             <p className="text-gray-400 text-xs uppercase mb-1">Revenue</p>
-                            <p className="text-lg md:text-xl font-bold text-green-400">
-                              {formatCurrency(client.total_revenue || 0, currencyCode)}
-                            </p>
+                            {Object.entries(client.revenue_by_currency || {}).length > 0 ? (
+                              Object.entries(client.revenue_by_currency || {}).map(([code, amt]) => (
+                                <p key={code} className="text-lg md:text-xl font-bold text-green-400">
+                                  {formatCurrency(amt, code)}
+                                </p>
+                              ))
+                            ) : (
+                              <p className="text-gray-500 text-sm">—</p>
+                            )}
                           </div>
                           <div>
                             <p className="text-gray-400 text-xs uppercase mb-1">Outstanding</p>
-                            <p className="text-lg md:text-xl font-bold text-yellow-400">
-                              {formatCurrency(client.total_outstanding || 0, currencyCode)}
-                            </p>
+                            {Object.entries(client.outstanding_by_currency || {}).length > 0 ? (
+                              Object.entries(client.outstanding_by_currency || {}).map(([code, amt]) => (
+                                <p key={code} className="text-lg md:text-xl font-bold text-yellow-400">
+                                  {formatCurrency(amt, code)}
+                                </p>
+                              ))
+                            ) : (
+                              <p className="text-gray-500 text-sm">—</p>
+                            )}
                           </div>
                         </div>
                       </div>

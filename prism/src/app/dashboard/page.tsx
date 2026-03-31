@@ -154,10 +154,14 @@ export default function Dashboard() {
           .filter(inv => (inv.amount_paid || 0) > 0)
           .reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
         
-        // Pending revenue = SUM(remaining_balance) for preferred currency unpaid/partial invoices
+        // Pending revenue = SUM of unpaid/partial preferred currency invoices
+        // Use remaining_balance if set, fall back to full amount (new invoices may have null remaining_balance)
         const pendingRevenue = preferredInvoices
-          .filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft')
-          .reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
+          .filter(inv => inv.status !== 'paid' && inv.status !== 'draft')
+          .reduce((sum, inv) => {
+            const balance = inv.remaining_balance != null ? inv.remaining_balance : inv.amount
+            return sum + (balance || 0)
+          }, 0)
         
         // Overdue alert: show ALL currencies (user needs to know about every overdue regardless of preference)
         const now = new Date()
