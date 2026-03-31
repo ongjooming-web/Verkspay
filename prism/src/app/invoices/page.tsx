@@ -300,8 +300,9 @@ export default function Invoices() {
       .select()
 
     if (error) {
-      console.error('[InvoicesList] Error creating invoice:', error)
-      alert(`Error creating invoice: ${error.message}`)
+      console.error('[InvoicesList] Error creating invoice:', JSON.stringify(error))
+      const errMsg = error.message || error.details || error.hint || error.code || JSON.stringify(error)
+      alert(`Error creating invoice: ${errMsg}`)
       return
     }
 
