@@ -109,6 +109,23 @@ export default function ReportsPage() {
           setClients(clientsData)
         }
 
+        // Fetch all distinct currencies from user's invoices for the currency filter dropdown
+        const { data: currencyRows } = await supabase
+          .from('invoices')
+          .select('currency_code')
+          .eq('user_id', userData.user.id)
+
+        if (currencyRows) {
+          const codes = [...new Set(
+            currencyRows.map((r: any) => r.currency_code || 'MYR').filter(Boolean)
+          )].sort() as string[]
+          setAvailableCurrencies(codes)
+          // Default to preferred currency if user has invoices in it, otherwise 'all'
+          if (codes.length === 1) {
+            setSelectedCurrency(codes[0])
+          }
+        }
+
         // Set default dates (This month) - will be formatted properly via formatDateToString in a moment
         setDatePreset('this_month')
         // The useEffect below will handle fetching once user is set
@@ -412,10 +429,11 @@ export default function ReportsPage() {
           '61-90': 0,
           '90+': 0,
           total: 0,
+          currency_code: inv.currency_code || 'MYR',
         }
       }
 
-      const balance = inv.remaining_balance || inv.amount
+      const balance = inv.remaining_balance != null ? inv.remaining_balance : inv.amount
 
       if (daysSinceDue <= 0) {
         byClient[clientName].current += balance
@@ -464,12 +482,14 @@ export default function ReportsPage() {
           outstanding: 0,
           avgPaymentDays: 0,
           percentage: 0,
+          currency_code: inv.currency_code || 'MYR',
         }
       }
 
       byClient[clientName].invoiced += inv.amount || 0
       byClient[clientName].paid += inv.amount_paid || 0
-      byClient[clientName].outstanding += inv.remaining_balance || 0
+      const outstanding = inv.remaining_balance != null ? inv.remaining_balance : (inv.status !== 'paid' ? inv.amount : 0)
+      byClient[clientName].outstanding += outstanding || 0
       byClient[clientName].count++
     })
 
@@ -513,6 +533,7 @@ export default function ReportsPage() {
           income: 0,
           paidCount: 0,
           cumulative: 0,
+          currency_code: inv.currency_code || 'MYR',
         }
       }
 
@@ -575,6 +596,7 @@ export default function ReportsPage() {
         amount: amountPaid,
         method: inv.payment_method || '-',
         type: paymentType,
+        currency_code: inv.currency_code || 'MYR',
       }
     })
 
@@ -1067,7 +1089,7 @@ export default function ReportsPage() {
               {selectedReport === 'revenue' && (
                 <>
                   <div className="w-full h-80">
-                    <ReportsChart type="revenue" data={chartData} currencyCode={currencyCode} />
+                    <ReportsChart type="revenue" data={chartData} currencyCode={activeCurrencyLabel} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1147,12 +1169,12 @@ export default function ReportsPage() {
                       {tableData.map((row: any, idx) => (
                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                           <td className="py-3 px-4 text-white">{row.client}</td>
-                          <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.current.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-yellow-400">{activeCurrencyLabel} {row['1-30'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-orange-400">{activeCurrencyLabel} {row['31-60'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-red-400">{activeCurrencyLabel} {row['61-90'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-red-600">{activeCurrencyLabel} {row['90+'].toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-white font-semibold">{activeCurrencyLabel} {row.total.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-green-400">{fmtAmt(row.current, row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">{fmtAmt(row['1-30'], row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-orange-400">{fmtAmt(row['31-60'], row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-red-400">{fmtAmt(row['61-90'], row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-red-600">{fmtAmt(row['90+'], row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-white font-semibold">{fmtAmt(row.total, row.currency_code)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1178,9 +1200,9 @@ export default function ReportsPage() {
                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                           <td className="py-3 px-4 text-white">{row.client}</td>
                           <td className="text-right py-3 px-4 text-gray-300">{row.count}</td>
-                          <td className="text-right py-3 px-4 text-white">{activeCurrencyLabel} {row.invoiced.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.paid.toFixed(0)}</td>
-                          <td className="text-right py-3 px-4 text-yellow-400">{activeCurrencyLabel} {row.outstanding.toFixed(0)}</td>
+                          <td className="text-right py-3 px-4 text-white">{fmtAmt(row.invoiced, row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-green-400">{fmtAmt(row.paid, row.currency_code)}</td>
+                          <td className="text-right py-3 px-4 text-yellow-400">{fmtAmt(row.outstanding, row.currency_code)}</td>
                           <td className="text-right py-3 px-4 text-blue-400">{row.percentage.toFixed(1)}%</td>
                         </tr>
                       ))}
@@ -1192,7 +1214,7 @@ export default function ReportsPage() {
               {selectedReport === 'tax' && (
                 <>
                   <div className="w-full h-80">
-                    <ReportsChart type="tax" data={chartData} currencyCode={currencyCode} />
+                    <ReportsChart type="tax" data={chartData} currencyCode={activeCurrencyLabel} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1208,9 +1230,9 @@ export default function ReportsPage() {
                         {tableData.map((row: any, idx) => (
                           <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
                             <td className="py-3 px-4 text-white">{row.month}</td>
-                            <td className="text-right py-3 px-4 text-green-400">{activeCurrencyLabel} {row.income.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-green-400">{fmtAmt(row.income, row.currency_code)}</td>
                             <td className="text-right py-3 px-4 text-gray-300">{row.paidCount}</td>
-                            <td className="text-right py-3 px-4 text-blue-400">{activeCurrencyLabel} {row.cumulative.toFixed(0)}</td>
+                            <td className="text-right py-3 px-4 text-blue-400">{fmtAmt(row.cumulative, row.currency_code)}</td>
                           </tr>
                         ))}
                       </tbody>
