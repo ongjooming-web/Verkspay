@@ -159,10 +159,10 @@ export default function ReportsPage() {
       const from = new Date(now.getFullYear(), now.getMonth(), 1)
       const to = new Date(now)
       const fromStr = formatDateToString(from)
-      const toStr = formatToDate(to)
+      const toStr = formatDateToString(to)
       setCustomFrom(fromStr)
       setCustomTo(toStr)
-      fetchReportData(selectedReport, fromStr, toStr, 'all')
+      fetchReportData(selectedReport, fromStr, formatToDate(to), 'all')
     }
   }, [user])
 
@@ -170,8 +170,8 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!user) return
     const from = customFrom || formatDateToString(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
-    const to = customTo || formatToDate(new Date())
-    fetchReportData(selectedReport, from, to, selectedClient)
+    const toDate = customTo ? new Date(customTo) : new Date()
+    fetchReportData(selectedReport, from, formatToDate(toDate), selectedClient)
   }, [selectedCurrency])
 
   const getDateRange = () => {
@@ -209,7 +209,7 @@ export default function ReportsPage() {
     }
 
     const fromStr = formatDateToString(from)
-    const toStr = formatToDate(to)
+    const toStr = formatDateToString(to)
 
     return { from: fromStr, to: toStr }
   }
@@ -253,16 +253,14 @@ export default function ReportsPage() {
     }
 
     const fromStr = formatDateToString(from)
-    const toStr = formatToDate(to)
+    const toStr = formatDateToString(to)
 
-    console.log('[Reports] Preset date range calculated:', { preset, fromStr, toStr, now: formatDateToString(now) })
-
-    // Update the date inputs
+    // Update the date inputs (must be plain yyyy-MM-dd for <input type="date">)
     setCustomFrom(fromStr)
     setCustomTo(toStr)
 
-    // Immediately fetch the report with these dates
-    fetchReportData(selectedReport, fromStr, toStr, selectedClient)
+    // Pass end-of-day timestamp to query so today's invoices are included
+    fetchReportData(selectedReport, fromStr, formatToDate(to), selectedClient)
   }
 
   const fetchReportData = async (reportType: ReportType, from: string, to: string, clientId: string) => {
@@ -362,8 +360,9 @@ export default function ReportsPage() {
       to = to || dateRange.to
     }
 
-    console.log('[Reports] Generate Report clicked:', { from, to, selectedReport })
-    fetchReportData(selectedReport, from, to, selectedClient)
+    // Apply end-of-day to 'to' so today's invoices are included
+    const toWithTime = to ? formatToDate(new Date(to)) : to
+    fetchReportData(selectedReport, from, toWithTime, selectedClient)
   }
 
   const processRevenueReport = (invoices: any[]) => {
