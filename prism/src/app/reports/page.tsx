@@ -120,10 +120,10 @@ export default function ReportsPage() {
             currencyRows.map((r: any) => r.currency_code || 'MYR').filter(Boolean)
           )].sort() as string[]
           setAvailableCurrencies(codes)
-          // Default to preferred currency if user has invoices in it, otherwise 'all'
-          if (codes.length === 1) {
-            setSelectedCurrency(codes[0])
-          }
+          // Default to preferred currency if available, else first in list
+          const preferred = currencyCode
+          const defaultCurrency = codes.includes(preferred) ? preferred : (codes[0] || 'MYR')
+          setSelectedCurrency(defaultCurrency)
         }
 
         // Set default dates (This month) - will be formatted properly via formatDateToString in a moment
@@ -304,8 +304,12 @@ export default function ReportsPage() {
       }
 
       if (clientId && clientId !== 'all') {
-        console.log('[Reports] Filtering by client:', clientId)
         query = query.eq('client_id', clientId)
+      }
+
+      // Apply currency filter at DB level — never mix currencies
+      if (selectedCurrency && selectedCurrency !== 'all') {
+        query = query.eq('currency_code', selectedCurrency)
       }
 
       const { data, error } = await query.order('created_at', { ascending: false })
@@ -316,10 +320,6 @@ export default function ReportsPage() {
 
       if (data) {
         invoices = data
-        console.log('[Reports] API response:', invoices.length, 'invoices found in date range', { from, to })
-        console.log('[Reports] Sample invoice dates:', invoices.slice(0, 3).map((inv: any) => ({ created_at: inv.created_at, paid_date: inv.paid_date })))
-      } else {
-        console.log('[Reports] No data returned from query')
       }
 
       // Process data based on report type
@@ -677,14 +677,11 @@ export default function ReportsPage() {
     }
   }
 
-  // When a specific currency is filtered, use it as the label.
-  // When 'all', each row uses its own currency_code — activeCurrencyLabel is only used
-  // for summary cards/totals where we need a single label (we show 'Mixed' in that case).
-  const activeCurrencyLabel = selectedCurrency !== 'all' ? selectedCurrency : 'Mixed'
-  // Helper: format a monetary amount with the correct currency code
-  const fmtAmt = (amount: number, rowCurrencyCode?: string) => {
-    const code = selectedCurrency !== 'all' ? selectedCurrency : (rowCurrencyCode || currencyCode || 'MYR')
-    return `${code} ${(amount || 0).toFixed(0)}`
+  // Always a specific currency — no "Mixed" state since "All" option is removed
+  const activeCurrencyLabel = selectedCurrency || currencyCode || 'MYR'
+  // Format a monetary amount with the active currency
+  const fmtAmt = (amount: number, _rowCurrencyCode?: string) => {
+    return `${activeCurrencyLabel} ${(amount || 0).toFixed(0)}`
   }
 
   const formatAmount = (amount: number, isOutstanding: boolean = false, rowCode?: string) => {
@@ -965,7 +962,6 @@ export default function ReportsPage() {
                   onChange={(e) => setSelectedCurrency(e.target.value)}
                   className="w-full glass px-3 py-2 rounded text-white text-sm appearance-none cursor-pointer"
                 >
-                  <option value="all" className="bg-slate-900">All currencies</option>
                   {availableCurrencies.map((code) => (
                     <option key={code} value={code} className="bg-slate-900">{code}</option>
                   ))}
@@ -1139,13 +1135,13 @@ export default function ReportsPage() {
                               Total ({tableData.length} rows)
                             </td>
                             <td className="text-right py-3 px-4 text-white font-bold">
-                              {selectedCurrency !== 'all' ? fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0)) : <span className="text-gray-500 text-xs">multi-currency</span>}
+                              {fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount ?? row?.invoiced ?? 0) || 0), 0))}
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              {selectedCurrency !== 'all' ? <span className="text-green-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0))}</span> : <span className="text-gray-500 text-xs">—</span>}
+                              <span className="text-green-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.paid ?? row?.collected ?? 0) || 0), 0))}</span>
                             </td>
                             <td className="text-right py-3 px-4 font-bold">
-                              {selectedCurrency !== 'all' ? <span className="text-orange-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0))}</span> : <span className="text-gray-500 text-xs">—</span>}
+                              <span className="text-orange-400">{fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.outstanding ?? 0) || 0), 0))}</span>
                             </td>
                             <td></td>
                           </tr>
@@ -1284,7 +1280,7 @@ export default function ReportsPage() {
                             Total ({tableData.length} payments)
                           </td>
                           <td className="text-right py-3 px-4 text-green-400 font-bold">
-                            {selectedCurrency !== 'all' ? fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0)) : <span className="text-gray-500 text-xs">multi-currency</span>}
+                            {fmtAmt(tableData.reduce((sum: number, row: any) => sum + ((row?.amount || 0)), 0))}
                           </td>
                           <td colSpan={2}></td>
                         </tr>
