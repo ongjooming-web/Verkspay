@@ -40,7 +40,7 @@ Deep link → Opens wallet app automatically
    ↓
 Sign message in wallet
    ↓
-Auto-return to Prism app
+Auto-return to Verkspay app
    ↓
 ✅ Address saved to Supabase
 ```
@@ -146,7 +146,7 @@ await provider.request({
 ## 🔒 Message Format
 
 ```
-Sign in to Prism
+Sign in to Verkspay
 Wallet: 0x1234...5678
 Timestamp: 1710723000000
 ```
@@ -199,7 +199,7 @@ Timestamp: 1710723000000
 3. Select wallet app
 4. Deep link opens wallet
 5. Approve in wallet app
-6. ✅ Auto-returns to Prism
+6. ✅ Auto-returns to Verkspay
 7. ✅ Address shows
 ```
 
@@ -323,7 +323,7 @@ git push
 
 ```
 ┌──────────────────────────┐
-│  Prism App (Mobile)      │
+│  Verkspay App (Mobile)      │
 │                          │
 │  [Connect Wallet]        │
 └──────────────────────────┘
@@ -348,7 +348,7 @@ git push
 └──────────────────────────┘
            ↓
 ┌──────────────────────────┐
-│  Prism App               │
+│  Verkspay App               │
 │  ✅ Connected!           │
 │  Address: 0x...          │
 │  [Disconnect]            │

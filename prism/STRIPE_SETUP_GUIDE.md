@@ -1,6 +1,6 @@
 # Stripe Subscription Setup Guide
 
-This guide walks through setting up Stripe subscription prices for Prism's billing system.
+This guide walks through setting up Stripe subscription prices for Verkspay's billing system.
 
 ## Prerequisites
 
@@ -12,16 +12,16 @@ This guide walks through setting up Stripe subscription prices for Prism's billi
 
 Go to **Products** > **Add Product**:
 
-### Product 1: Prism Starter
+### Product 1: Verkspay Starter
 - **Name**: Starter Plan
 - **Type**: Recurring (Subscription)
 - **Billing Period**: Monthly and Annually (you'll create prices separately)
 
-### Product 2: Prism Pro
+### Product 2: Verkspay Pro
 - **Name**: Pro Plan
 - **Type**: Recurring (Subscription)
 
-### Product 3: Prism Enterprise
+### Product 3: Verkspay Enterprise
 - **Name**: Enterprise Plan
 - **Type**: Recurring (Subscription)
 
@@ -87,7 +87,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 1. Go to **Webhooks** in Stripe Dashboard
 2. Add Endpoint:
-   - URL: `https://app.prismops.xyz/api/stripe/webhook`
+   - URL: `https://app.verkspay.com/api/stripe/webhook`
    - Events: Select these events:
      - `checkout.session.completed`
      - `customer.subscription.deleted`
@@ -112,7 +112,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 ### Production Testing
 1. Deploy to Vercel
-2. Go to `https://app.prismops.xyz/pricing`
+2. Go to `https://app.verkspay.com/pricing`
 3. Click "Start Free Trial" on a plan
 4. Use Stripe test card: `4242 4242 4242 4242` (exp: any future date, CVC: any 3 digits)
 5. Verify webhook fires and subscription is created in Supabase
@@ -132,7 +132,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ### Webhook not firing
 - Verify webhook secret is correct in both Stripe and Vercel
 - Check Stripe Dashboard > Webhooks for failed delivery attempts
-- Make sure endpoint URL is exactly: `https://app.prismops.xyz/api/stripe/webhook`
+- Make sure endpoint URL is exactly: `https://app.verkspay.com/api/stripe/webhook`
 
 ### Subscription not created
 - Check Stripe Dashboard > Customers for the customer record

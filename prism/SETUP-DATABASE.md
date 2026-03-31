@@ -4,7 +4,7 @@
 
 1. Go to [supabase.com](https://supabase.com)
 2. Login to your account
-3. Navigate to project: `prism-dev` (fqdipubbyvekhipknxnr)
+3. Navigate to project: `verkspay` (fqdipubbyvekhipknxnr)
 
 ## Step 2: Run SQL Schema
 
@@ -76,7 +76,7 @@ After running the SQL, verify tables were created:
 
 1. Go to **Authentication** → **URL Configuration**
 2. Add to **Redirect URLs**:
-   - `https://app.prismops.xyz/auth/callback`
+   - `https://app.verkspay.com/auth/callback`
    - `http://localhost:3000/auth/callback`
 3. Save
 

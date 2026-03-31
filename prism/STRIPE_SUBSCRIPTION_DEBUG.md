@@ -5,7 +5,7 @@
 The webhook is fully configured to handle subscription purchases and cancellations.
 
 ### Webhook Endpoint
-- **URL:** `https://app.prismops.xyz/api/stripe/webhook`
+- **URL:** `https://app.verkspay.com/api/stripe/webhook`
 - **Location:** `src/app/api/stripe/webhook/route.ts`
 - **Events Handled:**
   - `checkout.session.completed` → Updates user plan
@@ -52,8 +52,8 @@ Stripe.checkout.sessions.create({
     plan: 'pro'             // ← Required!
   },
   customer_email: user.email,
-  success_url: 'https://app.prismops.xyz/dashboard?session_id={CHECKOUT_SESSION_ID}',
-  cancel_url: 'https://app.prismops.xyz/pricing'
+  success_url: 'https://app.verkspay.com/dashboard?session_id={CHECKOUT_SESSION_ID}',
+  cancel_url: 'https://app.verkspay.com/pricing'
 })
 ```
 
@@ -91,7 +91,7 @@ Settings page shows new plan because it reads from `profiles.plan`
 
 1. Go to **Developers** → **Webhooks**
 2. Click **Add endpoint**
-   - URL: `https://app.prismops.xyz/api/stripe/webhook`
+   - URL: `https://app.verkspay.com/api/stripe/webhook`
    - Select events:
      - `checkout.session.completed`
      - `customer.subscription.deleted`
@@ -103,7 +103,7 @@ Settings page shows new plan because it reads from `profiles.plan`
 ### ✅ Test Flow
 
 1. **Create test user**
-   - Sign up at https://app.prismops.xyz/signup
+   - Sign up at https://app.verkspay.com/signup
    - Email: `test@example.com`
    - Password: `TestPassword123`
 
@@ -205,7 +205,7 @@ Copy exactly → Vercel → STRIPE_WEBHOOK_SECRET
 **Check 2: Webhook not registered**
 ```
 Stripe Dashboard → Developers → Webhooks
-Verify endpoint exists: https://app.prismops.xyz/api/stripe/webhook
+Verify endpoint exists: https://app.verkspay.com/api/stripe/webhook
 ```
 
 ### Problem: "Missing Stripe price ID" Error

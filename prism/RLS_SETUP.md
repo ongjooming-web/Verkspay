@@ -1,4 +1,4 @@
-# Row-Level Security (RLS) Setup for Prism
+# Row-Level Security (RLS) Setup for Verkspay
 
 ## What is RLS?
 
@@ -70,7 +70,7 @@ public | invoices  | Users can view own invoices
 ```
 
 ### Step 5: Test Prism Still Works
-1. **Log in** to Prism (https://app.prismops.xyz)
+1. **Log in** to Verkspay (https://app.verkspay.com)
 2. **Check dashboard** loads ✅
 3. **Create an invoice** ✅
 4. **View invoices list** ✅

@@ -1,4 +1,4 @@
-# Prism Dashboard - Quick Start (30 Seconds)
+# Verkspay Dashboard - Quick Start (30 Seconds)
 
 ## TL;DR - Get It Running in 3 Steps
 

@@ -64,7 +64,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ### Step 5: Deploy & Monitor
 
 1. [ ] Redeploy to Vercel (or wait for auto-deploy)
-2. [ ] Test on production: https://app.prismops.xyz/pricing
+2. [ ] Test on production: https://app.verkspay.com/pricing
 3. [ ] Monitor Stripe Dashboard for:
    - Webhook deliveries (Webhooks > Events)
    - Customer creation (Customers tab)
@@ -73,7 +73,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ## 🔗 Quick Links
 
 - Stripe Dashboard: https://dashboard.stripe.com
-- Prism Pricing Page: https://app.prismops.xyz/pricing
+- Prism Pricing Page: https://app.verkspay.com/pricing
 - Vercel Settings: https://vercel.com/projects (select prism)
 - Full Setup Guide: See `STRIPE_SETUP_GUIDE.md` in this repo
 

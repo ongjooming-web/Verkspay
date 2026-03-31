@@ -23,7 +23,7 @@ npm install && npm run dev
 
 1. **Login to Supabase**
    - Go to https://supabase.com/dashboard
-   - Find project `prism-dev`
+   - Find project `verkspay`
 
 2. **Run Database Schema**
    - Click **SQL Editor** (left sidebar)
@@ -54,7 +54,7 @@ npm install && npm run dev
    - Visit https://vercel.com
    - Click **New Project**
    - Select GitHub and authorize
-   - Find `ongjooming-web/prism`
+   - Find `ongjooming-web/Verkspay`
    - Click **Import**
 
 2. **Set Environment Variables**
@@ -73,14 +73,14 @@ npm install && npm run dev
 
 4. **Configure Custom Domain (Optional)**
    - Go to **Settings** → **Domains**
-   - Add `app.prismops.xyz`
+   - Add `app.verkspay.com`
    - Follow DNS instructions
    - (DNS takes 24-48h to propagate)
 
 ### Phase C: Test (5 minutes)
 
 1. **Visit your app**
-   - If deployed: Visit `https://app.prismops.xyz` (or Vercel default URL)
+   - If deployed: Visit `https://app.verkspay.com` (or Vercel default URL)
    - If local: Visit `http://localhost:3000`
 
 2. **Test Signup**
@@ -134,7 +134,7 @@ npm start
 **Solution:**
 1. Go to Supabase → Authentication → URL Configuration
 2. Add to "Redirect URLs":
-   - `https://app.prismops.xyz/auth/callback`
+   - `https://app.verkspay.com/auth/callback`
    - `http://localhost:3000/auth/callback`
 
 ### Issue: "Tables don't exist"
@@ -159,7 +159,7 @@ npm start
 ### Issue: "Domain not working"
 **Solution:**
 1. Wait 24-48 hours for DNS propagation
-2. Test with: `nslookup app.prismops.xyz`
+2. Test with: `nslookup app.verkspay.com`
 3. Check DNS records at your domain provider
 4. Verify CNAME points to `cname.vercel-dns.com`
 
@@ -194,7 +194,7 @@ npm start
 
 ## Helpful Links
 
-- **GitHub Repo:** https://github.com/ongjooming-web/prism
+- **GitHub Repo:** https://github.com/ongjooming-web/Verkspay
 - **Supabase Docs:** https://supabase.com/docs
 - **Next.js Docs:** https://nextjs.org/docs
 - **Vercel Docs:** https://vercel.com/docs

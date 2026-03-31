@@ -1,4 +1,4 @@
-# Prism Security Audit Report
+# Verkspay Security Audit Report
 
 ## Summary
 Comprehensive security audit of all API routes and client components. Issues found and fixed across 6 categories.
