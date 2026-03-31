@@ -650,6 +650,9 @@ export default function ReportsPage() {
     }
   }
 
+  // Currency label for display — selected filter currency, or preferred currency as fallback
+  const activeCurrencyLabel = selectedCurrency !== 'all' ? selectedCurrency : (currencyCode || 'MYR')
+
   const formatAmount = (amount: number, isOutstanding: boolean = false, rowCode?: string) => {
     const value = amount || 0
     const textColor = value > 0 ? (isOutstanding ? 'text-orange-400' : 'text-green-400') : 'text-gray-500'
