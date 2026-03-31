@@ -650,7 +650,7 @@ export default function ReportsPage() {
     }
   }
 
-  const formatAmount = (amount: number, isOutstanding: boolean = false) => {
+  const formatAmount = (amount: number, isOutstanding: boolean = false, rowCode?: string) => {
     const value = amount || 0
     const textColor = value > 0 ? (isOutstanding ? 'text-orange-400' : 'text-green-400') : 'text-gray-500'
     return <span className={textColor}>{rowCode || activeCurrencyLabel} {value.toFixed(0)}</span>
