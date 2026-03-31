@@ -103,6 +103,8 @@ export default function Settings() {
 
       setMessage('✓ Currency preference saved successfully!')
       setCurrencyCode(selectedCountry.currency)
+      // Broadcast to all open pages (useCurrency hook listens for this)
+      localStorage.setItem('verkspay_currency', selectedCountry.currency)
       setTimeout(() => setMessage(''), 3000)
     } catch (err: any) {
       console.error('[Settings] Error saving currency:', err.message || err)

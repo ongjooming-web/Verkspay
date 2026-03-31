@@ -5,15 +5,16 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 interface ReportsChartProps {
   type: 'revenue' | 'tax'
   data: any[]
+  currencyCode?: string
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) return `MYR ${(value / 1000000).toFixed(1)}M`
-  if (value >= 1000) return `MYR ${(value / 1000).toFixed(0)}k`
-  return `MYR ${value.toFixed(0)}`
+const makeFormatCurrency = (code: string) => (value: number) => {
+  if (value >= 1000000) return `${code} ${(value / 1000000).toFixed(1)}M`
+  if (value >= 1000) return `${code} ${(value / 1000).toFixed(0)}k`
+  return `${code} ${value.toFixed(0)}`
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-800 p-3 rounded border border-gray-600 shadow-lg">
@@ -28,7 +29,8 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function ReportsChart({ type, data }: ReportsChartProps) {
+export function ReportsChart({ type, data, currencyCode = 'MYR' }: ReportsChartProps) {
+  const formatCurrency = makeFormatCurrency(currencyCode)
   if (type === 'revenue') {
     return (
       <ResponsiveContainer width="100%" height="100%">
@@ -48,7 +50,7 @@ export function ReportsChart({ type, data }: ReportsChartProps) {
             tick={{ fontSize: 12 }}
             tickFormatter={(value) => formatCurrency(value)}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
           <Bar 
             dataKey="collected" 
@@ -84,7 +86,7 @@ export function ReportsChart({ type, data }: ReportsChartProps) {
             tick={{ fontSize: 12 }}
             tickFormatter={(value) => formatCurrency(value)}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
           <Bar 
             dataKey="income" 

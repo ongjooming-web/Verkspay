@@ -97,12 +97,17 @@ export default function Dashboard() {
         setToken(session.access_token)
         const userId = session.user.id
 
-        // Fetch user's display name and insights from profile
+        // Fetch user's display name, insights, and preferred currency from profile
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, business_name, latest_insights, insights_generated_at')
+          .select('full_name, business_name, latest_insights, insights_generated_at, currency_code')
           .eq('id', userId)
           .single()
+
+        // Preferred currency: use profile value, fall back to localStorage, then MYR
+        const preferredCurrency = profileData?.currency_code
+          || localStorage.getItem('verkspay_currency')
+          || 'MYR'
 
         if (profileData) {
           const name = profileData.full_name || profileData.business_name || session.user.email?.split('@')[0] || 'User'
@@ -135,50 +140,44 @@ export default function Dashboard() {
           .select('id', { count: 'exact' })
           .eq('user_id', userId)
 
-        // Calculate comprehensive stats using amount_paid and remaining_balance
-        const revenue = invoicesData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0
+        // Filter invoices to preferred currency for dashboard metrics
+        // (Invoices in other currencies are not deleted — they still exist on the Invoices page)
+        const preferredInvoices = invoicesData?.filter(
+          inv => (inv.currency_code || 'MYR') === preferredCurrency
+        ) || []
+
+        // Calculate comprehensive stats using amount_paid and remaining_balance (preferred currency only)
+        const revenue = preferredInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0)
         
-        // Paid revenue = SUM(amount_paid) across all invoices with payments
-        const paidRevenue = invoicesData
-          ?.filter(inv => (inv.amount_paid || 0) > 0)
-          .reduce((sum, inv) => sum + (inv.amount_paid || 0), 0) || 0
+        // Paid revenue = SUM(amount_paid) for preferred currency invoices with payments
+        const paidRevenue = preferredInvoices
+          .filter(inv => (inv.amount_paid || 0) > 0)
+          .reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
         
-        // Pending revenue = SUM(remaining_balance) for unpaid/partial invoices
-        const pendingRevenue = invoicesData
-          ?.filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft')
-          .reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0) || 0
+        // Pending revenue = SUM(remaining_balance) for preferred currency unpaid/partial invoices
+        const pendingRevenue = preferredInvoices
+          .filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft')
+          .reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
         
-        // Overdue amount = SUM(remaining_balance) for overdue invoices
+        // Overdue alert: show ALL currencies (user needs to know about every overdue regardless of preference)
         const now = new Date()
         const overdue = invoicesData?.filter(inv => {
           const isDue = inv.due_date && new Date(inv.due_date) < now
           const isUnpaid = inv.status !== 'paid' && inv.status !== 'draft'
           return isDue && isUnpaid
         }) || []
-        const overdueAmount = overdue.reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
-        const overdueCount = overdue.length
+        // Overdue amount stat: only preferred currency
+        const overdueAmount = overdue
+          .filter(inv => (inv.currency_code || 'MYR') === preferredCurrency)
+          .reduce((sum, inv) => sum + (inv.remaining_balance || 0), 0)
+        const overdueCount = overdue.length // count is all currencies
         
-        // Store overdue invoices for display with per-invoice currency
+        // Store ALL overdue invoices for the alert banner (shows each with its own currency)
         setOverdueInvoices(overdue)
 
-        // Calculate per-currency breakdowns using amount_paid for paid, remaining_balance for pending
-        const paidInvoices = invoicesData?.filter(inv => (inv.amount_paid || 0) > 0) || []
-        const pendingInvoices = invoicesData?.filter(inv => (inv.remaining_balance || 0) > 0 && inv.status !== 'paid' && inv.status !== 'draft') || []
-        
-        // For display, we need to adjust the grouping to use amount_paid/remaining_balance
-        const paidByCurrencyMap: Record<string, number> = {}
-        paidInvoices.forEach((inv: any) => {
-          const code = inv.currency_code || 'MYR'
-          paidByCurrencyMap[code] = (paidByCurrencyMap[code] || 0) + (inv.amount_paid || 0)
-        })
-        setPaidByCurrency(paidByCurrencyMap)
-
-        const pendingByCurrencyMap: Record<string, number> = {}
-        pendingInvoices.forEach((inv: any) => {
-          const code = inv.currency_code || 'MYR'
-          pendingByCurrencyMap[code] = (pendingByCurrencyMap[code] || 0) + (inv.remaining_balance || 0)
-        })
-        setPendingByCurrency(pendingByCurrencyMap)
+        // Metric cards: always show preferred currency, even if 0
+        setPaidByCurrency({ [preferredCurrency]: paidRevenue })
+        setPendingByCurrency({ [preferredCurrency]: pendingRevenue })
 
         const clientCount = clientsData?.length || 0
         const invoiceCount = invoicesData?.length || 0
@@ -221,7 +220,8 @@ export default function Dashboard() {
           monthlyRevenue[monthKey] = 0
         }
 
-        invoicesData?.forEach(inv => {
+        // Monthly chart: only preferred currency invoices
+        preferredInvoices.forEach(inv => {
           if ((inv.amount_paid || 0) > 0) {
             const date = new Date(inv.created_at)
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -236,7 +236,7 @@ export default function Dashboard() {
           revenue
         })))
 
-        // Pipeline breakdown
+        // Pipeline breakdown: preferred currency only
         const statusCounts = {
           draft: 0,
           sent: 0,
@@ -244,7 +244,7 @@ export default function Dashboard() {
           overdue: 0
         }
         
-        invoicesData?.forEach(inv => {
+        preferredInvoices.forEach(inv => {
           if (inv.status in statusCounts) {
             statusCounts[inv.status as keyof typeof statusCounts]++
           }
@@ -257,13 +257,12 @@ export default function Dashboard() {
           { name: 'Overdue', value: statusCounts.overdue, color: '#FF6B6B' }
         ])
 
-        // Invoice status breakdown - use amount_paid for paid, remaining_balance for unpaid
+        // Invoice status breakdown (preferred currency) - use amount_paid for paid, remaining_balance for unpaid
         const statusRevenue: { [key: string]: number } = {}
-        invoicesData?.forEach(inv => {
+        preferredInvoices.forEach(inv => {
           if (!(inv.status in statusRevenue)) {
             statusRevenue[inv.status] = 0
           }
-          // For paid invoices, use amount_paid; for unpaid, use remaining_balance
           if (inv.status === 'paid') {
             statusRevenue[inv.status] += inv.amount_paid || 0
           } else if (inv.status !== 'draft') {
@@ -430,15 +429,11 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
               <div className="space-y-2">
-                {Object.entries(paidByCurrency).length > 0 ? (
-                  Object.entries(paidByCurrency).map(([code, total]) => (
-                    <div key={code} className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                      {formatCurrency(total, code)}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 text-sm">No paid invoices</div>
-                )}
+                {Object.entries(paidByCurrency).map(([code, total]) => (
+                  <div key={code} className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    {formatCurrency(total, code)}
+                  </div>
+                ))}
               </div>
               <div className="text-green-400 text-sm mt-3">Invoices received</div>
             </CardBody>
@@ -448,15 +443,11 @@ export default function Dashboard() {
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Pending Revenue</div>
               <div className="space-y-2">
-                {Object.entries(pendingByCurrency).length > 0 ? (
-                  Object.entries(pendingByCurrency).map(([code, total]) => (
-                    <div key={code} className="text-2xl font-bold text-blue-400">
-                      {formatCurrency(total, code)}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 text-sm">No pending invoices</div>
-                )}
+                {Object.entries(pendingByCurrency).map(([code, total]) => (
+                  <div key={code} className="text-2xl font-bold text-blue-400">
+                    {formatCurrency(total, code)}
+                  </div>
+                ))}
               </div>
               <div className="text-blue-300 text-sm mt-3">Awaiting payment</div>
             </CardBody>
@@ -767,7 +758,7 @@ export default function Dashboard() {
               <div className="border-t border-white/10 pt-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-400 text-sm">Pipeline Value</span>
-                  <span className="text-cyan-300 font-semibold">{formatCurrency(proposalStats.pipelineValue, 'MYR')}</span>
+                  <span className="text-cyan-300 font-semibold">{formatCurrency(proposalStats.pipelineValue, currencyCode)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-sm">Win Rate</span>

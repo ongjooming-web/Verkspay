@@ -8,6 +8,7 @@ import { Navigation } from '@/components/Navigation'
 import { Card, CardBody, CardHeader } from '@/components/Card'
 import { Button } from '@/components/Button'
 import Link from 'next/link'
+import { useCurrency } from '@/hooks/useCurrency'
 
 // Dynamically import chart component (browser-only)
 const ReportsChart = dynamic(() => import('@/components/ReportsChart').then((mod) => mod.ReportsChart), {
@@ -44,6 +45,7 @@ interface SummaryMetrics {
 
 export default function ReportsPage() {
   const router = useRouter()
+  const { currencyCode } = useCurrency()
   const [user, setUser] = useState<any>(null)
   const [plan, setPlan] = useState<string>('trial')
   const [selectedReport, setSelectedReport] = useState<ReportType>('revenue')
@@ -1040,7 +1042,7 @@ export default function ReportsPage() {
               {selectedReport === 'revenue' && (
                 <>
                   <div className="w-full h-80">
-                    <ReportsChart type="revenue" data={chartData} />
+                    <ReportsChart type="revenue" data={chartData} currencyCode={currencyCode} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1165,7 +1167,7 @@ export default function ReportsPage() {
               {selectedReport === 'tax' && (
                 <>
                   <div className="w-full h-80">
-                    <ReportsChart type="tax" data={chartData} />
+                    <ReportsChart type="tax" data={chartData} currencyCode={currencyCode} />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">

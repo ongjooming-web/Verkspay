@@ -105,7 +105,14 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authData.user.id
-    console.log('[Insights] Data request for user:', userId)
+
+    // Fetch user's preferred currency from profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('currency_code')
+      .eq('id', userId)
+      .single()
+    const preferredCurrency = profileData?.currency_code || 'USD'
 
     // Fetch all invoices for the user
     const { data: invoicesData, error: invoiceError } = await supabase
@@ -201,13 +208,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Determine most used currency
-    const currencyMap = new Map<string, number>()
-    invoices.forEach((inv: any) => {
-      const code = inv.currency_code || 'USD'
-      currencyMap.set(code, (currencyMap.get(code) || 0) + 1)
-    })
-    const currency = Array.from(currencyMap.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 'USD'
+    // Use profile's preferred currency (not a guess from invoice counts)
+    const currency = preferredCurrency
 
     // Client breakdown
     const clientMap = new Map<string, any>()
