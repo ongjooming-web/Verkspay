@@ -131,7 +131,7 @@ export default function Signup() {
             {/* Logo with subtle glow */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-              <img src="/logo.svg" alt="Verkspay Logo" className="h-12 w-auto relative z-10" />
+              <img src="/logo.svg" alt="Verkspay Logo" className="h-12 w-auto relative z-10" style={{background:"transparent"}} />
             </div>
             {/* Brand Name */}
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent -mt-2">Verkspay</h1>
