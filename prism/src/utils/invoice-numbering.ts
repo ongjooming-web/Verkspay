@@ -63,63 +63,32 @@ export async function generateRecurringInvoiceNumber(
  */
 export async function generateInvoiceNumber(
   userId: string,
-  supabase: any
+  supabase: any,
+  skipAbove: number = 0  // skip numbers <= this (used when retrying after 23505)
 ): Promise<string> {
-  const maxAttempts = 10
+  // Fetch ALL invoice numbers for this user to find true maximum
+  const { data: invoices, error: fetchError } = await supabase
+    .from('invoices')
+    .select('invoice_number')
+    .eq('user_id', userId)
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      // Fetch ALL invoice numbers for this user (no limit) to find true maximum
-      const { data: invoices, error: fetchError } = await supabase
-        .from('invoices')
-        .select('invoice_number')
-        .eq('user_id', userId)
+  if (fetchError) throw fetchError
 
-      if (fetchError) throw fetchError
+  let nextNum = skipAbove + 1
 
-      let nextNum = 1
+  if (invoices && invoices.length > 0) {
+    const numbers = invoices
+      .map((inv: any) => {
+        const match = inv.invoice_number?.match(/^INV-(\d+)$/)
+        return match ? parseInt(match[1], 10) : 0
+      })
+      .filter((n: number) => n > 0)
 
-      if (invoices && invoices.length > 0) {
-        // Parse every INV-XXXX number and find the true maximum
-        const numbers = invoices
-          .map((inv: any) => {
-            const match = inv.invoice_number?.match(/^INV-(\d+)$/)
-            return match ? parseInt(match[1], 10) : 0
-          })
-          .filter((n: number) => n > 0)
-
-        if (numbers.length > 0) {
-          nextNum = Math.max(...numbers) + 1
-        }
-      }
-
-      const padLength = nextNum > 9999 ? nextNum.toString().length : 4
-      const invoiceNumber = `INV-${nextNum.toString().padStart(padLength, '0')}`
-
-      // Final collision check before returning
-      const { data: existing } = await supabase
-        .from('invoices')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('invoice_number', invoiceNumber)
-        .maybeSingle()
-
-      if (existing) {
-        // Collision — wait briefly and retry
-        await new Promise((resolve) => setTimeout(resolve, 50 + Math.random() * 100))
-        continue
-      }
-
-      return invoiceNumber
-    } catch (error: any) {
-      if (error?.code !== 'PGRST116') {
-        console.error('[InvoiceNumbering] Attempt', attempt + 1, '- Error:', error)
-      }
-      if (attempt < maxAttempts - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 50 + Math.random() * 100))
-      }
+    if (numbers.length > 0) {
+      nextNum = Math.max(Math.max(...numbers) + 1, skipAbove + 1)
     }
   }
 
-  throw new Error(`Failed to generate invoice number after ${maxAttempts} attempts`)
+  const padLength = nextNum > 9999 ? nextNum.toString().length : 4
+  return `INV-${nextNum.toString().padStart(padLength, '0')}`
 }

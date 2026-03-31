@@ -76,23 +76,27 @@ export default function Invoices() {
 
   // Realtime: auto-refresh when invoices change (create, update, delete)
   useEffect(() => {
-    let userId: string
+    let channel: any
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return
-      userId = data.user.id
-      const channel = supabase
+      const userId = data.user.id
+      channel = supabase
         .channel('invoices-realtime')
         .on('postgres_changes', {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'invoices',
           filter: `user_id=eq.${userId}`,
-        }, () => {
-          fetchInvoices()
-        })
+        }, () => fetchInvoices())
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${userId}`,
+        }, () => fetchInvoices())
         .subscribe()
-      return () => { supabase.removeChannel(channel) }
     })
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   const fetchInvoices = async () => {
@@ -275,11 +279,12 @@ export default function Invoices() {
     let data: any = null
     let insertError: any = null
     const maxInsertAttempts = 5
+    let skipAbove = 0
 
     for (let attempt = 0; attempt < maxInsertAttempts; attempt++) {
       let invoiceNumber: string
       try {
-        invoiceNumber = await generateInvoiceNumber(userId, supabase)
+        invoiceNumber = await generateInvoiceNumber(userId, supabase, skipAbove)
       } catch (err) {
         alert('Error generating invoice number. Please try again.')
         return
@@ -302,8 +307,10 @@ export default function Invoices() {
         .select()
 
       if (result.error?.code === '23505') {
-        // Duplicate invoice number — retry with next number
-        console.warn('[InvoicesList] Duplicate invoice number, retrying... attempt', attempt + 1)
+        // Extract the number we just tried and skip past it next attempt
+        const match = invoiceNumber.match(/^INV-(\d+)$/)
+        skipAbove = match ? parseInt(match[1], 10) : skipAbove + 1
+        console.warn('[InvoicesList] Duplicate invoice number, retrying past', invoiceNumber)
         continue
       }
 
