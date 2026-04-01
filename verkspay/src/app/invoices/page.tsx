@@ -53,18 +53,6 @@ export default function Invoices() {
   const [showSuggestionsPanel, setShowSuggestionsPanel] = useState(false)
   const [additionalSuggestions, setAdditionalSuggestions] = useState<any[]>([])
   
-  // Auto-update overdue status based on due_date
-  const updateOverdueStatus = async () => {
-    const now = new Date()
-    for (const invoice of invoices) {
-      if (invoice.status !== 'paid' && new Date(invoice.due_date) < now && invoice.status !== 'overdue') {
-        await supabase
-          .from('invoices')
-          .update({ status: 'overdue' })
-          .eq('id', invoice.id)
-      }
-    }
-  }
   const [sortBy, setSortBy] = useState<SortBy>('date')
   const [searchTerm, setSearchTerm] = useState('')
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -134,6 +122,21 @@ export default function Invoices() {
           })
         )
         console.log('[InvoicesList] Updated invoice list with client names')
+        
+        // Auto-update overdue status based on due_date
+        const now = new Date()
+        for (const invoice of invoicesWithClients) {
+          if (invoice.status !== 'paid' && new Date(invoice.due_date) < now && invoice.status !== 'overdue') {
+            console.log('[InvoicesList] Updating invoice', invoice.invoice_number, 'to overdue status')
+            await supabase
+              .from('invoices')
+              .update({ status: 'overdue' })
+              .eq('id', invoice.id)
+            // Update local state immediately
+            invoice.status = 'overdue'
+          }
+        }
+        
         setInvoices(invoicesWithClients)
         
         // Calculate per-currency breakdowns
