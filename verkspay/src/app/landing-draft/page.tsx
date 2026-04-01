@@ -2,12 +2,8 @@
 
 export default function LandingDraft() {
   return (
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Verkspay - Get Paid Faster, Chase Invoices Less</title>
-        <style>{`
+    <div style={{ fontFamily: "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&display=swap');
           
           * {
@@ -621,8 +617,6 @@ export default function LandingDraft() {
             z-index: 10;
           }
         `}</style>
-      </head>
-      <body>
         {/* Navigation */}
         <nav style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #f3f4f6' }}>
           <div style={{ maxWidth: '80rem', marginLeft: 'auto', marginRight: 'auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -835,7 +829,6 @@ export default function LandingDraft() {
             </div>
           </div>
         </footer>
-      </body>
-    </html>
+      </div>
   )
 }
