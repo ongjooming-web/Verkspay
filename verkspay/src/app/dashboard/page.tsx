@@ -433,28 +433,10 @@ export default function Dashboard() {
           <p className="text-gray-400 text-lg">Here's your business overview at a glance</p>
         </div>
 
-        {/* Alert: Overdue Invoices */}
-        {stats.overdueCount > 0 && (
-          <Card className="mb-8 border-red-500/50 bg-red-500/10">
-            <CardBody>
-              <p className="text-red-300 font-semibold mb-4">⚠️ {stats.overdueCount} Overdue Invoice{stats.overdueCount !== 1 ? 's' : ''}</p>
-              <div className="space-y-2 mb-4">
-                {overdueInvoices.map((inv) => (
-                  <div key={inv.id} className="flex justify-between items-center">
-                    <span className="text-red-300 text-sm font-mono">{inv.invoice_number}</span>
-                    <span className="text-red-400 font-semibold">{formatCurrency(inv.remaining_balance || inv.amount, inv.currency_code || 'MYR')}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/invoices">
-                <Button className="bg-red-600/80 hover:bg-red-700/80 w-full">View Invoices</Button>
-              </Link>
-            </CardBody>
-          </Card>
-        )}
+        {/* Overdue Invoices - Moved to stat block grid below */}
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10" data-onboarding="metrics-cards">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10" data-onboarding="metrics-cards">
           <Card className="hover:scale-105 hover:border-green-400/50">
             <CardBody>
               <div className="text-gray-400 text-sm font-medium mb-3">Paid Revenue</div>
@@ -499,13 +481,20 @@ export default function Dashboard() {
             </CardBody>
           </Card>
 
-          <Card className="hover:scale-105 hover:border-cyan-400/50">
-            <CardBody>
-              <div className="text-gray-400 text-sm font-medium mb-3">Proposal Pipeline</div>
-              <div className="text-4xl font-bold text-cyan-400">{proposalStats.total}</div>
-              <div className="text-cyan-400 text-sm mt-3">{proposalStats.accepted} accepted • {proposalStats.winRate}% win rate</div>
-            </CardBody>
-          </Card>
+          {/* Overdue Invoices Stat Block - Clickable */}
+          <Link href="/invoices">
+            <Card className={`hover:scale-105 transition-all cursor-pointer ${stats.overdueCount > 0 ? 'hover:border-red-400/50 border-red-500/50 bg-red-500/5' : 'hover:border-gray-400/50 opacity-60'}`}>
+              <CardBody>
+                <div className="text-gray-400 text-sm font-medium mb-3">
+                  {stats.overdueCount > 0 ? '⚠️ Overdue' : 'No Overdue'}
+                </div>
+                <div className="text-4xl font-bold text-red-400">{stats.overdueCount}</div>
+                <div className={`text-sm mt-3 ${stats.overdueCount > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  {stats.overdueCount === 1 ? '1 invoice due' : `${stats.overdueCount} invoices due`}
+                </div>
+              </CardBody>
+            </Card>
+          </Link>
         </div>
 
         {/* AI Insights Widget */}
