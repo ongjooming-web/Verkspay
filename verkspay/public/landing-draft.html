@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verkspay - Get Paid Faster, Chase Invoices Less</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&display=swap');
+        
+        * {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        /* Liquid Glass Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Premium Diffusion Shadow */
+        .premium-shadow {
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Spring Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Stagger Animation */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stagger-item {
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+        
+        .stagger-item:nth-child(1) { animation-delay: 0.1s; }
+        .stagger-item:nth-child(2) { animation-delay: 0.2s; }
+        .stagger-item:nth-child(3) { animation-delay: 0.3s; }
+        .stagger-item:nth-child(4) { animation-delay: 0.4s; }
+        .stagger-item:nth-child(5) { animation-delay: 0.5s; }
+        
+        /* Button Animations */
+        .btn-primary {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        /* Accent Color (Emerald) */
+        .accent-emerald {
+            color: #10b981;
+        }
+        
+        .accent-emerald-bg {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        /* Typography Scale */
+        .text-display {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        
+        .text-headline {
+            font-size: 1.875rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+        
+        .text-subheading {
+            font-size: 1.125rem;
+            font-weight: 600;
+            letter-spacing: -0.005em;
+        }
+        
+        /* Feature Grid Zig-Zag */
+        @media (min-width: 1024px) {
+            .feature-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+            
+            .feature-grid > :nth-child(4) {
+                grid-column: 1 / 2;
+            }
+            
+            .feature-grid > :nth-child(5) {
+                grid-column: 2 / 4;
+            }
+        }
+        
+        /* Pricing Table */
+        .pricing-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 2rem;
+            align-items: center;
+            padding: 2rem;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+            transition: background 0.3s ease;
+        }
+        
+        .pricing-item:hover {
+            background: rgba(16, 185, 129, 0.03);
+        }
+        
+        .pricing-item.featured {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .pricing-item {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-white to-slate-50 text-gray-900">
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold accent-emerald">Verkspay</div>
+            <button class="px-6 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold hover:shadow-lg transition">
+                Sign In
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section: Split Screen -->
+    <section class="min-h-[90vh] flex items-center overflow-hidden">
+        <div class="max-w-7xl mx-auto w-full px-6 grid lg:grid-cols-2 gap-12 lg:gap-0 items-center">
+            <!-- Left: Text & CTA -->
+            <div class="space-y-8">
+                <h1 class="text-display text-gray-900">
+                    Get paid 3 days faster
+                </h1>
+                
+                <p class="text-xl text-gray-600 max-w-[50ch] leading-relaxed">
+                    Invoicing built for freelancers and growing businesses. Smart reminders, partial payments, and Stripe built in. No accountant features you'll never use.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button class="btn-primary px-8 py-4 rounded-lg accent-emerald-bg text-white font-semibold text-lg">
+                        Start Free Trial
+                    </button>
+                    <button class="px-8 py-4 rounded-lg border-2 border-gray-300 font-semibold text-gray-900 hover:border-emerald-600 hover:text-emerald-600 transition">
+                        See it in action
+                    </button>
+                </div>
+                
+                <div class="pt-8 border-t border-gray-200">
+                    <p class="text-sm text-gray-500 mb-4">Trusted by freelancers worldwide</p>
+                    <div class="flex gap-4">
+                        <span class="text-sm font-semibold text-gray-900">2.3M+ invoices processed</span>
+                        <span class="text-sm font-semibold text-gray-900">•</span>
+                        <span class="text-sm font-semibold text-gray-900">42% faster collection</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Animated Visual -->
+            <div class="hidden lg:block relative h-96">
+                <div class="float-animation absolute inset-0 glass-card rounded-3xl overflow-hidden">
+                    <div class="h-full bg-gradient-to-br from-emerald-50 to-blue-50 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-5xl font-bold accent-emerald mb-4">💰</div>
+                            <p class="text-gray-600 font-semibold">Invoice sent & paid in 24h</p>
+                            <p class="text-xs text-gray-400 mt-2">Real-time payment tracking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features: Zig-Zag Grid -->
+    <section class="py-24 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20">
+                <h2 class="text-headline text-gray-900 mb-4">Built for your workflow</h2>
+                <p class="text-lg text-gray-600 max-w-[60ch] mx-auto">
+                    Everything you need to get paid faster and manage clients better
+                </p>
+            </div>
+            
+            <!-- Feature Grid: 3-2-1 Layout -->
+            <div class="feature-grid">
+                <!-- Row 1: 3 Features -->
+                <div class="stagger-item glass-card rounded-2xl p-10 premium-shadow hover:shadow-[0_25px_50px_-15px_rgba(0,0,0,0.1)] transition">
+                    <div class="text-3xl mb-4">🔔</div>
+                    <h3 class="text-subheading text-gray-900 mb-2">Smart Reminders</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Automated follow-ups at 3, 7, and 14 days overdue. Stop chasing manually.
+                    </p>
+                </div>
+                
+                <div class="stagger-item glass-card rounded-2xl p-10 premium-shadow hover:shadow-[0_25px_50px_-15px_rgba(0,0,0,0.1)] transition">
+                    <div class="text-3xl mb-4">💸</div>
+                    <h3 class="text-subheading text-gray-900 mb-2">Partial Payments</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Collect deposits upfront, track the remainder automatically.
+                    </p>
+                </div>
+                
+                <div class="stagger-item glass-card rounded-2xl p-10 premium-shadow hover:shadow-[0_25px_50px_-15px_rgba(0,0,0,0.1)] transition">
+                    <div class="text-3xl mb-4">💳</div>
+                    <h3 class="text-subheading text-gray-900 mb-2">Stripe Payments</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Send a payment link, get paid instantly into your account.
+                    </p>
+                </div>
+                
+                <!-- Row 2: 2 Features (Wider) -->
+                <div class="stagger-item glass-card rounded-2xl p-10 premium-shadow hover:shadow-[0_25px_50px_-15px_rgba(0,0,0,0.1)] transition">
+                    <div class="text-3xl mb-4">🤖</div>
+                    <h3 class="text-subheading text-gray-900 mb-2">AI-Powered CRM</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Client health scores, AI summaries, smart follow-up suggestions, and revenue insights.
+                    </p>
+                </div>
+                
+                <div class="stagger-item glass-card rounded-2xl p-10 premium-shadow hover:shadow-[0_25px_50px_-15px_rgba(0,0,0,0.1)] transition">
+                    <div class="text-3xl mb-4">📋</div>
+                    <h3 class="text-subheading text-gray-900 mb-2">Proposals & Contracts</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Create professional proposals, win clients, and convert to invoices with one click.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Additional Features (Compact) -->
+            <div class="mt-16 grid md:grid-cols-2 gap-6 max-w-4xl">
+                <div class="flex gap-4 items-start">
+                    <span class="text-2xl">⏰</span>
+                    <div>
+                        <h4 class="font-semibold text-gray-900">Recurring Invoices</h4>
+                        <p class="text-sm text-gray-600">Auto-generated for retainer clients</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                    <span class="text-2xl">💬</span>
+                    <div>
+                        <h4 class="font-semibold text-gray-900">WhatsApp Integration</h4>
+                        <p class="text-sm text-gray-600">Send invoices via WhatsApp</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section class="py-16 px-6 bg-gray-50">
+        <div class="max-w-7xl mx-auto">
+            <h3 class="text-center text-headline text-gray-900 mb-12">Join freelancers worldwide</h3>
+            <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div class="text-center">
+                    <div class="text-3xl font-bold accent-emerald mb-2">2,300+</div>
+                    <p class="text-gray-600 text-sm">Active users</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold accent-emerald mb-2">$50M+</div>
+                    <p class="text-gray-600 text-sm">Processed annually</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold accent-emerald mb-2">4.9/5</div>
+                    <p class="text-gray-600 text-sm">User rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="py-24 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-headline text-gray-900 mb-4">Simple, transparent pricing</h2>
+                <p class="text-lg text-gray-600">Choose the plan that fits your needs</p>
+            </div>
+            
+            <!-- Pricing Table -->
+            <div class="border border-gray-200 rounded-2xl overflow-hidden premium-shadow">
+                <!-- Starter -->
+                <div class="pricing-item">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 text-lg">Starter</h3>
+                        <p class="text-sm text-gray-500">For freelancers</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>✓ Up to 20 invoices/month</li>
+                            <li>✓ Stripe payments</li>
+                            <li>✓ Smart reminders</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-900">$19</div>
+                        <p class="text-xs text-gray-500">/month</p>
+                    </div>
+                    <button class="px-6 py-2 rounded-lg border border-gray-300 font-semibold text-gray-900 hover:border-emerald-600 transition whitespace-nowrap">
+                        Start Free
+                    </button>
+                </div>
+                
+                <!-- Pro - Featured -->
+                <div class="pricing-item featured">
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-2">Most Popular</div>
+                        <h3 class="font-semibold text-gray-900 text-lg">Pro</h3>
+                        <p class="text-sm text-gray-500">For growing freelancers</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>✓ Unlimited invoices</li>
+                            <li>✓ Partial payments</li>
+                            <li>✓ Recurring invoices</li>
+                            <li>✓ Proposals</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-900">$49</div>
+                        <p class="text-xs text-gray-500">/month</p>
+                    </div>
+                    <button class="px-6 py-2 rounded-lg accent-emerald-bg text-white font-semibold whitespace-nowrap hover:shadow-lg transition">
+                        Start Free
+                    </button>
+                </div>
+                
+                <!-- Enterprise -->
+                <div class="pricing-item">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 text-lg">Enterprise</h3>
+                        <p class="text-sm text-gray-500">For teams & agencies</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>✓ Everything in Pro</li>
+                            <li>✓ Revenue forecasting</li>
+                            <li>✓ Team management</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-900">$89</div>
+                        <p class="text-xs text-gray-500">/month</p>
+                    </div>
+                    <button class="px-6 py-2 rounded-lg border border-gray-300 font-semibold text-gray-900 hover:border-emerald-600 transition whitespace-nowrap">
+                        Start Free
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 px-6 bg-gradient-to-br from-emerald-50 to-blue-50">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-headline text-gray-900 mb-6">Start free. Upgrade when you're ready.</h2>
+            <p class="text-lg text-gray-600 mb-8 max-w-[50ch] mx-auto">
+                No credit card required. 14-day free trial. Cancel anytime.
+            </p>
+            <button class="btn-primary px-10 py-4 rounded-lg accent-emerald-bg text-white font-semibold text-lg">
+                Start Free Today
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 bg-white py-12 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Verkspay</h4>
+                    <p class="text-sm text-gray-600">Get paid faster. Chase invoices less.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4 text-sm">Product</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-emerald-600 transition">Features</a></li>
+                        <li><a href="#" class="hover:text-emerald-600 transition">Pricing</a></li>
+                        <li><a href="#" class="hover:text-emerald-600 transition">Security</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4 text-sm">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-emerald-600 transition">Privacy</a></li>
+                        <li><a href="#" class="hover:text-emerald-600 transition">Terms</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4 text-sm">Contact</h4>
+                    <p class="text-sm text-gray-600">support@verkspay.com</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 pt-8 text-center text-sm text-gray-500">
+                <p>© 2026 Verkspay. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
